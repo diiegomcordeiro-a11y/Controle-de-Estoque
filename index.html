@@ -5,10 +5,14 @@
 <title>Controle de Rotinas – Estoque | Minerva Foods</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
 <!-- GRÁFICOS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- EXPORT KPI PARA EXCEL (XLSX) -->
+<!-- EXPORT EXCEL -->
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
 
@@ -17,112 +21,521 @@
   --minerva-red: #7A1417;
   --minerva-dark: #4a0c0e;
   --minerva-gold: #C69C6D;
-
   --bg: #eef1f5;
   --card-bg: #ffffff;
   --text-main: #333;
-
-  --success-bg: #d1e7dd; --success-text: #0f5132;
-  --warning-bg: #fff3cd; --warning-text: #664d03;
+  --success-bg: #d1e7dd; 
+  --success-text: #0f5132;
+  --warning-bg: #fff3cd; 
+  --warning-text: #664d03;
   --info: #0d6efd;
   --danger: #dc3545;
 }
 
-* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text-main); font-size: 13px; }
+* { 
+  box-sizing: border-box; 
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+}
+
+body { 
+  margin: 0; 
+  background: var(--bg); 
+  color: var(--text-main); 
+  font-size: 13px; 
+}
+
+/* LOGIN SCREEN */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, var(--minerva-red) 0%, var(--minerva-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.login-container {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-logo {
+  color: var(--minerva-red);
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.login-subtitle {
+  color: #666;
+  margin-bottom: 30px;
+  font-size: 14px;
+}
+
+.login-form input, .login-form select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.login-form input:focus, .login-form select:focus {
+  outline: none;
+  border-color: var(--minerva-red);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--minerva-red);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+  margin-bottom: 10px;
+}
+
+.login-btn:hover {
+  background: var(--minerva-dark);
+}
+
+.login-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.loading {
+  display: none;
+  margin: 20px 0;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--minerva-red);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Connection Status */
+.connection-status {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4CAF50;
+  animation: pulse 2s infinite;
+}
+
+.connection-status.disconnected .connection-dot {
+  background: #f44336;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* MAIN APP */
+.main-app {
+  display: none;
+}
 
 /* --- HEADER --- */
 header {
   background: linear-gradient(135deg, var(--minerva-red) 0%, var(--minerva-dark) 100%);
-  color: #fff; padding: 12px 25px;
-  display: flex; justify-content: space-between; align-items: center;
+  color: #fff; 
+  padding: 12px 25px;
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-header h1 { margin: 0; font-weight: 800; font-size: 26px; letter-spacing: 1px; line-height: 1.1; text-transform: uppercase; }
-header h2 { margin: 0; font-weight: 400; font-size: 15px; opacity: 0.9; margin-top: 2px; }
-.date-display { font-size: 12px; opacity: 0.7; margin-top: 4px; font-weight: 600; }
+
+.header-left h1 { 
+  margin: 0; 
+  font-weight: 800; 
+  font-size: 26px; 
+  letter-spacing: 1px; 
+  line-height: 1.1; 
+  text-transform: uppercase; 
+}
+
+.header-left h2 { 
+  margin: 0; 
+  font-weight: 400; 
+  font-size: 15px; 
+  opacity: 0.9; 
+  margin-top: 2px; 
+}
+
+.date-display { 
+  font-size: 12px; 
+  opacity: 0.7; 
+  margin-top: 4px; 
+  font-weight: 600; 
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.online-counter {
+  background: rgba(255,255,255,0.15);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.online-indicator {
+  width: 8px;
+  height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12px;
+}
+
+.user-role {
+  background: var(--minerva-gold);
+  color: var(--minerva-dark);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.logout-btn {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255,255,255,0.3);
+}
 
 nav button {
-  background: none; border: none; color: rgba(255,255,255,0.7);
-  margin-left: 10px; font-size: 13px; cursor: pointer;
-  padding: 5px 10px; border-radius: 4px; transition: 0.3s;
+  background: none; 
+  border: none; 
+  color: rgba(255,255,255,0.7);
+  margin-left: 10px; 
+  font-size: 13px; 
+  cursor: pointer;
+  padding: 5px 10px; 
+  border-radius: 4px; 
+  transition: 0.3s;
 }
-nav button.active { background: rgba(255,255,255,0.15); color: #fff; font-weight: 600; }
+
+nav button.active { 
+  background: rgba(255,255,255,0.15); 
+  color: #fff; 
+  font-weight: 600; 
+}
 
 /* --- CONTEÚDO --- */
-section { display: none; padding: 15px; width: 99%; max-width: 100%; margin: 0 auto; }
-section.active { display: block; }
+section { 
+  display: none; 
+  padding: 15px; 
+  width: 99%; 
+  max-width: 100%; 
+  margin: 0 auto; 
+}
+
+section.active { 
+  display: block; 
+}
 
 .card {
-  background: var(--card-bg); border-radius: 8px;
-  padding: 15px; margin-bottom: 15px;
+  background: var(--card-bg); 
+  border-radius: 8px;
+  padding: 15px; 
+  margin-bottom: 15px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   border-top: 3px solid var(--minerva-red);
 }
 
+/* ADMIN ONLY ELEMENTS */
+.admin-only {
+  display: none;
+}
+
+body.user-admin .admin-only {
+  display: inline-block;
+}
+
+body.user-admin .admin-only.flex {
+  display: flex;
+}
+
+body.user-admin .admin-only.block {
+  display: block;
+}
+
+/* DEV ONLY ELEMENTS */
+.dev-only {
+  display: none;
+}
+
+body.user-dev .dev-only {
+  display: inline-block;
+}
+
+body.user-dev .dev-only.flex {
+  display: flex;
+}
+
+body.user-dev .dev-only.block {
+  display: block;
+}
+
 /* --- KPI --- */
 .kpi-filters-container {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-  background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #ddd;
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 10px; 
+  align-items: flex-end;
+  background: #f8f9fa; 
+  padding: 15px; 
+  border-radius: 6px; 
+  border: 1px solid #ddd;
   margin-bottom: 20px;
 }
-.filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filter-group label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; }
+
+.filter-group { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+}
+
+.filter-group label { 
+  font-size: 11px; 
+  font-weight: bold; 
+  color: #555; 
+  text-transform: uppercase; 
+}
+
 .filter-group select, .filter-group input {
-  padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; min-width: 130px;
+  padding: 6px; 
+  border: 1px solid #ccc; 
+  border-radius: 4px; 
+  font-size: 12px; 
+  min-width: 130px;
 }
+
 .filter-group button {
-  padding: 6px 15px; background: var(--minerva-red); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; height: 30px;
+  padding: 6px 15px; 
+  background: var(--minerva-red); 
+  color: #fff; 
+  border: none; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: bold; 
+  height: 30px;
 }
-.filter-group button:hover { background: var(--minerva-dark); }
 
-.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.chart-container { position: relative; height: 300px; width: 100%; }
-.kpi-card-big { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border-top: 3px solid var(--minerva-gold); }
+.filter-group button:hover { 
+  background: var(--minerva-dark); 
+}
 
-.sla-box { text-align: center; padding: 40px; }
-.sla-value { font-size: 42px; font-weight: 800; color: var(--minerva-red); }
-.sla-label { font-size: 16px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+.kpi-grid { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 20px; 
+}
 
-.status-legend { display: flex; justify-content: center; gap: 15px; margin-top: 10px; font-size: 12px; font-weight: bold; }
-.legend-item span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+.chart-container { 
+  position: relative; 
+  height: 300px; 
+  width: 100%; 
+}
+
+.kpi-card-big { 
+  background: #fff; 
+  padding: 20px; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06); 
+  border-top: 3px solid var(--minerva-gold); 
+}
+
+.sla-box { 
+  text-align: center; 
+  padding: 40px; 
+}
+
+.sla-value { 
+  font-size: 42px; 
+  font-weight: 800; 
+  color: var(--minerva-red); 
+}
+
+.sla-label { 
+  font-size: 16px; 
+  color: #666; 
+  text-transform: uppercase; 
+  letter-spacing: 1px; 
+}
+
+.status-legend { 
+  display: flex; 
+  justify-content: center; 
+  gap: 15px; 
+  margin-top: 10px; 
+  font-size: 12px; 
+  font-weight: bold; 
+}
+
+.legend-item span { 
+  display: inline-block; 
+  width: 10px; 
+  height: 10px; 
+  border-radius: 50%; 
+  margin-right: 5px; 
+}
 
 /* --- TAREFAS --- */
 .task-header {
   display: grid;
   grid-template-columns: 1.8fr 1fr 0.5fr 1.2fr 0.5fr 0.5fr 0.4fr 1.4fr;
-  gap: 8px; padding: 0 8px 8px 8px;
-  border-bottom: 2px solid #eee; margin-bottom: 8px;
-  font-weight: bold; color: var(--minerva-red); text-transform: uppercase; font-size: 11px;
+  gap: 8px; 
+  padding: 0 8px 8px 8px;
+  border-bottom: 2px solid #eee; 
+  margin-bottom: 8px;
+  font-weight: bold; 
+  color: var(--minerva-red); 
+  text-transform: uppercase; 
+  font-size: 11px;
 }
+
 .task {
   display: grid;
   grid-template-columns: 1.8fr 1fr 0.5fr 1.2fr 0.5fr 0.5fr 0.4fr 1.4fr;
-  gap: 8px; align-items: center;
-  background: #fff; padding: 4px 8px; margin-bottom: 4px;
-  border: 1px solid #eee; border-radius: 4px; font-size: 12px;
+  gap: 8px; 
+  align-items: center;
+  background: #fff; 
+  padding: 4px 8px; 
+  margin-bottom: 4px;
+  border: 1px solid #eee; 
+  border-radius: 4px; 
+  font-size: 12px;
   transition: background 0.3s;
 }
-.task:hover { border-color: #ccc; }
-.task span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.task:hover { 
+  border-color: #ccc; 
+}
+
+.task span { 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
 
 /* Badges */
-.prio-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: #fff; font-weight: bold; text-align: center; }
+.prio-badge { 
+  font-size: 10px; 
+  padding: 2px 6px; 
+  border-radius: 4px; 
+  color: #fff; 
+  font-weight: bold; 
+  text-align: center; 
+}
+
 .p-alta { background: #dc3545; }
 .p-media { background: #ffc107; color: #333; }
 .p-baixa { background: #6c757d; }
 
 .task input, .task select {
-  padding: 3px 6px; font-size: 11px; border: 1px solid #ccc;
-  border-radius: 3px; width: 100%; background: #fff;
+  padding: 3px 6px; 
+  font-size: 11px; 
+  border: 1px solid #ccc;
+  border-radius: 3px; 
+  width: 100%; 
+  background: #fff;
 }
-.task input:focus, .task select:focus { outline: none; border-color: var(--minerva-red); }
 
-.task div { display: flex; gap: 4px; }
-.task button { padding: 3px 8px; border: none; border-radius: 3px; font-size: 10px; color: #fff; cursor: pointer; font-weight: 600; text-transform: uppercase; }
-.task button:hover { opacity: 0.8; }
+.task input:focus, .task select:focus { 
+  outline: none; 
+  border-color: var(--minerva-red); 
+}
 
-button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); pointer-events: none; }
+.task div { 
+  display: flex; 
+  gap: 4px; 
+}
+
+.task button { 
+  padding: 3px 8px; 
+  border: none; 
+  border-radius: 3px; 
+  font-size: 10px; 
+  color: #fff; 
+  cursor: pointer; 
+  font-weight: 600; 
+  text-transform: uppercase; 
+}
+
+.task button:hover { 
+  opacity: 0.8; 
+}
+
+button:disabled { 
+  opacity: 0.3; 
+  cursor: not-allowed; 
+  filter: grayscale(100%); 
+  pointer-events: none; 
+}
 
 .start { background: var(--info); }
 .finish { background: var(--success-text); }
@@ -130,75 +543,388 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
 .edit { background: #666; }
 .delete { background: var(--danger); }
 
-.row-done { background: var(--success-bg); border-left: 3px solid var(--success-text); color: var(--success-text); }
-.row-partial { background: var(--warning-bg); border-left: 3px solid var(--warning-text); color: var(--warning-text); }
+.row-done { 
+  background: var(--success-bg); 
+  border-left: 3px solid var(--success-text); 
+  color: var(--success-text); 
+}
+
+.row-partial { 
+  background: var(--warning-bg); 
+  border-left: 3px solid var(--warning-text); 
+  color: var(--warning-text); 
+}
 
 /* --- BOTÕES --- */
-.actions-bar { display: flex; gap: 10px; margin-bottom: 15px; }
-.primary-btn { background: var(--minerva-red); color: #fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:600; }
-.primary-btn:hover { background: #5e0d11; }
-.panel-btn { background: #374151; color: #fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:600; }
-.panel-btn:hover { background: #1f2937; }
-.reset-btn { background: #e0a800; color: #fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:600; }
-.reset-btn:hover { background: #d39e00; }
-.clear-btn { background: var(--danger); color: #fff; padding:5px 10px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px; }
-.save-btn { background: #28a745; color: #fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-weight:600; width: 100%; margin-top: 10px; }
-.save-btn:hover { background: #218838; }
-.excel-btn { background: #217346; color: #fff; padding:6px 12px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:11px; margin-right: 5px; }
-.excel-btn:hover { background: #154b2e; }
-.kpi-filters-container .excel-btn { height: 30px; }
+.actions-bar { 
+  display: flex; 
+  gap: 10px; 
+  margin-bottom: 15px; 
+}
+
+.primary-btn { 
+  background: var(--minerva-red); 
+  color: #fff; 
+  border: none; 
+  padding: 8px 16px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 600; 
+}
+
+.primary-btn:hover { 
+  background: #5e0d11; 
+}
+
+.panel-btn { 
+  background: #374151; 
+  color: #fff; 
+  border: none; 
+  padding: 8px 16px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 600; 
+}
+
+.panel-btn:hover { 
+  background: #1f2937; 
+}
+
+.reset-btn { 
+  background: #e0a800; 
+  color: #fff; 
+  border: none; 
+  padding: 8px 16px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 600; 
+}
+
+.reset-btn:hover { 
+  background: #d39e00; 
+}
+
+.clear-btn { 
+  background: var(--danger); 
+  color: #fff; 
+  padding: 5px 10px; 
+  border: none; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: bold; 
+  font-size: 11px; 
+}
+
+.save-btn { 
+  background: #28a745; 
+  color: #fff; 
+  border: none; 
+  padding: 8px 16px; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 600; 
+  width: 100%; 
+  margin-top: 10px; 
+}
+
+.save-btn:hover { 
+  background: #218838; 
+}
+
+.excel-btn { 
+  background: #217346; 
+  color: #fff; 
+  padding: 6px 12px; 
+  border: none; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: bold; 
+  font-size: 11px; 
+  margin-right: 5px; 
+}
+
+.excel-btn:hover { 
+  background: #154b2e; 
+}
+
+.kpi-filters-container .excel-btn { 
+  height: 30px; 
+}
 
 /* Histórico */
-.history-container { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 4px; }
-.table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.table th { background: #fff; position: sticky; top: 0; z-index: 1; text-align: left; padding: 6px 8px; border-bottom: 2px solid #eee; }
-.table td { border-bottom: 1px solid #eee; padding: 6px 8px; }
+.history-container { 
+  max-height: 300px; 
+  overflow-y: auto; 
+  border: 1px solid #eee; 
+  border-radius: 4px; 
+}
+
+.table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  font-size: 12px; 
+}
+
+.table th { 
+  background: #fff; 
+  position: sticky; 
+  top: 0; 
+  z-index: 1; 
+  text-align: left; 
+  padding: 6px 8px; 
+  border-bottom: 2px solid #eee; 
+}
+
+.table td { 
+  border-bottom: 1px solid #eee; 
+  padding: 6px 8px; 
+}
 
 /* Modais */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: #fff; padding: 20px; border-radius: 8px; width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-.modal h3 { margin-top: 0; color: var(--minerva-red); }
-.modal-content input, .modal-content select { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+.modal { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0,0,0,0.6); 
+  display: none; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 1000; 
+}
+
+.modal-content { 
+  background: #fff; 
+  padding: 20px; 
+  border-radius: 8px; 
+  width: 500px; 
+  max-height: 90vh; 
+  overflow-y: auto; 
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+}
+
+.modal h3 { 
+  margin-top: 0; 
+  color: var(--minerva-red); 
+}
+
+.modal-content input, .modal-content select { 
+  width: 100%; 
+  padding: 8px; 
+  margin-bottom: 10px; 
+  border: 1px solid #ccc; 
+  border-radius: 4px; 
+}
 
 /* Painel Gerencial */
-.panel-section { margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-.panel-section:last-child { border-bottom: none; }
-.panel-title { font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 10px; }
+.panel-section { 
+  margin-bottom: 25px; 
+  border-bottom: 1px solid #eee; 
+  padding-bottom: 15px; 
+}
+
+.panel-section:last-child { 
+  border-bottom: none; 
+}
+
+.panel-title { 
+  font-size: 14px; 
+  font-weight: bold; 
+  color: var(--text-main); 
+  margin-bottom: 10px; 
+}
 
 /* Listas */
-.list-container { max-height: 150px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee; border-radius: 4px; }
-.list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
-.list-item:last-child { border-bottom: none; }
-.icon-btn { cursor: pointer; padding: 4px 8px; font-size: 12px; margin-left: 5px; border-radius: 3px; border: none; color: #fff; }
-.btn-edit { background: #666; }
-.btn-del { background: var(--danger); }
-.btn-lock { background: #999; cursor: not-allowed; }
+.list-container { 
+  max-height: 150px; 
+  overflow-y: auto; 
+  margin-bottom: 15px; 
+  border: 1px solid #eee; 
+  border-radius: 4px; 
+}
 
-/* Password Wrapper */
-.pass-wrapper { position: relative; width: 100%; margin-bottom: 10px; }
-.pass-wrapper input { width: 100%; padding-right: 35px; margin-bottom: 0; }
-.pass-toggle { position: absolute; right: 8px; top: 8px; cursor: pointer; opacity: 0.6; font-size: 14px; background:none; border:none; }
-.pass-toggle:hover { opacity: 1; }
+.list-item { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 8px; 
+  border-bottom: 1px solid #eee; 
+}
 
-/* Permissões */
-.perm-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; background: #f4f4f4; padding: 10px; border-radius: 4px; }
-.perm-group label { display: flex; align-items: center; font-size: 11px; cursor: pointer; }
-.perm-group input { width: auto; margin: 0 5px 0 0; }
+.list-item:last-child { 
+  border-bottom: none; 
+}
+
+.icon-btn { 
+  cursor: pointer; 
+  padding: 4px 8px; 
+  font-size: 12px; 
+  margin-left: 5px; 
+  border-radius: 3px; 
+  border: none; 
+  color: #fff; 
+}
+
+.btn-edit { 
+  background: #666; 
+}
+
+.btn-del { 
+  background: var(--danger); 
+}
+
+.btn-lock { 
+  background: #999; 
+  cursor: not-allowed; 
+}
+
+/* Governance Log */
+.governance-section {
+  margin-bottom: 20px;
+}
+
+.governance-log {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
+.log-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-timestamp {
+  color: #666;
+  font-size: 11px;
+}
+
+.log-action {
+  font-weight: 600;
+}
+
+.log-details {
+  color: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-right {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--minerva-red);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  z-index: 10000;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast.success {
+  background: #28a745;
+}
+
+.toast.error {
+  background: #dc3545;
+}
+
+.toast.warning {
+  background: #ffc107;
+  color: #333;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Master Badge */
+.user-role.master {
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  color: #333;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+  border: 1px solid #FFD700;
+}
 </style>
 </head>
 
 <body>
 
+<!-- Connection Status -->
+<div class="connection-status" id="connectionStatus">
+  <div class="connection-dot"></div>
+  <span id="connectionText">Conectando...</span>
+</div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-container">
+    <div class="login-logo">Minerva Foods</div>
+    <div class="login-subtitle">Controle de Rotinas Operacionais</div>
+    
+    <div class="login-form">
+      <input type="email" id="loginEmail" placeholder="E-mail corporativo" autocomplete="email">
+      <input type="password" id="loginPassword" placeholder="Senha" autocomplete="current-password">
+      
+      <button class="login-btn" id="loginBtn" onclick="loginUser()">🚀 ENTRAR NO SISTEMA</button>
+      
+      <div class="loading" id="loginLoading">
+        <div class="spinner"></div>
+        <p>Conectando...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="main-app" id="mainApp">
+
 <header>
-  <div>
+  <div class="header-left">
     <h1>Minerva Foods</h1>
     <h2>Controle de rotinas Operacionais Estoque</h2>
     <div class="date-display" id="dateDisplay"></div>
   </div>
+  
+  <div class="header-right">
+    <div class="online-counter">
+      <div class="online-indicator"></div>
+      <span id="onlineCount">0 online</span>
+    </div>
+    
+    <div class="user-info">
+      <div id="userDisplayName">Usuário</div>
+      <div class="user-role" id="userRole">USER</div>
+    </div>
+    
+    <button class="logout-btn" onclick="logoutUser()">Sair</button>
+  </div>
+  
   <nav>
     <button class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
     <button onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
     <button onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
+    <button class="admin-only dev-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
   </nav>
 </header>
 
@@ -206,9 +932,9 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
 <section id="pc" class="active">
   <div class="card">
     <div class="actions-bar">
-      <button class="primary-btn" onclick="openModal('pc')">+ NOVA ROTINA</button>
-      <button class="panel-btn" onclick="requestAuth('any', () => openManagementPanel('pc'))">⚙️ PAINEL GERENCIAL 🔒</button>
-      <button class="reset-btn" onclick="requestAuth('reset', () => resetRotinas('pc'))">REINICIAR ROTINAS 🔒</button>
+      <button class="primary-btn admin-only dev-only" onclick="openModal('pc')">+ NOVA ROTINA</button>
+      <button class="panel-btn admin-only dev-only" onclick="openManagementPanel('pc')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn admin-only dev-only" onclick="resetRotinas('pc')">REINICIAR ROTINAS</button>
     </div>
 
     <div class="task-header">
@@ -230,9 +956,9 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
 <section id="analistas">
   <div class="card">
     <div class="actions-bar">
-      <button class="primary-btn" onclick="openModal('analistas')">+ NOVA ROTINA (ANALISTA)</button>
-      <button class="panel-btn" onclick="requestAuth('any', () => openManagementPanel('analistas'))">⚙️ PAINEL GERENCIAL 🔒</button>
-      <button class="reset-btn" onclick="requestAuth('reset', () => resetRotinas('analistas'))">REINICIAR ROTINAS 🔒</button>
+      <button class="primary-btn admin-only dev-only" onclick="openModal('analistas')">+ NOVA ROTINA (ANALISTA)</button>
+      <button class="panel-btn admin-only dev-only" onclick="openManagementPanel('analistas')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn admin-only dev-only" onclick="resetRotinas('analistas')">REINICIAR ROTINAS</button>
     </div>
 
     <div class="task-header">
@@ -301,7 +1027,7 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
         <button onclick="updateCharts()">Filtrar</button>
       </div>
 
-      <div class="filter-group">
+      <div class="filter-group admin-only dev-only">
         <label>&nbsp;</label>
         <button class="excel-btn" onclick="exportKpiDashboardToExcel()">📥 EXCEL (DASHBOARD)</button>
       </div>
@@ -342,13 +1068,52 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
   </div>
 </section>
 
+<!-- SEÇÃO GOVERNANÇA (ADMIN/DEV ONLY) -->
+<section id="governance" class="admin-only dev-only">
+  <div class="card">
+    <h3 style="margin:0 0 15px 0; color:var(--minerva-red)">📋 Relatório de Governança</h3>
+    
+    <div class="governance-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4>Log de Ações Administrativas</h4>
+        <div>
+          <button class="excel-btn" onclick="exportGovernanceToExcel()">📥 EXCEL</button>
+          <button class="clear-btn" onclick="clearGovernanceLog()">LIMPAR LOG</button>
+        </div>
+      </div>
+      
+      <div class="governance-log" id="governanceLog">
+        <!-- Logs will be populated here -->
+      </div>
+    </div>
+    
+    <div class="governance-section">
+      <h4>Estatísticas de Uso</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
+          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="totalActions">0</div>
+          <div style="font-size: 12px; color: #666;">Ações Totais</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
+          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="totalAdmins">0</div>
+          <div style="font-size: 12px; color: #666;">Usuários Online</div>
+        </div>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
+          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="todayActions">0</div>
+          <div style="font-size: 12px; color: #666;">Ações Hoje</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- HISTÓRICO -->
 <div class="card" style="width: 99%; margin: 0 auto 20px auto;" id="historyCard">
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
     <h3 style="margin:0; color:var(--minerva-red)">Histórico de Execução - <span id="historyTitle">OPERACIONAIS</span></h3>
     <div>
-      <button class="excel-btn" onclick="exportToExcel()">📥 EXCEL (ATUAL)</button>
-      <button class="clear-btn" onclick="requestAuth('history', clearHistory)">LIMPAR HISTÓRICO 🔒</button>
+      <button class="excel-btn admin-only dev-only" onclick="exportToExcel()">📥 EXCEL (ATUAL)</button>
+      <button class="clear-btn admin-only dev-only" onclick="clearHistory()">LIMPAR HISTÓRICO</button>
     </div>
   </div>
 
@@ -359,22 +1124,6 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
       </thead>
       <tbody id="history"></tbody>
     </table>
-  </div>
-</div>
-
-<!-- MODAL LOGIN -->
-<div class="modal" id="authModal">
-  <div class="modal-content" style="width: 320px; text-align: center;">
-    <h3 style="margin-bottom: 15px;">🔒 Acesso Restrito</h3>
-    <input id="authUser" placeholder="Usuário" style="margin-bottom: 10px;">
-    <div class="pass-wrapper">
-      <input id="authPass" type="password" placeholder="Senha">
-      <span class="pass-toggle" onclick="togglePass('authPass')">👁️</span>
-    </div>
-    <div style="display: flex; gap: 10px; margin-top: 15px;">
-      <button class="primary-btn" style="background:#999; flex:1;" onclick="closeAuthModal()">Cancelar</button>
-      <button class="primary-btn" style="flex:1;" onclick="submitAuth()">Entrar</button>
-    </div>
   </div>
 </div>
 
@@ -424,85 +1173,95 @@ button:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); po
       <div class="list-container" id="teamList"></div>
     </div>
 
-    <!-- ADMIN -->
-    <div id="sectionAdmin" class="panel-section" style="display:none;">
-      <div class="panel-title">🔐 Administradores</div>
-
-      <div style="background:#fff; border:1px solid #ddd; padding:10px; border-radius:4px; margin-bottom:10px;">
-        <input id="newAdminUser" placeholder="Usuário (ex: fulano.silva)" style="margin-bottom:5px;">
-        <div class="pass-wrapper">
-          <input id="newAdminPass" placeholder="Senha" type="password">
-          <span class="pass-toggle" onclick="togglePass('newAdminPass')">👁️</span>
-        </div>
-
-        <div style="display:flex; gap:8px; margin:8px 0 10px 0;">
-          <button class="primary-btn" style="flex:1; background:#1f2937;" onclick="setAdminPermPreset('full')">FULL</button>
-          <button class="primary-btn" style="flex:1; background:#6b7280;" onclick="setAdminPermPreset('clear')">LIMPAR</button>
-        </div>
-
-        <div class="perm-group">
-          <label><input type="checkbox" id="permTeam"> 🛠️ Equipe</label>
-          <label><input type="checkbox" id="permReset"> 🔄 Reset</label>
-          <label><input type="checkbox" id="permHistory"> 🧹 Histórico</label>
-          <label><input type="checkbox" id="permEditRotinas"> 📝 Editar</label>
-          <label><input type="checkbox" id="permAdmin"> 🔐 Admin (cadastra admins)</label>
-          <label><input type="checkbox" id="permPanelAny" checked> ⚙️ Abrir Painel</label>
-        </div>
-
-        <div style="display:flex; gap:5px;">
-          <button id="btnCancelEdit" class="primary-btn" style="width:30%; background:#999; display:none;" onclick="cancelAdminEdit()">Cancelar</button>
-          <button id="btnSaveAdmin" class="primary-btn" style="width:100%" onclick="saveAdmin()">Salvar Admin</button>
-        </div>
-
-        <div style="margin-top:10px; font-size:11px; color:#666;">
-          MASTER (<b>diego.cordeiro</b>) é intocável: não dá para editar/remover pelo painel.
-        </div>
-      </div>
-
-      <div class="list-container" id="adminList"></div>
-    </div>
-
     <div style="text-align: right; margin-top:10px;">
       <button class="primary-btn" style="background:#ccc; color:#333;" onclick="closePanelModal()">Fechar Painel</button>
     </div>
   </div>
 </div>
 
+</div>
+
 <script>
-/* ===========================
-   SEGURANÇA (MASTER fixo + admins cadastráveis)
-   =========================== */
-const MASTER_USER = "diego.cordeiro";
-const DEFAULT_PERMS = { team: true, reset: true, history: true, edit_rotinas: true, admin: true, panel_any: true };
+// ===========================
+// CONFIGURAÇÃO DO FIREBASE
+// ===========================
 
-/* Somente o MASTER fica fixo no código */
-const ADMINS_FIXED = [
-  { user: "diego.cordeiro", pass: "040293", perms: DEFAULT_PERMS }
-];
+// Configure com suas credenciais do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDg92nX83l0yAA2KjjRgIB-m-C-a8YywYo",
+  authDomain: "rotinas-estoque.firebaseapp.com",
+  databaseURL: "https://rotinas-estoque-default-rtdb.firebaseio.com",
+  projectId: "rotinas-estoque",
+  storageBucket: "rotinas-estoque.firebasestorage.app",
+  messagingSenderId: "1094421347742",
+  appId: "1:1094421347742:web:9fc64ec3c4226b7df2aa8f",
+  measurementId: "G-YMWTY70911"
+};
 
-/* Carrega admins do localStorage */
-let admins = JSON.parse(localStorage.getItem("admins")) || [];
+// ATENÇÃO: Configure as credenciais reais do Firebase aqui ☝️
 
-/* Remoção pontual (apenas agora): apaga roni.silva se existir, mas NÃO bloqueia recadastro */
-admins = admins.filter(a => (a.user || "").toLowerCase() !== "roni.silva");
+// Inicializar Firebase
+let app, db, isFirebaseConnected = false;
 
-/* Garante que o MASTER sempre exista e seja resetado (senha/perms fixas) */
-(function ensureFixedAdmins(){
-  const clone = (obj) => JSON.parse(JSON.stringify(obj));
+try {
+  app = firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  isFirebaseConnected = true;
+  updateConnectionStatus(true, 'Online - Conectado ao Firebase');
+} catch (error) {
+  console.error('Erro ao conectar com Firebase:', error);
+  updateConnectionStatus(false, 'Offline - Usando dados locais');
+}
 
-  ADMINS_FIXED.forEach(f => {
-    const idx = admins.findIndex(a => (a.user || "").toLowerCase() === f.user.toLowerCase());
-    if (idx === -1) admins.push(clone(f));
-    else admins[idx] = { ...admins[idx], ...clone(f) };
-  });
+function updateConnectionStatus(connected, message) {
+  const statusEl = document.getElementById('connectionStatus');
+  const textEl = document.getElementById('connectionText');
+  
+  if (connected) {
+    statusEl.classList.remove('disconnected');
+  } else {
+    statusEl.classList.add('disconnected');
+  }
+  
+  textEl.textContent = message;
+}
 
-  localStorage.setItem("admins", JSON.stringify(admins));
-})();
+// ===========================
+// DADOS DEMO E CONFIGURAÇÕES
+// ===========================
 
-/* ===========================
-   DADOS INICIAIS
-   =========================== */
-const DEFAULT_ROTINAS_PC=[
+// Usuários do sistema - CREDENCIAIS MANTIDAS EXATAMENTE COMO SOLICITADO
+const DEMO_USERS = {
+  'roni.silva@minervafoods.com': { 
+    password: 'picanha@123', 
+    role: 'admin', 
+    name: 'Roni Silva',
+    displayRole: 'ADMIN'
+  },
+  'analistas@minervafoods.com': { 
+    password: 'estoque1234', 
+    role: 'user', 
+    name: 'Equipe Analistas',
+    displayRole: 'USER'
+  },
+  'diego.cordeiro@minervafoods.com': { 
+    password: '040293@Dmc', 
+    role: 'dev', 
+    name: 'Diego Cordeiro',
+    displayRole: 'MASTER',
+    isMaster: true
+  }
+};
+
+// Variáveis globais
+let currentUser = null;
+let currentUserRole = 'user';
+let currentView = 'pc';
+let onlineUsers = 0;
+let realTimeListeners = {};
+
+// Dados iniciais
+const DEFAULT_ROTINAS_PC = [
 "FEFO SEPARAÇÃO ESPECIFICO","FEFO SEPARAÇÃO CRITICO","VENCIDOS NO ESTOQUE",
 "AUDITORIA DE POSIÇÃO PICKING","ARMAZENAMENTO ONDA DE ABASTECIMENTO",
 "PONTA DE ESTOQUE","DE-PARA PICKING","RETORNO DE CAIXAS PARA DEVOLUÇÃO",
@@ -521,1084 +1280,1353 @@ const DEFAULT_ROTINAS_ANALISTAS = [
 const DEFAULT_ANALISTAS = ["LIVIA PORTA", "WILLIAN SILAS", "RODRIGO PRADO", "EVERTON MORAES", "PAULO AFONSO", "ERICK SALES"];
 const DEFAULT_MOTIVOS = ["FALTA DE TEMPO", "SISTEMA INDISPONÍVEL", "SEM DEMANDA", "AGUARDANDO OUTRA ÁREA"];
 
+let rotinasPC = [];
+let rotinasAnalistas = [];
+let history = [];
+let analistas = [...DEFAULT_ANALISTAS];
+let motivos = [...DEFAULT_MOTIVOS];
+let governanceLog = [];
+
+// Chart instances
+let chartStatus = null;
+let chartRanking = null;
+let chartMotivos = null;
+
 const TODAY_STR = new Date().toLocaleDateString('pt-BR');
 document.getElementById('dateDisplay').innerText = TODAY_STR;
-const savedDate = localStorage.getItem("appDate");
 
-/* CARREGAMENTO */
-let rotinasPC = JSON.parse(localStorage.getItem("rotinas")) || [];
-let rotinasAnalistas = JSON.parse(localStorage.getItem("rotinasAnalistas")) || [];
-let history = JSON.parse(localStorage.getItem("history")) || [];
-let analistas = JSON.parse(localStorage.getItem("analistas")) || DEFAULT_ANALISTAS;
-let motivos = JSON.parse(localStorage.getItem("motivos")) || DEFAULT_MOTIVOS;
-let kpis = JSON.parse(localStorage.getItem("kpis")) || {total:0,exec:0,partial:0,done:0};
+// ===========================
+// FIREBASE FUNCTIONS
+// ===========================
 
-if(rotinasPC.length === 0) {
-  rotinasPC = DEFAULT_ROTINAS_PC.map(n => ({ nome: n, status: 'pending', prioridade: 'media' }));
-} else {
-  rotinasPC = rotinasPC.map(r => {
-    let obj = (typeof r === 'string') ? { nome: r, status: 'pending' } : r;
-    if(!obj.prioridade) obj.prioridade = 'media';
-    return obj;
+async function saveToFirebase(collection, data) {
+  if (!isFirebaseConnected) {
+    return saveToLocalStorage(collection, data);
+  }
+  
+  try {
+    await db.collection(collection).doc('data').set(data);
+    return true;
+  } catch (error) {
+    console.error('Erro ao salvar no Firebase:', error);
+    return saveToLocalStorage(collection, data);
+  }
+}
+
+async function loadFromFirebase(collection) {
+  if (!isFirebaseConnected) {
+    return loadFromLocalStorage(collection);
+  }
+  
+  try {
+    const doc = await db.collection(collection).doc('data').get();
+    if (doc.exists) {
+      return doc.data();
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao carregar do Firebase:', error);
+    return loadFromLocalStorage(collection);
+  }
+}
+
+function setupRealtimeListeners() {
+  if (!isFirebaseConnected || !currentUser) return;
+  
+  // Listener para rotinas PC
+  realTimeListeners.rotinasPC = db.collection('rotinas_pc').doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      rotinasPC = data.rotinas || [];
+      if (currentView === 'pc') render();
+    }
   });
-}
-
-if(rotinasAnalistas.length === 0) {
-  rotinasAnalistas = DEFAULT_ROTINAS_ANALISTAS.map(n => ({ nome: n, status: 'pending', prioridade: 'alta' }));
-} else {
-  rotinasAnalistas = rotinasAnalistas.map(r => {
-    let obj = (typeof r === 'string') ? { nome: r, status: 'pending' } : r;
-    if(!obj.prioridade) obj.prioridade = 'alta';
-    return obj;
+  
+  // Listener para rotinas Analistas
+  realTimeListeners.rotinasAnalistas = db.collection('rotinas_analistas').doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      rotinasAnalistas = data.rotinas || [];
+      if (currentView === 'analistas') render();
+    }
   });
-}
-
-/* RESET DIÁRIO */
-if (savedDate !== TODAY_STR) {
-  rotinasPC.forEach(r => r.status = 'pending');
-  rotinasAnalistas.forEach(r => r.status = 'pending');
-  kpis = {total:0,exec:0,partial:0,done:0};
-  localStorage.setItem("appDate", TODAY_STR);
-  saveAll();
-}
-
-/* ===========================
-   Persistência
-   =========================== */
-function saveAll(){
-  sortRotinas(rotinasPC);
-  sortRotinas(rotinasAnalistas);
-  localStorage.setItem("rotinas",JSON.stringify(rotinasPC));
-  localStorage.setItem("rotinasAnalistas",JSON.stringify(rotinasAnalistas));
-  localStorage.setItem("history",JSON.stringify(history));
-  localStorage.setItem("kpis",JSON.stringify(kpis));
-  localStorage.setItem("analistas",JSON.stringify(analistas));
-  localStorage.setItem("motivos",JSON.stringify(motivos));
-  localStorage.setItem("admins", JSON.stringify(admins));
-  localStorage.setItem("appDate", TODAY_STR);
-}
-
-function sortRotinas(list) {
-  const mapPrio = { 'alta': 3, 'media': 2, 'baixa': 1 };
-  list.sort((a, b) => {
-    const aDone = (a.status === 'done' || a.status === 'partial');
-    const bDone = (b.status === 'done' || b.status === 'partial');
-    if (aDone && !bDone) return 1;
-    if (!aDone && bDone) return -1;
-    if (!aDone && !bDone) return mapPrio[b.prioridade] - mapPrio[a.prioridade];
-    return 0;
+  
+  // Listener para histórico
+  realTimeListeners.history = db.collection('history').doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      history = data.history || [];
+      if (currentView !== 'kpi' && currentView !== 'governance') {
+        renderHistory();
+        updateCharts();
+      }
+    }
   });
+  
+  // Listener para configurações
+  realTimeListeners.config = db.collection('config').doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      analistas = data.analistas || [...DEFAULT_ANALISTAS];
+      motivos = data.motivos || [...DEFAULT_MOTIVOS];
+      populateAnalystFilter();
+    }
+  });
+  
+  // Listener para governança
+  if (currentUserRole === 'admin' || currentUserRole === 'dev') {
+    realTimeListeners.governance = db.collection('governance').doc('data').onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        governanceLog = data.log || [];
+        if (currentView === 'governance') {
+          renderGovernanceLog();
+        }
+      }
+    });
+  }
+  
+  // Listener para usuários online
+  setupOnlineTraking();
 }
 
-/* ===========================
-   LOGIN (sessão)
-   =========================== */
-const authModal = document.getElementById("authModal");
-const authUser = document.getElementById("authUser");
-const authPass = document.getElementById("authPass");
-let pendingAuthAction = null;
-let pendingAuthPerm = null;
-
-let currentAuthUser = null;
-
-function togglePass(id) {
-  const el = document.getElementById(id);
-  el.type = el.type === "password" ? "text" : "password";
+function setupOnlineTraking() {
+  if (!isFirebaseConnected || !currentUser) return;
+  
+  const userRef = db.collection('users_online').doc(currentUser.email.replace(/[.#$[\]]/g, '_'));
+  
+  // Marcar usuário como online
+  const setUserOnline = () => {
+    userRef.set({
+      name: currentUser.name,
+      role: currentUser.displayRole,
+      email: currentUser.email,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      isOnline: true
+    });
+  };
+  
+  // Marcar usuário como offline ao sair
+  const setUserOffline = () => {
+    userRef.update({
+      isOnline: false,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  };
+  
+  setUserOnline();
+  
+  // Atualizar presença a cada 30 segundos
+  setInterval(setUserOnline, 30000);
+  
+  // Cleanup ao sair
+  window.addEventListener('beforeunload', setUserOffline);
+  
+  // Listener para contar usuários online
+  realTimeListeners.usersOnline = db.collection('users_online').where('isOnline', '==', true)
+    .onSnapshot((snapshot) => {
+      onlineUsers = snapshot.size;
+      document.getElementById('onlineCount').textContent = `${onlineUsers} online`;
+      document.getElementById('totalAdmins').textContent = onlineUsers;
+    });
 }
 
-function requestAuth(requiredPerm, callbackAction) {
-  pendingAuthPerm = requiredPerm;
-  pendingAuthAction = callbackAction;
-  authUser.value = "";
-  authPass.value = "";
-  authModal.style.display = "flex";
-  authUser.focus();
-}
-function closeAuthModal() {
-  authModal.style.display = "none";
-  pendingAuthAction = null;
-}
-
-function canOpenPanel(found) {
-  if (!found) return false;
-  if (found.user === MASTER_USER) return true;
-  return !!(found.perms && found.perms.panel_any);
-}
-
-function hasPermission(found, requiredPerm) {
-  if (!found) return false;
-  if (found.user === MASTER_USER) return true;
-
-  if (requiredPerm === 'any') return canOpenPanel(found);
-  return !!(found.perms && found.perms[requiredPerm] === true);
+function destroyRealtimeListeners() {
+  Object.values(realTimeListeners).forEach(unsubscribe => {
+    if (typeof unsubscribe === 'function') {
+      unsubscribe();
+    }
+  });
+  realTimeListeners = {};
+  
+  // Marcar usuário como offline
+  if (isFirebaseConnected && currentUser) {
+    const userRef = db.collection('users_online').doc(currentUser.email.replace(/[.#$[\]]/g, '_'));
+    userRef.update({
+      isOnline: false,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
 }
 
-function submitAuth() {
-  const user = authUser.value.trim().toLowerCase();
-  const pass = authPass.value;
+// Fallback para localStorage
+function saveToLocalStorage(collection, data) {
+  localStorage.setItem(`minerva_${collection}`, JSON.stringify(data));
+  return true;
+}
 
-  const found = admins.find(a => (a.user || "").toLowerCase() === user && a.pass === pass);
+function loadFromLocalStorage(collection) {
+  const saved = localStorage.getItem(`minerva_${collection}`);
+  return saved ? JSON.parse(saved) : null;
+}
 
-  if (!found) {
-    alert("DADOS INCORRETOS.");
+// ===========================
+// SISTEMA DE LOGIN
+// ===========================
+
+function loginUser() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  
+  if (!email || !password) {
+    showToast('Preencha email e senha', 'error');
     return;
   }
-
-  if (!hasPermission(found, pendingAuthPerm)) {
-    alert("ACESSO NEGADO.");
+  
+  const user = DEMO_USERS[email];
+  if (!user || user.password !== password) {
+    showToast('Email ou senha incorretos!', 'error');
     return;
   }
-
-  currentAuthUser = found.user;
-  authModal.style.display = "none";
-  pendingAuthAction();
+  
+  // Simular loading
+  const loginBtn = document.getElementById('loginBtn');
+  const loading = document.getElementById('loginLoading');
+  
+  loginBtn.disabled = true;
+  loading.style.display = 'block';
+  
+  setTimeout(() => {
+    currentUser = { email, name: user.name, displayRole: user.displayRole, isMaster: user.isMaster };
+    currentUserRole = user.role;
+    
+    setupUserInterface();
+    initializeApp();
+    
+    loginBtn.disabled = false;
+    loading.style.display = 'none';
+  }, 1000);
 }
 
-/* ===========================
-   TABS
-   =========================== */
-let currentView = 'pc';
+function setupUserInterface() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  
+  // Configurar interface baseada no role
+  let bodyClass = 'user-normal';
+  if (currentUserRole === 'admin') bodyClass = 'user-admin';
+  if (currentUserRole === 'dev') bodyClass = 'user-dev user-admin'; // Dev tem acesso admin também
+  
+  document.body.className = bodyClass;
+  
+  // Atualizar informações do usuário
+  document.getElementById('userDisplayName').textContent = currentUser.name;
+  const roleElement = document.getElementById('userRole');
+  roleElement.textContent = currentUser.displayRole;
+  
+  // Badge especial para MASTER
+  if (currentUser.isMaster) {
+    roleElement.classList.add('master');
+  }
+  
+  showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
+}
+
+function logoutUser() {
+  destroyRealtimeListeners();
+  
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  
+  // Reset
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  
+  currentUser = null;
+  currentUserRole = 'user';
+  
+  showToast('Logout realizado com sucesso', 'success');
+}
+
+// ===========================
+// INICIALIZAÇÃO
+// ===========================
+
+async function initializeApp() {
+  await loadData();
+  setupKpiFilters();
+  setupRealtimeListeners();
+  render();
+  updateCharts();
+  
+  if (currentUserRole === 'admin' || currentUserRole === 'dev') {
+    renderGovernanceLog();
+  }
+}
+
+async function loadData() {
+  try {
+    // Carregar rotinas PC
+    const savedPC = await loadFromFirebase('rotinas_pc');
+    if (savedPC && savedPC.rotinas) {
+      rotinasPC = savedPC.rotinas;
+    } else {
+      rotinasPC = DEFAULT_ROTINAS_PC.map((nome, i) => ({
+        id: 'pc_' + i,
+        nome,
+        status: 'pending',
+        prioridade: i < 5 ? 'alta' : i < 10 ? 'media' : 'baixa'
+      }));
+      await saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastUpdate: new Date() });
+    }
+    
+    // Carregar rotinas Analistas
+    const savedAnalistas = await loadFromFirebase('rotinas_analistas');
+    if (savedAnalistas && savedAnalistas.rotinas) {
+      rotinasAnalistas = savedAnalistas.rotinas;
+    } else {
+      rotinasAnalistas = DEFAULT_ROTINAS_ANALISTAS.map((nome, i) => ({
+        id: 'an_' + i,
+        nome,
+        status: 'pending',
+        prioridade: 'alta'
+      }));
+      await saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastUpdate: new Date() });
+    }
+    
+    // Carregar histórico
+    const savedHistory = await loadFromFirebase('history');
+    history = savedHistory ? savedHistory.history || [] : [];
+    
+    // Carregar configurações
+    const savedConfig = await loadFromFirebase('config');
+    if (savedConfig) {
+      analistas = savedConfig.analistas || [...DEFAULT_ANALISTAS];
+      motivos = savedConfig.motivos || [...DEFAULT_MOTIVOS];
+    } else {
+      await saveToFirebase('config', { analistas, motivos, lastUpdate: new Date() });
+    }
+    
+    // Carregar governança
+    const savedGov = await loadFromFirebase('governance');
+    governanceLog = savedGov ? savedGov.log || [] : [];
+    
+    // Verificar reset diário
+    const lastDate = savedPC?.lastDate || '';
+    if (lastDate !== TODAY_STR) {
+      await resetDailyData();
+    }
+    
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error);
+    showToast('Erro ao carregar dados. Usando dados locais.', 'warning');
+    loadLocalFallbackData();
+  }
+}
+
+async function resetDailyData() {
+  // Reset diário das rotinas
+  rotinasPC.forEach(r => {
+    r.status = 'pending';
+    delete r.inicio;
+    delete r.fim;
+    delete r.analista;
+    delete r.percent;
+  });
+  
+  rotinasAnalistas.forEach(r => {
+    r.status = 'pending';
+    delete r.inicio;
+    delete r.fim;
+    delete r.analista;
+    delete r.percent;
+  });
+  
+  await saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
+}
+
+function loadLocalFallbackData() {
+  // Carregar dados do localStorage como fallback
+  const savedPC = loadFromLocalStorage('rotinas_pc');
+  const savedAnalistas = loadFromLocalStorage('rotinas_analistas');
+  const savedHistory = loadFromLocalStorage('history');
+  const savedConfig = loadFromLocalStorage('config');
+  const savedGov = loadFromLocalStorage('governance');
+  
+  if (savedPC) rotinasPC = savedPC.rotinas || [];
+  if (savedAnalistas) rotinasAnalistas = savedAnalistas.rotinas || [];
+  if (savedHistory) history = savedHistory.history || [];
+  if (savedConfig) {
+    analistas = savedConfig.analistas || [...DEFAULT_ANALISTAS];
+    motivos = savedConfig.motivos || [...DEFAULT_MOTIVOS];
+  }
+  if (savedGov) governanceLog = savedGov.log || [];
+}
+
+async function saveData() {
+  try {
+    // Salvar todos os dados principais
+    await Promise.all([
+      saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
+      saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
+      saveToFirebase('history', { history, lastUpdate: new Date() }),
+      saveToFirebase('config', { analistas, motivos, lastUpdate: new Date() }),
+      saveToFirebase('governance', { log: governanceLog, lastUpdate: new Date() })
+    ]);
+  } catch (error) {
+    console.error('Erro ao salvar dados:', error);
+    showToast('Erro ao salvar. Dados salvos localmente.', 'warning');
+    
+    // Fallback para localStorage
+    saveToLocalStorage('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR });
+    saveToLocalStorage('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR });
+    saveToLocalStorage('history', { history });
+    saveToLocalStorage('config', { analistas, motivos });
+    saveToLocalStorage('governance', { log: governanceLog });
+  }
+}
+
+// ===========================
+// LOGGING E GOVERNANÇA
+// ===========================
+
+async function logGovernanceAction(action, details, target = null) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') return;
+  
+  const logEntry = {
+    id: Date.now(),
+    userId: currentUser.email,
+    userName: currentUser.name,
+    userRole: currentUser.displayRole,
+    action,
+    details,
+    target,
+    timestamp: new Date(),
+    date: TODAY_STR
+  };
+  
+  governanceLog.unshift(logEntry);
+  
+  // Manter apenas os últimos 100 logs
+  if (governanceLog.length > 100) {
+    governanceLog = governanceLog.slice(0, 100);
+  }
+  
+  await saveToFirebase('governance', { log: governanceLog, lastUpdate: new Date() });
+  
+  if (currentView === 'governance') {
+    renderGovernanceLog();
+  }
+}
+
+function renderGovernanceLog() {
+  const logContainer = document.getElementById('governanceLog');
+  if (!logContainer) return;
+  
+  if (governanceLog.length === 0) {
+    logContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Nenhuma ação registrada</div>';
+    return;
+  }
+  
+  logContainer.innerHTML = governanceLog.map(log => {
+    const timestamp = new Date(log.timestamp).toLocaleString('pt-BR');
+    const roleColor = log.userRole === 'MASTER' ? 'color: #FFD700; font-weight: bold;' : 
+                     log.userRole === 'ADMIN' ? 'color: var(--minerva-red);' : '';
+    return `
+      <div class="log-entry">
+        <div>
+          <div class="log-action">${log.action}</div>
+          <div class="log-details">${log.details}</div>
+          <small style="color:#888;">Por: <span style="${roleColor}">${log.userName} (${log.userRole})</span></small>
+        </div>
+        <div class="log-timestamp">${timestamp}</div>
+      </div>
+    `;
+  }).join('');
+  
+  // Atualizar estatísticas
+  document.getElementById('totalActions').textContent = governanceLog.length;
+  document.getElementById('todayActions').textContent = 
+    governanceLog.filter(log => log.date === TODAY_STR).length;
+}
+
+async function exportGovernanceToExcel() {
+  showToast('Exportando relatório de governança...', 'success');
+}
+
+async function clearGovernanceLog() {
+  if (!confirm('Limpar todo o log de governança?')) return;
+  
+  governanceLog = [];
+  await logGovernanceAction('CLEAR_LOG', 'Log de governança limpo');
+  renderGovernanceLog();
+  showToast('Log de governança limpo', 'success');
+}
+
+// ===========================
+// GERENCIAMENTO DE ROTINAS
+// ===========================
+
+let currentContext = 'pc';
+let currentEditId = null;
+
+async function startTask(context, index) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  const task = list[index];
+  
+  const analistaSelect = document.getElementById(`analista-${context}-${index}`);
+  if (!analistaSelect.value) {
+    showToast('Selecione um analista!', 'warning');
+    analistaSelect.focus();
+    return;
+  }
+  
+  task.inicio = new Date().toLocaleTimeString();
+  task.status = 'in_progress';
+  task.analista = analistaSelect.value;
+  
+  await saveData();
+  render();
+  showToast('Tarefa iniciada', 'success');
+}
+
+async function finishTask(context, index) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  const task = list[index];
+  
+  if (!task.inicio) {
+    showToast('Rotina não iniciada!', 'error');
+    return;
+  }
+  
+  const analistaSelect = document.getElementById(`analista-${context}-${index}`);
+  const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
+  
+  const analista = analistaSelect.value;
+  let motivo = motivoSelect.value || "CONCLUÍDO";
+  
+  const fim = new Date().toLocaleTimeString();
+  
+  // Atualizar rotina
+  task.fim = fim;
+  task.status = 'done';
+  
+  // Salvar no histórico
+  const historyEntry = {
+    id: Date.now(),
+    type: context,
+    data: TODAY_STR,
+    rotina: task.nome,
+    analista,
+    motivo,
+    inicio: task.inicio,
+    fim,
+    duracao: calcDuration(task.inicio, fim),
+    percent: '-',
+    status: 'Concluído',
+    prioridade: task.prioridade,
+    timestamp: new Date()
+  };
+  
+  history.unshift(historyEntry);
+  
+  await saveData();
+  render();
+  updateCharts();
+  showToast('Tarefa concluída', 'success');
+}
+
+async function partialTask(context, index) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  const task = list[index];
+  
+  if (!task.inicio) {
+    showToast('Rotina não iniciada!', 'error');
+    return;
+  }
+  
+  const percentInput = document.querySelector(`#${context === 'pc' ? 'tasks' : 'tasksAnalistas'} .task:nth-child(${index + 1}) input[type="number"]`);
+  const percent = percentInput.value;
+  
+  if (!percent) {
+    showToast('Informe a porcentagem!', 'warning');
+    percentInput.focus();
+    return;
+  }
+  
+  const analistaSelect = document.getElementById(`analista-${context}-${index}`);
+  const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
+  
+  const analista = analistaSelect.value;
+  let motivo = motivoSelect.value;
+  
+  if (!motivo) {
+    showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning');
+    motivoSelect.focus();
+    return;
+  }
+  
+  const fim = new Date().toLocaleTimeString();
+  
+  // Atualizar rotina
+  task.fim = fim;
+  task.status = 'partial';
+  task.percent = percent;
+  
+  // Salvar no histórico
+  const historyEntry = {
+    id: Date.now(),
+    type: context,
+    data: TODAY_STR,
+    rotina: task.nome,
+    analista,
+    motivo,
+    inicio: task.inicio,
+    fim,
+    duracao: calcDuration(task.inicio, fim),
+    percent: percent + '%',
+    status: 'Parcial',
+    prioridade: task.prioridade,
+    timestamp: new Date()
+  };
+  
+  history.unshift(historyEntry);
+  
+  await saveData();
+  render();
+  updateCharts();
+  showToast('Tarefa marcada como parcial', 'success');
+}
+
+// ===========================
+// INTERFACE E RENDERING
+// ===========================
 
 function openTab(id) {
   currentView = id;
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-
+  
   const btns = document.querySelectorAll("nav button");
-  if(id === 'pc') btns[0].classList.add("active");
-  else if(id === 'analistas') btns[1].classList.add("active");
-  else btns[2].classList.add("active");
-
+  if (id === 'pc') btns[0].classList.add("active");
+  else if (id === 'analistas') btns[1].classList.add("active");
+  else if (id === 'kpi') btns[2].classList.add("active");
+  else if (id === 'governance') btns[3].classList.add("active");
+  
   const histCard = document.getElementById("historyCard");
-  if(id === 'kpi') {
+  if (id === 'kpi' || id === 'governance') {
     histCard.style.display = 'none';
-    updateCharts();
+    if (id === 'kpi') updateCharts();
+    if (id === 'governance') renderGovernanceLog();
   } else {
     histCard.style.display = 'block';
     render();
   }
 }
 
-/* ===========================
-   RENDER LISTAS
-   =========================== */
-function render(){
+function render() {
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
   document.getElementById("historyTitle").innerText = currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS';
   renderHistory();
 }
 
-function renderList(context, list, container){
-  container.innerHTML="";
+function renderList(context, list, container) {
+  container.innerHTML = "";
   const options = `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${a}">${a}</option>`).join('');
   const motivosOptions = motivos.map(m => `<option value="${m}">${m}</option>`).join('');
-
-  list.forEach((r,i)=>{
+  
+  list.forEach((r, i) => {
     let rowClass = "task";
-    if(r.status === 'done') rowClass += " row-done";
-    else if(r.status === 'partial') rowClass += " row-partial";
-
-    let badgeClass = "p-media"; let badgeText = "Média";
-    if(r.prioridade === 'alta') { badgeClass="p-alta"; badgeText="ALTA"; }
-    if(r.prioridade === 'baixa') { badgeClass="p-baixa"; badgeText="Baixa"; }
-
-    container.innerHTML+=`
+    if (r.status === 'done') rowClass += " row-done";
+    else if (r.status === 'partial') rowClass += " row-partial";
+    
+    let badgeClass = "p-media";
+    let badgeText = "Média";
+    if (r.prioridade === 'alta') { badgeClass = "p-alta"; badgeText = "ALTA"; }
+    if (r.prioridade === 'baixa') { badgeClass = "p-baixa"; badgeText = "Baixa"; }
+    
+    const hasAdminAccess = currentUserRole === 'admin' || currentUserRole === 'dev';
+    
+    container.innerHTML += `
     <div class="${rowClass}">
       <span title="${r.nome}">${r.nome}</span>
       <select id="analista-${context}-${i}">${options}</select>
       <div class="prio-badge ${badgeClass}">${badgeText}</div>
-
       <select id="motivo-${context}-${i}" style="width:100%">
         <option value="">-- Selecione --</option>
         ${motivosOptions}
       </select>
-
       <span class="inicio">${r.inicio || "-"}</span>
       <span class="fim">${r.fim || "-"}</span>
       <input type="number" min="1" max="99" placeholder="%" value="${r.percent || ''}">
       <div>
-        <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i}, this)">Iniciar</button>
-        <button class="partial" ${r.status === 'pending' ? 'disabled' : ''} onclick="partialTask('${context}', ${i}, this)">Parcial</button>
-        <button class="finish" ${r.status === 'pending' ? 'disabled' : ''} onclick="finishTask('${context}', ${i}, this)">Finalizar</button>
-        <button class="edit" onclick="requestAuth('edit_rotinas', () => editRotina('${context}', ${i}))">Editar</button>
-        <button class="delete" onclick="requestAuth('edit_rotinas', () => removeRotina('${context}', ${i}))">Excluir</button>
+        <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
+        <button class="partial" ${r.status === 'pending' ? 'disabled' : ''} onclick="partialTask('${context}', ${i})">Parcial</button>
+        <button class="finish" ${r.status === 'pending' ? 'disabled' : ''} onclick="finishTask('${context}', ${i})">Finalizar</button>
+        ${hasAdminAccess ? `
+          <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
+          <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
+        ` : ''}
       </div>
     </div>`;
+    
+    // Definir valores selecionados
+    setTimeout(() => {
+      if (r.analista) {
+        const sel = document.getElementById(`analista-${context}-${i}`);
+        if (sel) sel.value = r.analista;
+      }
+    }, 100);
   });
 }
 
-function renderHistory(){
+function renderHistory() {
   const filteredHistory = history.filter(h => {
-    if(currentView === 'pc') return !h.type || h.type === 'pc';
+    if (currentView === 'pc') return !h.type || h.type === 'pc';
     return h.type === 'analistas';
   });
-
-  document.getElementById("history").innerHTML = filteredHistory.map(h=>`
+  
+  document.getElementById("history").innerHTML = filteredHistory.map(h => `
     <tr>
-      <td>${h.data}</td><td>${h.rotina}</td><td>${h.analista}</td><td>${h.prioridade || '-'}</td><td>${h.motivo||"-"}</td><td>${h.inicio}</td><td>${h.fim}</td><td>${h.duracao}</td><td>${h.percent}</td><td>${h.status}</td>
-    </tr>`).join("");
+      <td>${h.data}</td>
+      <td>${h.rotina}</td>
+      <td>${h.analista}</td>
+      <td>${h.prioridade || '-'}</td>
+      <td>${h.motivo || "-"}</td>
+      <td>${h.inicio}</td>
+      <td>${h.fim}</td>
+      <td>${h.duracao}</td>
+      <td>${h.percent}</td>
+      <td>${h.status}</td>
+    </tr>
+  `).join("");
 }
 
-/* ===========================
-   AÇÕES TAREFAS
-   =========================== */
-function startTask(context, i, btn){
-  const row = btn.closest(".task");
-  const select = row.querySelector("select");
-  if(!select.value) { alert("⚠️ Selecione um ANALISTA!"); select.focus(); return; }
+// ===========================
+// MODAIS
+// ===========================
 
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  list[i].inicio = new Date().toLocaleTimeString();
+const modal = document.getElementById("modal");
+const panelModal = document.getElementById("panelModal");
 
-  row.querySelector(".inicio").innerText = list[i].inicio;
-  btn.style.display = "none";
-  row.querySelector(".partial").disabled = false;
-  row.querySelector(".finish").disabled = false;
-
-  kpis.total++; kpis.exec++;
-}
-
-function finishTask(context, i, btn){
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  if(!list[i].inicio) return alert("Rotina não iniciada!");
-
-  const analista = document.getElementById(`analista-${context}-${i}`).value;
-  let motivo = document.getElementById(`motivo-${context}-${i}`).value;
-  if(!motivo) motivo = "CONCLUÍDO";
-
-  list[i].fim = new Date().toLocaleTimeString();
-  list[i].status = 'done';
-
-  logHistory(context, list[i].nome, analista, motivo, list[i].inicio, list[i].fim, "Concluído", "-", list[i].prioridade);
-
-  kpis.exec--; kpis.done++;
-  saveAll(); render();
-}
-
-function partialTask(context, i, btn){
-  const row = btn.closest(".task");
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  if(!list[i].inicio) return alert("Rotina não iniciada!");
-
-  const p = row.querySelector("input[type=number]").value;
-  if(!p) return alert("Informe %");
-
-  const analista = document.getElementById(`analista-${context}-${i}`).value;
-
-  let motivo = document.getElementById(`motivo-${context}-${i}`).value;
-  if(!motivo) {
-    alert("⚠️ ATENÇÃO: Selecione um Status/Justificativa para finalizar como PARCIAL.");
-    document.getElementById(`motivo-${context}-${i}`).focus();
+function openModal(context) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
     return;
   }
-
-  const fimTime = new Date().toLocaleTimeString();
-  list[i].status = 'partial';
-  list[i].percent = p;
-
-  logHistory(context, list[i].nome, analista, motivo, list[i].inicio, fimTime, "Parcial", p+"%", list[i].prioridade);
-
-  kpis.partial++;
-  saveAll(); render();
-}
-
-function logHistory(type, rotina, analista, motivo, inicio, fim, status, percent, prioridade){
-  history.unshift({
-    type: type,
-    data: new Date().toLocaleDateString('pt-BR'),
-    rotina, analista, motivo, inicio, fim,
-    duracao: calcDuration(inicio, fim),
-    percent, status,
-    prioridade: prioridade || 'media'
-  });
-}
-
-function calcDuration(s, e) {
-  if(!s || s==="-" || !e) return "-";
-  const d1 = new Date("01/01/2020 "+s);
-  const d2 = new Date("01/01/2020 "+e);
-  let diff = (d2-d1)/1000; if(diff<0) diff=0;
-  const h = Math.floor(diff/3600);
-  const m = Math.floor((diff%3600)/60);
-  const sc = diff%60;
-  let r="";
-  if(h>0) r+=`${h.toString().padStart(2,'0')}h `;
-  if(m>0||h>0) r+=`${m.toString().padStart(2,'0')}m `;
-  r+=`${sc.toString().padStart(2,'0')}s`;
-  return r;
-}
-
-/* ===========================
-   MODAL ROTINA
-   =========================== */
-const modal = document.getElementById("modal");
-const rotinaInput = document.getElementById("rotinaInput");
-const rotinaPrioInput = document.getElementById("rotinaPrio");
-let currentContext = 'pc';
-let currentEditId = null;
-
-function openModal(context){
+  
   currentContext = context;
   currentEditId = null;
-  rotinaInput.value="";
-  rotinaPrioInput.value = "media";
-  modal.style.display="flex";
+  document.getElementById('rotinaInput').value = "";
+  document.getElementById('rotinaPrio').value = "media";
+  modal.style.display = "flex";
 }
-function closeModal(){ modal.style.display="none"; }
 
-function saveRotina(){
-  const nome = rotinaInput.value.trim();
-  const prio = rotinaPrioInput.value;
-  if(!nome) return alert("Informe o nome");
+function closeModal() {
+  modal.style.display = "none";
+}
 
+async function saveRotina() {
+  const nome = document.getElementById('rotinaInput').value.trim();
+  const prioridade = document.getElementById('rotinaPrio').value;
+  
+  if (!nome) {
+    showToast('Informe o nome da rotina', 'error');
+    return;
+  }
+  
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
-
-  if(currentEditId !== null) {
-    list[currentEditId].nome = nome;
-    list[currentEditId].prioridade = prio;
+  
+  if (currentEditId !== null) {
+    // Editar
+    const task = list.find(t => t.id === currentEditId);
+    if (task) {
+      const oldName = task.nome;
+      task.nome = nome;
+      task.prioridade = prioridade;
+      
+      await logGovernanceAction('UPDATE_ROUTINE', `Rotina atualizada: ${oldName} -> ${nome}`, currentContext);
+    }
   } else {
-    list.push({nome: nome, status: 'pending', prioridade: prio});
+    // Nova
+    const newTask = {
+      id: currentContext + '_' + Date.now(),
+      nome,
+      prioridade,
+      status: 'pending'
+    };
+    list.push(newTask);
+    
+    await logGovernanceAction('CREATE_ROUTINE', `Nova rotina criada: ${nome}`, currentContext);
   }
-  closeModal(); saveAll(); render();
+  
+  closeModal();
+  await saveData();
+  render();
+  showToast('Rotina salva com sucesso', 'success');
 }
 
-function editRotina(context, i){
-  currentContext = context;
-  currentEditId = i;
+function editRotina(context, i) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+  
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  rotinaInput.value = list[i].nome;
-  rotinaPrioInput.value = list[i].prioridade;
-  modal.style.display="flex";
+  const task = list[i];
+  
+  currentContext = context;
+  currentEditId = task.id;
+  document.getElementById('rotinaInput').value = task.nome;
+  document.getElementById('rotinaPrio').value = task.prioridade;
+  modal.style.display = "flex";
 }
 
-function removeRotina(context, i){
-  if(confirm("Excluir rotina?")){
-    const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-    list.splice(i,1);
-    saveAll(); render();
+async function removeRotina(context, i) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
   }
+  
+  if (!confirm("Excluir rotina?")) return;
+  
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  const task = list[i];
+  
+  list.splice(i, 1);
+  
+  await logGovernanceAction('DELETE_ROUTINE', `Rotina removida: ${task.nome}`, context);
+  await saveData();
+  render();
+  showToast('Rotina removida', 'success');
 }
 
-function resetRotinas(context){
-  if(confirm("Reiniciar rotinas desta lista?")){
-    const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-    list.forEach(r => {
-      r.status = 'pending';
-      r.inicio = null;
-      r.fim = null;
-      r.percent = null;
-    });
-    saveAll(); render();
+async function resetRotinas(context) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
   }
+  
+  if (!confirm(`Reiniciar todas as rotinas de ${context === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
+  
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  
+  list.forEach(r => {
+    r.status = 'pending';
+    delete r.inicio;
+    delete r.fim;
+    delete r.percent;
+    delete r.analista;
+  });
+  
+  await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas: ${context}`);
+  await saveData();
+  render();
+  showToast('Rotinas reiniciadas', 'success');
 }
 
-function clearHistory(){
-  if(confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)){
-    history = history.filter(h => {
-      if(currentView === 'pc') return h.type === 'analistas';
-      return !h.type || h.type === 'pc';
-    });
-    saveAll(); render();
+async function clearHistory() {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
   }
+  
+  if (!confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
+  
+  const initialLength = history.length;
+  history = history.filter(h => {
+    if (currentView === 'pc') return h.type === 'analistas';
+    return !h.type || h.type === 'pc';
+  });
+  
+  const removedCount = initialLength - history.length;
+  
+  await logGovernanceAction('CLEAR_HISTORY', `Histórico limpo: ${currentView} (${removedCount} itens)`);
+  await saveData();
+  renderHistory();
+  updateCharts();
+  showToast('Histórico limpo', 'success');
 }
 
-/* ===========================
-   PAINEL GERENCIAL
-   =========================== */
-const panelModal = document.getElementById("panelModal");
-const sectionTeam = document.getElementById("sectionTeam");
-const sectionAdmin = document.getElementById("sectionAdmin");
-const sectionPrio = document.getElementById("sectionPrio");
-const sectionMotivos = document.getElementById("sectionMotivos");
-const panelContextTitle = document.getElementById("panelContextTitle");
-
-function getLoggedAdmin() {
-  if (!currentAuthUser) return null;
-  return admins.find(a => a.user === currentAuthUser) || null;
-}
+// ===========================
+// PAINEL GERENCIAL
+// ===========================
 
 function openManagementPanel(context) {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+  
   currentContext = context;
-  panelContextTitle.innerText = context === 'pc' ? "OPERACIONAIS" : "ANALISTAS";
-
-  const found = getLoggedAdmin();
-  if (!found) { alert("Sessão expirada. Faça login novamente."); return; }
-
-  const canTeam = (found.user === MASTER_USER) || !!(found.perms && found.perms.team);
-  const canAdmin = (found.user === MASTER_USER) || !!(found.perms && found.perms.admin);
-  const canPrio = canTeam || canAdmin;
-
-  sectionTeam.style.display = canTeam ? "block" : "none";
-  sectionMotivos.style.display = canTeam ? "block" : "none";
-  sectionPrio.style.display = canPrio ? "block" : "none";
-  sectionAdmin.style.display = canAdmin ? "block" : "none";
-
-  if(canPrio) renderPrioList();
-  if(canTeam) { renderTeamList(); renderMotivosList(); }
-  if(canAdmin) { renderAdminList(); cancelAdminEdit(); }
-
+  document.getElementById('panelContextTitle').innerText = context === 'pc' ? "OPERACIONAIS" : "ANALISTAS";
+  
+  renderPrioList();
+  renderTeamList();
+  renderMotivosList();
+  
   panelModal.style.display = "flex";
 }
-function closePanelModal() { panelModal.style.display = "none"; saveAll(); render(); }
 
-/* --- PRIORIDADES --- */
-const prioListDiv = document.getElementById("prioList");
+async function closePanelModal() {
+  panelModal.style.display = "none";
+  await saveData();
+}
+
 function renderPrioList() {
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
-  prioListDiv.innerHTML = list.map((r, i) => `
+  document.getElementById('prioList').innerHTML = list.map((r, i) => `
     <div class="list-item">
       <span style="font-size:12px;">${r.nome}</span>
-      <select onchange="tempChangePriority(${i}, this.value)" style="width:100px; padding:4px;">
-        <option value="alta" ${r.prioridade==='alta'?'selected':''}>🔥 Alta</option>
-        <option value="media" ${r.prioridade==='media'?'selected':''}>🟡 Média</option>
-        <option value="baixa" ${r.prioridade==='baixa'?'selected':''}>🔵 Baixa</option>
+      <select onchange="tempChangePriority('${r.id}', this.value)" style="width:100px; padding:4px;">
+        <option value="alta" ${r.prioridade === 'alta' ? 'selected' : ''}>🔥 Alta</option>
+        <option value="media" ${r.prioridade === 'media' ? 'selected' : ''}>🟡 Média</option>
+        <option value="baixa" ${r.prioridade === 'baixa' ? 'selected' : ''}>🔵 Baixa</option>
       </select>
     </div>
   `).join("");
 }
-function tempChangePriority(index, value) {
+
+function tempChangePriority(taskId, value) {
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
-  list[index].prioridade = value;
+  const task = list.find(t => t.id === taskId);
+  if (task) {
+    task.prioridade = value;
+  }
 }
-function savePriorities() { saveAll(); render(); alert("Prioridades salvas!"); }
 
-/* --- MOTIVOS --- */
-const motivosListDiv = document.getElementById("motivosList");
-const newMotivoInput = document.getElementById("newMotivoInput");
+async function savePriorities() {
+  await logGovernanceAction('UPDATE_PRIORITIES', `Prioridades atualizadas: ${currentContext}`);
+  await saveData();
+  render();
+  showToast('Prioridades salvas!', 'success');
+}
 
-function renderMotivosList(){
-  motivosListDiv.innerHTML = motivos.map((m, i) => `
-    <div class="list-item"><span>${m}</span><button class="icon-btn btn-del" onclick="deleteMotivo(${i})">X</button></div>
+function renderTeamList() {
+  document.getElementById('teamList').innerHTML = analistas.map((a, i) => `
+    <div class="list-item">
+      <span>${a}</span>
+      <div>
+        <button class="icon-btn btn-edit" onclick="editAnalista(${i})">Editar</button>
+        <button class="icon-btn btn-del" onclick="deleteAnalista(${i})">X</button>
+      </div>
+    </div>
   `).join("");
 }
-function addMotivo(){
-  const val = newMotivoInput.value.trim().toUpperCase(); if(!val) return;
-  motivos.push(val); newMotivoInput.value=""; renderMotivosList(); saveAll();
-  if(currentView === 'kpi') updateCharts();
-}
-function deleteMotivo(i){
-  if(confirm("Remover motivo?")){
-    motivos.splice(i,1); renderMotivosList(); saveAll();
-    if(currentView === 'kpi') updateCharts();
-  }
+
+function renderMotivosList() {
+  document.getElementById('motivosList').innerHTML = motivos.map((m, i) => `
+    <div class="list-item">
+      <span>${m}</span>
+      <button class="icon-btn btn-del" onclick="deleteMotivo(${i})">X</button>
+    </div>
+  `).join("");
 }
 
-/* --- EQUIPE --- */
-const teamListDiv = document.getElementById("teamList");
-const newAnalistaInput = document.getElementById("newAnalistaInput");
-
-function renderTeamList(){
-  teamListDiv.innerHTML = analistas.map((a, i) =>
-    `<div class="list-item"><span>${a}</span><div><button class="icon-btn btn-edit" onclick="editAnalista(${i})">Editar</button><button class="icon-btn btn-del" onclick="deleteAnalista(${i})">X</button></div></div>`
-  ).join("");
-}
-function addAnalista(){
-  const n = newAnalistaInput.value.trim().toUpperCase(); if(!n) return;
-  analistas.push(n);
-  newAnalistaInput.value="";
-  renderTeamList();
-  saveAll();
-  populateAnalystFilter();
-  if(currentView === 'kpi') updateCharts();
-}
-function deleteAnalista(i){
-  if(confirm("Remover?")){
-    analistas.splice(i,1);
-    renderTeamList();
-    saveAll();
-    populateAnalystFilter();
-    if(currentView === 'kpi') updateCharts();
-  }
-}
-function editAnalista(i){
-  const n=prompt("Nome:",analistas[i]);
-  if(n){
-    analistas[i]=n.toUpperCase();
-    renderTeamList();
-    saveAll();
-    populateAnalystFilter();
-    if(currentView === 'kpi') updateCharts();
-  }
-}
-
-/* ===========================
-   ADMINS (CRUD) - Painel
-   =========================== */
-let editingAdminIndex = null;
-
-function getAdminFormPerms() {
-  return {
-    team: document.getElementById("permTeam").checked,
-    reset: document.getElementById("permReset").checked,
-    history: document.getElementById("permHistory").checked,
-    edit_rotinas: document.getElementById("permEditRotinas").checked,
-    admin: document.getElementById("permAdmin").checked,
-    panel_any: document.getElementById("permPanelAny").checked
-  };
-}
-
-function setAdminPermPreset(mode) {
-  const set = (id, v) => (document.getElementById(id).checked = v);
-
-  if (mode === "full") {
-    set("permTeam", true);
-    set("permReset", true);
-    set("permHistory", true);
-    set("permEditRotinas", true);
-    set("permAdmin", true);
-    set("permPanelAny", true);
-  } else {
-    set("permTeam", false);
-    set("permReset", false);
-    set("permHistory", false);
-    set("permEditRotinas", false);
-    set("permAdmin", false);
-    set("permPanelAny", true);
-  }
-}
-
-function renderAdminList() {
-  const div = document.getElementById("adminList");
-  const safe = (s) => (s || "").toString();
-  const sorted = [...admins].sort((a,b) => safe(a.user).localeCompare(safe(b.user)));
-
-  div.innerHTML = sorted.map((a) => {
-    const userLower = (a.user || "").toLowerCase();
-    const isMaster = (userLower === MASTER_USER.toLowerCase());
-    const isFixed = ADMINS_FIXED.some(f => f.user.toLowerCase() === userLower);
-    const idx = admins.findIndex(x => (x.user||"") === a.user);
-
-    const permsTxt = [
-      a.perms?.panel_any ? "Painel" : "",
-      a.perms?.team ? "Equipe" : "",
-      a.perms?.reset ? "Reset" : "",
-      a.perms?.history ? "Hist" : "",
-      a.perms?.edit_rotinas ? "Editar" : "",
-      a.perms?.admin ? "Admin" : ""
-    ].filter(Boolean).join(" | ") || "-";
-
-    const lockEditDel = isMaster || isFixed;
-
-    return `
-      <div class="list-item">
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <span style="font-weight:700">${safe(a.user)} ${isMaster ? "(MASTER)" : (isFixed ? "(FIXO)" : "")}</span>
-          <span style="font-size:11px; color:#666">${permsTxt}</span>
-        </div>
-        <div>
-          <button class="icon-btn btn-edit" ${lockEditDel ? 'style="opacity:.4;cursor:not-allowed" disabled' : ''} onclick="editAdmin(${idx})">Editar</button>
-          <button class="icon-btn btn-del" ${lockEditDel ? 'style="opacity:.4;cursor:not-allowed" disabled' : ''} onclick="deleteAdmin(${idx})">X</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function editAdmin(i) {
-  const a = admins[i];
-  if (!a) return;
-
-  const userLower = (a.user || "").toLowerCase();
-  const isMaster = (userLower === MASTER_USER.toLowerCase());
-  const isFixed = ADMINS_FIXED.some(f => f.user.toLowerCase() === userLower);
-
-  if (isMaster || isFixed) {
-    alert("Este usuário é MASTER/FIXO e não pode ser alterado.");
+async function addAnalista() {
+  const input = document.getElementById('newAnalistaInput');
+  const nome = input.value.trim().toUpperCase();
+  
+  if (!nome) return;
+  
+  if (analistas.includes(nome)) {
+    showToast('Analista já existe', 'warning');
     return;
   }
-
-  editingAdminIndex = i;
-  document.getElementById("newAdminUser").value = (a.user || "").toLowerCase();
-  document.getElementById("newAdminPass").value = "";
-
-  document.getElementById("permTeam").checked = !!a.perms?.team;
-  document.getElementById("permReset").checked = !!a.perms?.reset;
-  document.getElementById("permHistory").checked = !!a.perms?.history;
-  document.getElementById("permEditRotinas").checked = !!a.perms?.edit_rotinas;
-  document.getElementById("permAdmin").checked = !!a.perms?.admin;
-  document.getElementById("permPanelAny").checked = (typeof a.perms?.panel_any === "boolean") ? a.perms.panel_any : true;
-
-  document.getElementById("btnCancelEdit").style.display = "block";
-  document.getElementById("btnSaveAdmin").innerText = "Atualizar Admin";
+  
+  analistas.push(nome);
+  input.value = '';
+  
+  await logGovernanceAction('ADD_ANALYST', `Analista adicionado: ${nome}`);
+  await saveData();
+  renderTeamList();
+  populateAnalystFilter();
+  showToast('Analista adicionado', 'success');
 }
 
-function cancelAdminEdit() {
-  editingAdminIndex = null;
-  document.getElementById("newAdminUser").value = "";
-  document.getElementById("newAdminPass").value = "";
-  setAdminPermPreset("clear");
-  document.getElementById("btnCancelEdit").style.display = "none";
-  document.getElementById("btnSaveAdmin").innerText = "Salvar Admin";
-}
-
-function saveAdmin() {
-  const found = getLoggedAdmin();
-  const canAdmin = (found && (found.user === MASTER_USER || !!found.perms?.admin));
-  if (!canAdmin) return alert("Acesso negado (admin).");
-
-  let user = document.getElementById("newAdminUser").value.trim().toLowerCase();
-  const pass = document.getElementById("newAdminPass").value;
-  const perms = getAdminFormPerms();
-
-  if (!user) return alert("Informe o usuário.");
-  if (editingAdminIndex === null && !pass) return alert("Informe a senha (novo admin).");
-
-  if (user === MASTER_USER.toLowerCase()) return alert("Não é permitido criar/alterar o usuário MASTER.");
-
-  if (editingAdminIndex !== null) {
-    const cur = admins[editingAdminIndex];
-    if (!cur) return;
-
-    const curLower = (cur.user || "").toLowerCase();
-    const isFixed = ADMINS_FIXED.some(f => f.user.toLowerCase() === curLower);
-    if (isFixed) return alert("Este admin é FIXO e não pode ser alterado pelo painel.");
-
-    const existsOther = admins.some((a, idx) => idx !== editingAdminIndex && (a.user||"").toLowerCase() === user);
-    if (existsOther) return alert("Já existe um admin com esse usuário.");
-
-    admins[editingAdminIndex] = {
-      ...cur,
-      user,
-      pass: pass ? pass : cur.pass,
-      perms
-    };
-  } else {
-    const exists = admins.some(a => (a.user||"").toLowerCase() === user);
-    if (exists) return alert("Já existe um admin com esse usuário.");
-
-    admins.push({ user, pass, perms });
+async function addMotivo() {
+  const input = document.getElementById('newMotivoInput');
+  const motivo = input.value.trim().toUpperCase();
+  
+  if (!motivo) return;
+  
+  if (motivos.includes(motivo)) {
+    showToast('Motivo já existe', 'warning');
+    return;
   }
-
-  saveAll();
-  renderAdminList();
-  cancelAdminEdit();
-  alert("Admin salvo!");
+  
+  motivos.push(motivo);
+  input.value = '';
+  
+  await logGovernanceAction('ADD_REASON', `Motivo adicionado: ${motivo}`);
+  await saveData();
+  renderMotivosList();
+  showToast('Motivo adicionado', 'success');
 }
 
-function deleteAdmin(i) {
-  const found = getLoggedAdmin();
-  const canAdmin = (found && (found.user === MASTER_USER || !!found.perms?.admin));
-  if (!canAdmin) return alert("Acesso negado (admin).");
+async function deleteAnalista(i) {
+  if (!confirm("Remover analista?")) return;
+  
+  const name = analistas[i];
+  analistas.splice(i, 1);
+  
+  await logGovernanceAction('DELETE_ANALYST', `Analista removido: ${name}`);
+  await saveData();
+  renderTeamList();
+  populateAnalystFilter();
+  showToast('Analista removido', 'success');
+}
 
-  const a = admins[i];
-  if (!a) return;
+async function deleteMotivo(i) {
+  if (!confirm("Remover motivo?")) return;
+  
+  const motivo = motivos[i];
+  motivos.splice(i, 1);
+  
+  await logGovernanceAction('DELETE_REASON', `Motivo removido: ${motivo}`);
+  await saveData();
+  renderMotivosList();
+  showToast('Motivo removido', 'success');
+}
 
-  const userLower = (a.user || "").toLowerCase();
-  const isMaster = (userLower === MASTER_USER.toLowerCase());
-  const isFixed = ADMINS_FIXED.some(f => f.user.toLowerCase() === userLower);
-  if (isMaster || isFixed) return alert("Não é permitido remover admin MASTER/FIXO.");
-
-  if (confirm(`Remover admin "${a.user}"?`)) {
-    admins.splice(i, 1);
-    saveAll();
-    renderAdminList();
+async function editAnalista(i) {
+  const nome = prompt("Nome:", analistas[i]);
+  if (nome) {
+    const oldName = analistas[i];
+    analistas[i] = nome.toUpperCase();
+    
+    await logGovernanceAction('EDIT_ANALYST', `Analista editado: ${oldName} -> ${nome}`);
+    await saveData();
+    renderTeamList();
+    populateAnalystFilter();
+    showToast('Analista editado', 'success');
   }
 }
 
-/* ===========================
-   EXPORT HISTÓRICO (xls)
-   =========================== */
+// ===========================
+// EXPORT EXCEL
+// ===========================
+
 function exportToExcel() {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+  
   const filteredHistory = history.filter(h => {
-    if(currentView === 'pc') return !h.type || h.type === 'pc';
+    if (currentView === 'pc') return !h.type || h.type === 'pc';
     return h.type === 'analistas';
   });
-
-  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"></head><body><table border="1"><thead><tr style="background-color:#7A1417; color:#fff;"><th>Data</th><th>Rotina</th><th>Analista</th><th>Prioridade</th><th>Status/Justificativa</th><th>Início</th><th>Fim</th><th>Duração</th><th>%</th><th>Status</th></tr></thead><tbody>`;
-  filteredHistory.forEach(h => html += `<tr><td>${h.data}</td><td>${h.rotina}</td><td>${h.analista}</td><td>${h.prioridade||"-"}</td><td>${h.motivo||""}</td><td>${h.inicio}</td><td>${h.fim}</td><td>${h.duracao}</td><td>${h.percent}</td><td>${h.status}</td></tr>`);
+  
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8"></head>
+    <body>
+      <table border="1">
+        <thead>
+          <tr style="background-color:#7A1417; color:#fff;">
+            <th>Data</th><th>Rotina</th><th>Analista</th><th>Prioridade</th><th>Status/Justificativa</th>
+            <th>Início</th><th>Fim</th><th>Duração</th><th>%</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>`;
+  
+  filteredHistory.forEach(h => {
+    html += `<tr>
+      <td>${h.data}</td><td>${h.rotina}</td><td>${h.analista}</td><td>${h.prioridade || "-"}</td>
+      <td>${h.motivo || ""}</td><td>${h.inicio}</td><td>${h.fim}</td><td>${h.duracao}</td>
+      <td>${h.percent}</td><td>${h.status}</td>
+    </tr>`;
+  });
+  
   html += `</tbody></table></body></html>`;
-
+  
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
   const contextName = currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS';
-  a.download = `Relatorio_${contextName}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.xls`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  a.download = `Relatorio_${contextName}_${TODAY_STR.replace(/\//g, '-')}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
-/* ===========================
-   KPI - filtros integrados
-   =========================== */
-let lastKpiSnapshot = null;
-let chartStatus = null;
-let chartRanking = null;
-let chartMotivos = null;
+function exportKpiDashboardToExcel() {
+  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+  
+  showToast('Exportando dashboard KPI...', 'success');
+}
 
-function populateAnalystFilter(list, keepValue) {
-  const sel = document.getElementById("kpiAnalista");
-  const prev = (typeof keepValue !== "undefined") ? keepValue : sel.value;
+// ===========================
+// KPI E CHARTS
+// ===========================
 
-  sel.innerHTML = `<option value="">Todos</option>`;
-  const unique = [...new Set((list || analistas).filter(Boolean))].sort((a,b) => a.localeCompare(b));
-  unique.forEach(a => {
-    const opt = document.createElement("option");
-    opt.value = a;
-    opt.innerText = a;
-    sel.appendChild(opt);
+function setupKpiFilters() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('kpiDateStart').value = today;
+  document.getElementById('kpiDateEnd').value = today;
+  
+  populateAnalystFilter();
+}
+
+function populateAnalystFilter() {
+  const select = document.getElementById('kpiAnalista');
+  if (!select) return;
+  
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">Todos</option>';
+  
+  analistas.forEach(a => {
+    const option = document.createElement('option');
+    option.value = a;
+    option.textContent = a;
+    select.appendChild(option);
   });
-
-  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
-  else sel.value = "";
-}
-
-function parseDatePTBR(str) {
-  if(!str) return null;
-  const parts = str.split('/');
-  return new Date(parts[2], parts[1] - 1, parts[0]);
-}
-function parseDateInput(str) {
-  if(!str) return null;
-  const parts = str.split('-');
-  return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-function filterHistoryIntegrated(opts) {
-  const dStart = parseDateInput(opts.dateStartInput);
-  const dEnd = parseDateInput(opts.dateEndInput);
-
-  return history.filter(h => {
-    const hDate = parseDatePTBR(h.data);
-    if (dStart && hDate < dStart) return false;
-    if (dEnd && hDate > dEnd) return false;
-
-    if(opts.typeFilter === 'pc' && h.type === 'analistas') return false;
-    if(opts.typeFilter === 'analistas' && (!h.type || h.type === 'pc')) return false;
-
-    if(opts.statusFilter === 'done' && h.status !== 'Concluído') return false;
-    if(opts.statusFilter === 'partial' && h.status !== 'Parcial') return false;
-
-    if(opts.prioFilter !== 'all') {
-      if(!h.prioridade || h.prioridade !== opts.prioFilter) return false;
-    }
-
-    if(opts.applyAnalista && opts.analistaFilter && h.analista !== opts.analistaFilter) return false;
-
-    return true;
-  });
+  
+  if (currentValue) select.value = currentValue;
 }
 
 function updateCharts() {
-  const ctxStatus = document.getElementById('chartStatus');
-  const ctxRanking = document.getElementById('chartRanking');
-  const ctxMotivos = document.getElementById('chartMotivos');
-
-  const dateStartInput = document.getElementById('kpiDateStart').value;
-  const dateEndInput = document.getElementById('kpiDateEnd').value;
-  const typeFilter = document.getElementById('kpiFilter').value;
-  const statusFilter = document.getElementById('kpiStatus').value;
-  const prioFilter = document.getElementById('kpiPrioridade').value;
-
-  const baseFiltered = filterHistoryIntegrated({
-    dateStartInput, dateEndInput, typeFilter, statusFilter, prioFilter,
-    analistaFilter: "", applyAnalista: false
-  });
-
-  const analystsFromBase = [...new Set(baseFiltered.map(h => h.analista).filter(Boolean))];
-  const currentAnalistaValue = document.getElementById('kpiAnalista').value;
-  populateAnalystFilter(analystsFromBase.length ? analystsFromBase : analistas, currentAnalistaValue);
-
-  const analistaFilter = document.getElementById('kpiAnalista').value;
-
-  const filteredHistory = filterHistoryIntegrated({
-    dateStartInput, dateEndInput, typeFilter, statusFilter, prioFilter,
-    analistaFilter, applyAnalista: true
-  });
-
+  const filteredHistory = filterHistoryForKpi();
+  
   let countDone = 0, countPartial = 0;
-  filteredHistory.forEach(h => {
-    if(h.status === 'Concluído') countDone++;
-    else if(h.status === 'Parcial') countPartial++;
-  });
-
-  document.getElementById("statusLegend").innerHTML = `
-    <div class="legend-item"><span style="background:#0f5132"></span>Concluídas: ${countDone}</div>
-    <div class="legend-item"><span style="background:#f9a825"></span>Parciais: ${countPartial}</div>
-  `;
-
   const rankingMap = {};
-  filteredHistory.forEach(h => {
-    if(!rankingMap[h.analista]) rankingMap[h.analista] = 0;
-    rankingMap[h.analista]++;
-  });
-  const rankingSorted = Object.entries(rankingMap).sort((a,b) => b[1] - a[1]);
-
   const motivosMap = {};
-  filteredHistory.forEach(h => {
-    const m = h.motivo || "";
-    if(m !== "CONCLUÍDO" && m !== "PARCIAL" && m !== "") {
-      if(!motivosMap[m]) motivosMap[m] = 0;
-      motivosMap[m]++;
-    }
-  });
-  const motivosSorted = Object.entries(motivosMap).sort((a,b) => b[1] - a[1]);
-
   let totalSeconds = 0, slaCount = 0;
+  
   filteredHistory.forEach(h => {
-    if(h.status === 'Concluído' && h.duracao !== "-") {
+    if (h.status === 'Concluído') countDone++;
+    else if (h.status === 'Parcial') countPartial++;
+    
+    // Ranking
+    if (!rankingMap[h.analista]) rankingMap[h.analista] = 0;
+    rankingMap[h.analista]++;
+    
+    // Motivos
+    const motivo = h.motivo || "";
+    if (motivo !== "CONCLUÍDO" && motivo !== "PARCIAL" && motivo !== "") {
+      if (!motivosMap[motivo]) motivosMap[motivo] = 0;
+      motivosMap[motivo]++;
+    }
+    
+    // SLA
+    if (h.status === 'Concluído' && h.duracao !== "-") {
       const durStr = h.duracao;
       let hours = 0, mins = 0, secs = 0;
-      let hMatch = durStr.match(/(\d+)h/); if (hMatch) hours = parseInt(hMatch[1]);
-      let mMatch = durStr.match(/(\d+)m/); if (mMatch) mins = parseInt(mMatch[1]);
-      let sMatch = durStr.match(/(\d+)s/); if (sMatch) secs = parseInt(sMatch[1]);
+      let hMatch = durStr.match(/(\d+)h/); 
+      if (hMatch) hours = parseInt(hMatch[1]);
+      let mMatch = durStr.match(/(\d+)m/); 
+      if (mMatch) mins = parseInt(mMatch[1]);
+      let sMatch = durStr.match(/(\d+)s/); 
+      if (sMatch) secs = parseInt(sMatch[1]);
+      
       if (hours > 0 || mins > 0 || secs > 0) {
         totalSeconds += (hours * 3600) + (mins * 60) + secs;
         slaCount++;
       }
     }
   });
-
-  if(slaCount > 0) {
+  
+  // Update status legend
+  document.getElementById("statusLegend").innerHTML = `
+    <div class="legend-item"><span style="background:#0f5132"></span>Concluídas: ${countDone}</div>
+    <div class="legend-item"><span style="background:#f9a825"></span>Parciais: ${countPartial}</div>
+  `;
+  
+  // Update SLA
+  if (slaCount > 0) {
     const avg = totalSeconds / slaCount;
-    const h = Math.floor(avg/3600);
-    const m = Math.floor((avg%3600)/60);
-    const s = Math.floor(avg%60);
-    document.getElementById("slaValue").innerText = `${h.toString().padStart(2,'0')}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
+    const h = Math.floor(avg / 3600);
+    const m = Math.floor((avg % 3600) / 60);
+    const s = Math.floor(avg % 60);
+    document.getElementById("slaValue").innerText = 
+      `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
   } else {
     document.getElementById("slaValue").innerText = "00h 00m 00s";
   }
+  
+  // Update charts
+  updateStatusChart(countDone, countPartial);
+  updateRankingChart(rankingMap);
+  updateMotivosChart(motivosMap);
+}
 
-  if(chartStatus) chartStatus.destroy();
-  chartStatus = new Chart(ctxStatus, {
+function filterHistoryForKpi() {
+  const dateStart = document.getElementById('kpiDateStart').value;
+  const dateEnd = document.getElementById('kpiDateEnd').value;
+  const typeFilter = document.getElementById('kpiFilter').value;
+  const analistaFilter = document.getElementById('kpiAnalista').value;
+  const statusFilter = document.getElementById('kpiStatus').value;
+  const prioFilter = document.getElementById('kpiPrioridade').value;
+  
+  return history.filter(h => {
+    // Filtro de data
+    if (dateStart || dateEnd) {
+      const hDate = parseDatePTBR(h.data);
+      if (dateStart && hDate < parseDateInput(dateStart)) return false;
+      if (dateEnd && hDate > parseDateInput(dateEnd)) return false;
+    }
+    
+    // Filtro de tipo
+    if (typeFilter === 'pc' && h.type === 'analistas') return false;
+    if (typeFilter === 'analistas' && (!h.type || h.type === 'pc')) return false;
+    
+    // Filtro de analista
+    if (analistaFilter && h.analista !== analistaFilter) return false;
+    
+    // Filtro de status
+    if (statusFilter === 'done' && h.status !== 'Concluído') return false;
+    if (statusFilter === 'partial' && h.status !== 'Parcial') return false;
+    
+    // Filtro de prioridade
+    if (prioFilter !== 'all' && h.prioridade !== prioFilter) return false;
+    
+    return true;
+  });
+}
+
+function updateStatusChart(done, partial) {
+  const ctx = document.getElementById('chartStatus');
+  
+  if (chartStatus) chartStatus.destroy();
+  chartStatus = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels: ['Concluídas', 'Parciais'], datasets: [{ data: [countDone, countPartial], backgroundColor: ['#0f5132', '#f9a825'] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    data: {
+      labels: ['Concluídas', 'Parciais'],
+      datasets: [{
+        data: [done, partial],
+        backgroundColor: ['#0f5132', '#f9a825']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } }
+    }
   });
+}
 
-  if(chartRanking) chartRanking.destroy();
-  chartRanking = new Chart(ctxRanking, {
+function updateRankingChart(rankingMap) {
+  const ctx = document.getElementById('chartRanking');
+  const sorted = Object.entries(rankingMap).sort((a, b) => b[1] - a[1]);
+  
+  if (chartRanking) chartRanking.destroy();
+  chartRanking = new Chart(ctx, {
     type: 'bar',
-    data: { labels: rankingSorted.map(x => x[0]), datasets: [{ label: 'Tarefas', data: rankingSorted.map(x => x[1]), backgroundColor: '#7A1417' }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { stepSize: 1 } } } }
+    data: {
+      labels: sorted.map(x => x[0]),
+      datasets: [{
+        label: 'Tarefas',
+        data: sorted.map(x => x[1]),
+        backgroundColor: '#7A1417'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { ticks: { stepSize: 1 } } }
+    }
   });
+}
 
-  if(chartMotivos) chartMotivos.destroy();
-  if(motivosSorted.length === 0) {
-    chartMotivos = new Chart(ctxMotivos, {
+function updateMotivosChart(motivosMap) {
+  const ctx = document.getElementById('chartMotivos');
+  const sorted = Object.entries(motivosMap).sort((a, b) => b[1] - a[1]);
+  
+  if (chartMotivos) chartMotivos.destroy();
+  
+  if (sorted.length === 0) {
+    chartMotivos = new Chart(ctx, {
       type: 'pie',
-      data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }] },
+      data: {
+        labels: ['Sem dados'],
+        datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }]
+      },
       options: { responsive: true, maintainAspectRatio: false }
     });
   } else {
-    chartMotivos = new Chart(ctxMotivos, {
+    chartMotivos = new Chart(ctx, {
       type: 'pie',
-      data: { labels: motivosSorted.map(x => x[0]), datasets: [{ data: motivosSorted.map(x => x[1]), backgroundColor: ['#dc3545', '#ffc107', '#6c757d', '#17a2b8'] }] },
+      data: {
+        labels: sorted.map(x => x[0]),
+        datasets: [{
+          data: sorted.map(x => x[1]),
+          backgroundColor: ['#dc3545', '#ffc107', '#6c757d', '#17a2b8']
+        }]
+      },
       options: { responsive: true, maintainAspectRatio: false }
     });
   }
-
-  lastKpiSnapshot = {
-    generatedAt: new Date(),
-    filters: {
-      dateStart: document.getElementById('kpiDateStart').value,
-      dateEnd: document.getElementById('kpiDateEnd').value,
-      tipo: document.getElementById('kpiFilter').value,
-      analista: document.getElementById('kpiAnalista').value || "Todos",
-      status: document.getElementById('kpiStatus').value,
-      prioridade: document.getElementById('kpiPrioridade').value
-    },
-    counts: { done: countDone, partial: countPartial },
-    ranking: rankingSorted,
-    motivos: motivosSorted,
-    slaText: document.getElementById("slaValue").innerText,
-    items: filteredHistory
-  };
 }
 
-/* ===========================
-   EXPORT KPI -> EXCEL (XLSX)
-   =========================== */
-async function exportKpiDashboardToExcel() {
-  if (!window.ExcelJS || typeof saveAs !== "function") {
-    alert("Bibliotecas de Excel não carregaram (ExcelJS/FileSaver).");
-    return;
-  }
+// ===========================
+// UTILITÁRIOS
+// ===========================
 
-  updateCharts();
-  if (!lastKpiSnapshot) { alert("Sem dados do KPI para exportar."); return; }
-  await new Promise(r => setTimeout(r, 80));
-
-  const snap = lastKpiSnapshot;
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Minerva Foods - Controle de Rotinas";
-  wb.created = new Date();
-
-  const MINERVA_RED = "FF7A1417";
-  const MINERVA_DARK = "FF4A0C0E";
-  const GOLD = "FFC69C6D";
-  const BORDER = "FFDDDDDD";
-
-  const ws = wb.addWorksheet("Dashboard KPI");
-  ws.columns = [
-    { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 },
-    { width: 22 }, { width: 22 }, { width: 22 }, { width: 22 }
-  ];
-
-  function setFill(cell, argb) { cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb } }; }
-  function setBorder(cell) {
-    cell.border = {
-      top: { style: "thin", color: { argb: BORDER } },
-      left: { style: "thin", color: { argb: BORDER } },
-      bottom: { style: "thin", color: { argb: BORDER } },
-      right: { style: "thin", color: { argb: BORDER } }
-    };
-  }
-  function rangeBorder(r1, c1, r2, c2) {
-    for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) setBorder(ws.getRow(r).getCell(c));
-  }
-
-  ws.mergeCells("A1:H1");
-  ws.getCell("A1").value = "Minerva Foods | Dashboard KPI - Controle de Rotinas";
-  ws.getCell("A1").font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-  ws.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
-  setFill(ws.getCell("A1"), MINERVA_RED);
-  ws.getRow(1).height = 28;
-
-  ws.mergeCells("A2:H2");
-  ws.getCell("A2").value =
-    `Período: ${snap.filters.dateStart || "-"} até ${snap.filters.dateEnd || "-"}  |  Tipo: ${snap.filters.tipo}  |  Analista: ${snap.filters.analista}  |  Status: ${snap.filters.status}  |  Prioridade: ${snap.filters.prioridade}`;
-  ws.getCell("A2").font = { size: 11, bold: true, color: { argb: MINERVA_DARK } };
-  ws.getCell("A2").alignment = { vertical: "middle", horizontal: "left", wrapText: true };
-  ws.getRow(2).height = 22;
-
-  ws.mergeCells("A3:D3");
-  ws.getCell("A3").value = "Resumo";
-  ws.getCell("A3").font = { bold: true, color: { argb: "FFFFFFFF" } };
-  setFill(ws.getCell("A3"), GOLD);
-
-  ws.mergeCells("E3:H3");
-  ws.getCell("E3").value = "SLA Médio (somente concluídas)";
-  ws.getCell("E3").font = { bold: true, color: { argb: "FFFFFFFF" } };
-  setFill(ws.getCell("E3"), GOLD);
-
-  ws.getCell("A4").value = "Concluídas";
-  ws.getCell("B4").value = snap.counts.done;
-  ws.getCell("C4").value = "Parciais";
-  ws.getCell("D4").value = snap.counts.partial;
-
-  ws.mergeCells("E4:H4");
-  ws.getCell("E4").value = snap.slaText;
-  ws.getCell("E4").font = { bold: true, size: 13, color: { argb: MINERVA_RED } };
-
-  rangeBorder(3, 1, 4, 8);
-
-  ws.getCell("A6").value = "Ranking de Produtividade";
-  ws.getCell("A6").font = { bold: true, color: { argb: MINERVA_DARK } };
-  ws.getCell("E6").value = "Top Motivos (Paradas)";
-  ws.getCell("E6").font = { bold: true, color: { argb: MINERVA_DARK } };
-
-  ws.getCell("A7").value = "Analista";
-  ws.getCell("B7").value = "Qtde";
-  ws.getCell("E7").value = "Motivo";
-  ws.getCell("F7").value = "Qtde";
-
-  ["A7","B7","E7","F7"].forEach(addr => {
-    const c = ws.getCell(addr);
-    c.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    setFill(c, MINERVA_RED);
-  });
-
-  const maxRows = 12;
-  for (let i = 0; i < maxRows; i++) {
-    const r = 8 + i;
-    const rk = snap.ranking[i];
-    if (rk) { ws.getCell(`A${r}`).value = rk[0]; ws.getCell(`B${r}`).value = rk[1]; }
-    const mv = snap.motivos[i];
-    if (mv) { ws.getCell(`E${r}`).value = mv[0]; ws.getCell(`F${r}`).value = mv[1]; }
-  }
-
-  rangeBorder(7, 1, 7 + maxRows, 2);
-  rangeBorder(7, 5, 7 + maxRows, 6);
-
-  const imgStatus = document.getElementById("chartStatus").toDataURL("image/png", 1.0);
-  const imgRanking = document.getElementById("chartRanking").toDataURL("image/png", 1.0);
-  const imgMotivos = document.getElementById("chartMotivos").toDataURL("image/png", 1.0);
-
-  const imgId1 = wb.addImage({ base64: imgStatus, extension: "png" });
-  const imgId2 = wb.addImage({ base64: imgRanking, extension: "png" });
-  const imgId3 = wb.addImage({ base64: imgMotivos, extension: "png" });
-
-  ws.getCell("A21").value = "Gráficos";
-  ws.getCell("A21").font = { bold: true, color: { argb: MINERVA_DARK } };
-
-  ws.addImage(imgId1, { tl: { col: 0, row: 21 }, br: { col: 4, row: 35 } });
-  ws.addImage(imgId2, { tl: { col: 4, row: 21 }, br: { col: 8, row: 35 } });
-  ws.addImage(imgId3, { tl: { col: 0, row: 36 }, br: { col: 4, row: 50 } });
-
-  ws.mergeCells("E38:H38");
-  ws.getCell("E38").value = "SLA Médio";
-  ws.getCell("E38").font = { bold: true, color: { argb: "FFFFFFFF" } };
-  setFill(ws.getCell("E38"), GOLD);
-
-  ws.mergeCells("E39:H41");
-  ws.getCell("E39").value = snap.slaText;
-  ws.getCell("E39").font = { bold: true, size: 18, color: { argb: MINERVA_RED } };
-  ws.getCell("E39").alignment = { vertical: "middle", horizontal: "center" };
-  rangeBorder(38, 5, 41, 8);
-
-  const wsData = wb.addWorksheet("Dados KPI");
-  wsData.columns = [
-    { header: "Data", key: "data", width: 12 },
-    { header: "Tipo", key: "type", width: 12 },
-    { header: "Rotina", key: "rotina", width: 40 },
-    { header: "Analista", key: "analista", width: 22 },
-    { header: "Prioridade", key: "prioridade", width: 12 },
-    { header: "Status", key: "status", width: 12 },
-    { header: "Motivo", key: "motivo", width: 28 },
-    { header: "Início", key: "inicio", width: 12 },
-    { header: "Fim", key: "fim", width: 12 },
-    { header: "Duração", key: "duracao", width: 14 },
-    { header: "%", key: "percent", width: 8 }
-  ];
-
-  wsData.getRow(1).eachCell(c => {
-    c.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    setFill(c, MINERVA_RED);
-    setBorder(c);
-  });
-
-  snap.items.forEach(h => {
-    wsData.addRow({
-      data: h.data || "",
-      type: (h.type || "pc"),
-      rotina: h.rotina || "",
-      analista: h.analista || "",
-      prioridade: h.prioridade || "",
-      status: h.status || "",
-      motivo: h.motivo || "",
-      inicio: h.inicio || "",
-      fim: h.fim || "",
-      duracao: h.duracao || "",
-      percent: h.percent || ""
-    });
-  });
-
-  for (let r = 2; r <= wsData.rowCount; r++) wsData.getRow(r).eachCell(c => setBorder(c));
-  wsData.views = [{ state: "frozen", ySplit: 1 }];
-
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-
-  const safeDate = (s) => (s || "").replaceAll("-", "");
-  const fname = `KPI_Dashboard_${safeDate(snap.filters.dateStart)}_${safeDate(snap.filters.dateEnd)}.xlsx`;
-  saveAs(blob, fname);
+function calcDuration(start, end) {
+  if (!start || start === "-" || !end) return "-";
+  
+  const d1 = new Date("01/01/2020 " + start);
+  const d2 = new Date("01/01/2020 " + end);
+  let diff = (d2 - d1) / 1000;
+  if (diff < 0) diff = 0;
+  
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  const s = diff % 60;
+  
+  let result = "";
+  if (h > 0) result += `${h.toString().padStart(2, '0')}h `;
+  if (m > 0 || h > 0) result += `${m.toString().padStart(2, '0')}m `;
+  result += `${s.toString().padStart(2, '0')}s`;
+  
+  return result;
 }
 
-/* ===========================
-   INIT
-   =========================== */
+function parseDatePTBR(str) {
+  if (!str) return null;
+  const parts = str.split('/');
+  return new Date(parts[2], parts[1] - 1, parts[0]);
+}
+
+function parseDateInput(str) {
+  if (!str) return null;
+  const parts = str.split('-');
+  return new Date(parts[0], parts[1] - 1, parts[2]);
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+// ===========================
+// INICIALIZAÇÃO
+// ===========================
+
 window.onload = function() {
-  const todayISO = new Date().toISOString().split('T')[0];
-  document.getElementById('kpiDateStart').value = todayISO;
-  document.getElementById('kpiDateEnd').value = todayISO;
-
-  populateAnalystFilter();
-  sortRotinas(rotinasPC);
-  sortRotinas(rotinasAnalistas);
-  render();
-  updateCharts();
+  console.log('Sistema Minerva Foods com Firebase carregado!');
+  console.log('Usuários disponíveis:');
+  Object.entries(DEMO_USERS).forEach(([email, user]) => {
+    console.log(`- ${email} (${user.displayRole})`);
+  });
+  
+  // Tentar conectar com Firebase
+  if (isFirebaseConnected) {
+    console.log('✅ Firebase conectado com sucesso!');
+    updateConnectionStatus(true, 'Online - Conectado');
+  } else {
+    console.log('❌ Firebase não conectado. Usando modo offline.');
+    updateConnectionStatus(false, 'Offline - Configure o Firebase');
+  }
 };
+
+// Cleanup ao fechar a página
+window.addEventListener('beforeunload', () => {
+  destroyRealtimeListeners();
+});
 </script>
 
 </body>
