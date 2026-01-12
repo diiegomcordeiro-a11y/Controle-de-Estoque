@@ -642,10 +642,9 @@ function isPrivileged() { return currentUserRole === 'admin' || currentUserRole 
 const PRIORITY_ORDER = { alta: 0, media: 1, baixa: 2 };
 
 /**
- * IMPORTANTE (fix do "pular pro fim ao iniciar"):
+ * Ordenação:
  * - Ordena SOMENTE as rotinas ativas (pending/in_progress) por prioridade.
  * - Rotinas done/partial ficam no final, respeitando a ordem atual do array.
- * Assim, só vai pro final quando você faz Parcial/Finalizar (moveTaskToEnd).
  */
 function sortByStatusAndPriority(context) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
@@ -711,6 +710,57 @@ function resetRoutineFields(task) {
   delete task.analista;
   delete task.percent;
   delete task.inicioTs;
+}
+
+/* ===========================
+   PARCIAL (UI STATE)
+   - Justificativa só habilita no modo parcial
+   - Finalizar (Concluído) desabilita no modo parcial
+   - Sai do modo parcial quando motivo e % voltarem vazios
+=========================== */
+const partialModeState = {}; // key -> true (somente em memória)
+
+function partialKey(context, taskId) { return `${context}:${String(taskId || '')}`; }
+
+function isPartialMode(context, task) {
+  const id = task?.id;
+  if (!id) return false;
+  return !!partialModeState[partialKey(context, id)];
+}
+
+function setPartialMode(context, taskId, enabled) {
+  const k = partialKey(context, taskId);
+  if (enabled) partialModeState[k] = true;
+  else delete partialModeState[k];
+}
+
+function clearPartialModeForTask(context, taskId) {
+  delete partialModeState[partialKey(context, taskId)];
+}
+
+function findTaskIndexById(context, taskId) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  return list.findIndex(t => String(t?.id) === String(taskId));
+}
+
+function handlePartialFieldsChange(context, taskId) {
+  const idx = findTaskIndexById(context, taskId);
+  if (idx < 0) return;
+
+  const motivoEl = document.getElementById(`motivo-${context}-${idx}`);
+  const percentEl = document.getElementById(`percent-${context}-${idx}`);
+
+  const motivo = String(motivoEl?.value || '').trim();
+  const percent = String(percentEl?.value || '').trim();
+
+  const inMode = !!partialModeState[partialKey(context, taskId)];
+  if (!inMode) return; // só reage se já estiver em modo parcial
+
+  // Se limpou tudo, sai do modo parcial (reativa Finalizar e trava justificativa)
+  if (!motivo && !percent) {
+    clearPartialModeForTask(context, taskId);
+    render();
+  }
 }
 
 /* ===========================
@@ -1347,6 +1397,12 @@ async function finishTask(context, index) {
   const task = list[index];
   if (!task) return;
 
+  // segurança extra: se estiver em modo parcial, não deixa finalizar como "Concluído"
+  if (isPartialMode(context, task)) {
+    showToast('Modo PARCIAL ativo. Limpe % e motivo para voltar ao modo Concluído.', 'warning');
+    return;
+  }
+
   if (task.status === 'done' || task.status === 'partial') { showToast('Tarefa já finalizada', 'warning'); return; }
 
   const lk = lockKey(context, task, 'finish');
@@ -1394,6 +1450,8 @@ async function finishTask(context, index) {
 
     rebuildEffectiveHistory();
 
+    clearPartialModeForTask(context, task.id);
+
     // só aqui manda pro final
     moveTaskToEnd(list, index);
 
@@ -1420,18 +1478,35 @@ async function partialTask(context, index) {
   try {
     if (!task.inicio) { showToast('Rotina não iniciada!', 'error'); return; }
 
-    const percentInput = document.querySelector(`#${context === 'pc' ? 'tasks' : 'tasksAnalistas'} .task:nth-child(${index + 1}) input[type="number"]`);
-    const percent = percentInput.value;
+    // entra em modo parcial (habilita justificativa e bloqueia "Finalizar")
+    if (task.status === 'in_progress' && !isPartialMode(context, task)) {
+      setPartialMode(context, task.id, true);
+      render();
+    }
 
-    if (!percent) { showToast('Informe a porcentagem!', 'warning'); percentInput.focus(); return; }
+    // re-localiza índice após render (para garantir ids corretos)
+    const idx = findTaskIndexById(context, task.id);
+    if (idx < 0) return;
 
-    const analistaSelect = document.getElementById(`analista-${context}-${index}`);
-    const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
+    const percentEl = document.getElementById(`percent-${context}-${idx}`);
+    const percent = String(percentEl?.value || '').trim();
+    if (!percent) {
+      showToast('Informe a porcentagem!', 'warning');
+      if (percentEl) percentEl.focus();
+      return;
+    }
+
+    const analistaSelect = document.getElementById(`analista-${context}-${idx}`);
+    const motivoSelect = document.getElementById(`motivo-${context}-${idx}`);
 
     const analista = analistaSelect.value;
-    const motivo = motivoSelect.value;
+    const motivo = String(motivoSelect?.value || '').trim();
 
-    if (!motivo) { showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning'); motivoSelect.focus(); return; }
+    if (!motivo) {
+      showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning');
+      if (motivoSelect) motivoSelect.focus();
+      return;
+    }
 
     const fim = nowTimeStr();
     const endTs = Date.now();
@@ -1466,8 +1541,11 @@ async function partialTask(context, index) {
 
     rebuildEffectiveHistory();
 
+    // sai do modo parcial (já finalizou)
+    clearPartialModeForTask(context, task.id);
+
     // só aqui manda pro final
-    moveTaskToEnd(list, index);
+    moveTaskToEnd(list, idx);
 
     await saveData();
     render();
@@ -1533,22 +1611,46 @@ function renderList(context, list, container) {
     const canFinish = (r.status === 'in_progress');
     const canPartial = (r.status === 'in_progress');
 
+    const inPartialMode = isPartialMode(context, r);
+    const motivoEnabled = (r.status === 'in_progress' && inPartialMode);
+
     container.innerHTML += `
       <div class="${rowClass}">
         <span title="${escapeHtml(r.nome)}">${escapeHtml(r.nome)}</span>
         <select id="analista-${context}-${i}">${options}</select>
+
         <div class="prio-badge ${badgeClass}">${escapeHtml(badgeText)}</div>
-        <select id="motivo-${context}-${i}" style="width:100%">
+
+        <select
+          id="motivo-${context}-${i}"
+          style="width:100%"
+          ${motivoEnabled ? '' : 'disabled'}
+          onchange="handlePartialFieldsChange('${context}', '${escapeHtml(r.id)}')"
+        >
           <option value="">-- Selecione --</option>
           ${motivosOptions}
         </select>
+
         <span class="inicio">${escapeHtml(r.inicio || "-")}</span>
         <span class="fim">${escapeHtml(r.fim || "-")}</span>
-        <input type="number" min="1" max="99" placeholder="%" value="${escapeHtml(r.percent || '')}">
+
+        <input
+          id="percent-${context}-${i}"
+          type="number"
+          min="1"
+          max="99"
+          placeholder="%"
+          value="${escapeHtml(r.percent || '')}"
+          oninput="handlePartialFieldsChange('${context}', '${escapeHtml(r.id)}')"
+        >
+
         <div>
           <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
+
           <button class="partial" ${canPartial ? '' : 'disabled'} onclick="partialTask('${context}', ${i})">Parcial</button>
-          <button class="finish" ${canFinish ? '' : 'disabled'} onclick="finishTask('${context}', ${i})">Finalizar</button>
+
+          <button class="finish" ${(canFinish && !inPartialMode) ? '' : 'disabled'} onclick="finishTask('${context}', ${i})">Finalizar</button>
+
           ${hasPriv ? `
             <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
             <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
@@ -1665,6 +1767,8 @@ async function removeRotina(context, i) {
   const task = list[i];
   list.splice(i, 1);
 
+  clearPartialModeForTask(context, task?.id);
+
   await logGovernanceAction('DELETE_ROUTINE', `Rotina removida: ${task.nome}`, context);
   await saveData();
   render();
@@ -1677,6 +1781,9 @@ async function resetRotinas(context) {
 
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   list.forEach(resetRoutineFields);
+
+  // limpa modo parcial (apenas memória)
+  Object.keys(partialModeState).forEach(k => { if (k.startsWith(`${context}:`)) delete partialModeState[k]; });
 
   applyDefaultPrioritiesAndOrder(context);
 
