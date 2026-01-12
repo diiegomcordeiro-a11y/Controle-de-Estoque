@@ -558,8 +558,6 @@ const COLL_ROTINAS_ANALISTAS = 'rotinas_analistas';
 const COLL_HISTORY = 'history';
 const COLL_CONFIG = 'config';
 const COLL_GOV = 'governance';
-
-/* arquivo anual (append-only) */
 const COLL_HISTORY_ARCHIVE = 'history_archive';
 
 let permissionsLoaded = false;
@@ -567,11 +565,6 @@ let usersLoaded = false;
 
 let adminEmails = ['roni.silva@minervafoods.com'];
 
-/**
- * Importante: Por segurança, este HTML não precisa carregar senhas reais.
- * As credenciais devem estar no Firestore (users_credentials/data.users).
- * Se o doc não existir, será criado com placeholders.
- */
 let usersList = [
   { email: 'diego.cordeiro@minervafoods.com', name: 'Diego Cordeiro', password: 'CHANGE_ME' },
   { email: 'roni.silva@minervafoods.com', name: 'Roni Silva', password: 'CHANGE_ME' },
@@ -611,11 +604,7 @@ const DEFAULT_MOTIVOS = ["FALTA DE TEMPO","SISTEMA INDISPONÍVEL","SEM DEMANDA",
 let rotinasPC = [];
 let rotinasAnalistas = [];
 
-/**
- * history (EFFECTIVE): o que a UI/KPI usa
- * visibleHistory: histórico "limpável" por ADMIN/privileged
- * archiveHistory: histórico anual
- */
+// history = efetivo (master: visível + archive; admin/user: só visível)
 let history = [];
 let visibleHistory = [];
 let archiveHistory = [];
@@ -637,15 +626,70 @@ function nowTimeStr() {
 function isPrivileged() { return currentUserRole === 'admin' || currentUserRole === 'master'; }
 
 /* ===========================
-   RESET: ORDEM + PRIORIDADES PADRÃO
+   PARCIAL UI MODE
+=========================== */
+const partialModeByTaskId = {};
+const partialDraftByTaskId = {};
+
+function isPartialMode(taskId) { return !!partialModeByTaskId[String(taskId)]; }
+
+function ensureDraft(taskId) {
+  const k = String(taskId);
+  if (!partialDraftByTaskId[k]) partialDraftByTaskId[k] = { percent: '', motivo: '' };
+  return partialDraftByTaskId[k];
+}
+
+function enterPartialMode(taskId) {
+  partialModeByTaskId[String(taskId)] = true;
+  ensureDraft(taskId);
+}
+
+function exitPartialMode(taskId) {
+  const k = String(taskId);
+  delete partialModeByTaskId[k];
+  delete partialDraftByTaskId[k];
+}
+
+function onPercentDraftInput(context, taskId, value) {
+  const d = ensureDraft(taskId);
+  d.percent = String(value || '');
+
+  const motivo = String(d.motivo || '').trim();
+  const percent = String(d.percent || '').trim();
+
+  if (!motivo && !percent) {
+    exitPartialMode(taskId);
+    render();
+  }
+}
+
+function onMotivoDraftChange(context, taskId, value) {
+  const d = ensureDraft(taskId);
+  d.motivo = String(value || '');
+
+  const motivo = String(d.motivo || '').trim();
+  const percent = String(d.percent || '').trim();
+
+  if (!motivo && !percent) {
+    exitPartialMode(taskId);
+    render();
+  }
+}
+
+/* ===========================
+   PRIORIDADE / ORDENAÇÃO
 =========================== */
 const PRIORITY_ORDER = { alta: 0, media: 1, baixa: 2 };
 
-/**
- * Ordenação:
- * - Ordena SOMENTE as rotinas ativas (pending/in_progress) por prioridade.
- * - Rotinas done/partial ficam no final, respeitando a ordem atual do array.
- */
+function ensureOrderIndex(list) {
+  let changed = false;
+  list.forEach((t, i) => {
+    if (typeof t.orderIndex !== 'number') { t.orderIndex = i; changed = true; }
+  });
+  return changed;
+}
+
+// Ordena só pendentes/em andamento por prioridade; done/partial ficam no fim na ordem atual
 function sortByStatusAndPriority(context) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
 
@@ -669,23 +713,13 @@ function sortByStatusAndPriority(context) {
   list.splice(0, list.length, ...active, ...finished);
 }
 
-function ensureOrderIndex(list) {
-  let changed = false;
-  list.forEach((t, i) => {
-    if (typeof t.orderIndex !== 'number') { t.orderIndex = i; changed = true; }
-  });
-  return changed;
-}
-
 function applyDefaultPrioritiesAndOrder(context) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
 
   ensureOrderIndex(list);
 
-  // base: ordem de criação (orderIndex)
   list.sort((a,b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
 
-  // prioridades padrão
   if (context === 'pc') {
     list.forEach((t, i) => {
       t.prioridade = i < 5 ? 'alta' : (i < 10 ? 'media' : 'baixa');
@@ -694,7 +728,6 @@ function applyDefaultPrioritiesAndOrder(context) {
     list.forEach(t => { t.prioridade = 'alta'; });
   }
 
-  // ordena para exibir: alta -> média -> baixa, mantendo orderIndex dentro do grupo
   list.sort((a,b) => {
     const pa = PRIORITY_ORDER[a.prioridade] ?? 99;
     const pb = PRIORITY_ORDER[b.prioridade] ?? 99;
@@ -710,57 +743,8 @@ function resetRoutineFields(task) {
   delete task.analista;
   delete task.percent;
   delete task.inicioTs;
-}
 
-/* ===========================
-   PARCIAL (UI STATE)
-   - Justificativa só habilita no modo parcial
-   - Finalizar (Concluído) desabilita no modo parcial
-   - Sai do modo parcial quando motivo e % voltarem vazios
-=========================== */
-const partialModeState = {}; // key -> true (somente em memória)
-
-function partialKey(context, taskId) { return `${context}:${String(taskId || '')}`; }
-
-function isPartialMode(context, task) {
-  const id = task?.id;
-  if (!id) return false;
-  return !!partialModeState[partialKey(context, id)];
-}
-
-function setPartialMode(context, taskId, enabled) {
-  const k = partialKey(context, taskId);
-  if (enabled) partialModeState[k] = true;
-  else delete partialModeState[k];
-}
-
-function clearPartialModeForTask(context, taskId) {
-  delete partialModeState[partialKey(context, taskId)];
-}
-
-function findTaskIndexById(context, taskId) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  return list.findIndex(t => String(t?.id) === String(taskId));
-}
-
-function handlePartialFieldsChange(context, taskId) {
-  const idx = findTaskIndexById(context, taskId);
-  if (idx < 0) return;
-
-  const motivoEl = document.getElementById(`motivo-${context}-${idx}`);
-  const percentEl = document.getElementById(`percent-${context}-${idx}`);
-
-  const motivo = String(motivoEl?.value || '').trim();
-  const percent = String(percentEl?.value || '').trim();
-
-  const inMode = !!partialModeState[partialKey(context, taskId)];
-  if (!inMode) return; // só reage se já estiver em modo parcial
-
-  // Se limpou tudo, sai do modo parcial (reativa Finalizar e trava justificativa)
-  if (!motivo && !percent) {
-    clearPartialModeForTask(context, taskId);
-    render();
-  }
+  if (task && task.id) exitPartialMode(task.id);
 }
 
 /* ===========================
@@ -789,7 +773,7 @@ function rebuildUsersMap() {
 }
 
 /* ===========================
-   HISTORY ARCHIVE (MASTER mantém histórico anual)
+   HISTORY / ARCHIVE
 =========================== */
 function localIsoDate(d = new Date()) {
   const y = d.getFullYear();
@@ -814,7 +798,6 @@ function safeTime(ts) {
 function rebuildEffectiveHistory() {
   if (currentUserRole === 'master') {
     const map = new Map();
-
     (Array.isArray(archiveHistory) ? archiveHistory : []).forEach(h => {
       if (h && typeof h.id !== 'undefined') map.set(String(h.id), h);
     });
@@ -840,6 +823,13 @@ function addVisibleIntoArchiveMemoryIfMissing() {
   });
 
   archiveHistory.sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+}
+
+function matchTypeForPurge(entry, purgeType) {
+  const t = entry?.type;
+  if (purgeType === 'pc') return (!t || t === 'pc');
+  if (purgeType === 'analistas') return (t === 'analistas');
+  return false;
 }
 
 async function archiveHistoryEntry(entry) {
@@ -884,6 +874,48 @@ async function loadArchiveHistoryForYear(year) {
 
   arr.sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
   return arr;
+}
+
+/**
+ * MASTER: purge permanente do arquivo anual (TODOS os anos) por aba.
+ * - Ajuste importante: se o documento ficar vazio, deleta o documento inteiro (batch.delete),
+ *   para evitar "restos" e garantir que some pro MASTER.
+ */
+async function purgeArchiveAllYearsByType(purgeType) {
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+  if (currentUserRole !== 'master') throw new Error('Acesso negado');
+
+  const snap = await db.collection(COLL_HISTORY_ARCHIVE).get();
+
+  let batch = db.batch();
+  let ops = 0;
+  let docsTouched = 0;
+
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    const arr = Array.isArray(data.history) ? data.history : [];
+    const filtered = arr.filter(x => !matchTypeForPurge(x, purgeType));
+
+    if (filtered.length !== arr.length) {
+      docsTouched++;
+
+      if (filtered.length === 0) {
+        batch.delete(doc.ref);
+      } else {
+        batch.set(doc.ref, { history: filtered, lastUpdate: new Date() }, { merge: true });
+      }
+
+      ops++;
+      if (ops >= 450) {
+        await batch.commit();
+        batch = db.batch();
+        ops = 0;
+      }
+    }
+  }
+
+  if (ops > 0) await batch.commit();
+  return docsTouched;
 }
 
 /* ===========================
@@ -1221,7 +1253,6 @@ async function loadData() {
   const savedGov = await loadFromFirebase(COLL_GOV);
   governanceLog = savedGov ? (savedGov.log || []) : [];
 
-  // RESET DIÁRIO
   const lastDate = savedPC?.lastDate || '';
   if (lastDate !== TODAY_STR) {
     await resetDailyData();
@@ -1376,6 +1407,8 @@ async function startTask(context, index) {
   const analistaSelect = document.getElementById(`analista-${context}-${index}`);
   if (!analistaSelect.value) { showToast('Selecione um analista!', 'warning'); analistaSelect.focus(); return; }
 
+  if (task?.id) exitPartialMode(task.id);
+
   task.inicio = nowTimeStr();
   task.inicioTs = Date.now();
   task.status = 'in_progress';
@@ -1397,9 +1430,8 @@ async function finishTask(context, index) {
   const task = list[index];
   if (!task) return;
 
-  // segurança extra: se estiver em modo parcial, não deixa finalizar como "Concluído"
-  if (isPartialMode(context, task)) {
-    showToast('Modo PARCIAL ativo. Limpe % e motivo para voltar ao modo Concluído.', 'warning');
+  if (task?.id && isPartialMode(task.id)) {
+    showToast('Para concluir: limpe % e motivo (ou clique PARCIAL para finalizar como parcial).', 'warning');
     return;
   }
 
@@ -1450,9 +1482,6 @@ async function finishTask(context, index) {
 
     rebuildEffectiveHistory();
 
-    clearPartialModeForTask(context, task.id);
-
-    // só aqui manda pro final
     moveTaskToEnd(list, index);
 
     await saveData();
@@ -1470,43 +1499,29 @@ async function partialTask(context, index) {
   if (!task) return;
 
   if (task.status === 'done' || task.status === 'partial') { showToast('Tarefa já finalizada', 'warning'); return; }
+  if (!task.inicio) { showToast('Rotina não iniciada!', 'error'); return; }
+
+  if (task?.id && !isPartialMode(task.id)) {
+    enterPartialMode(task.id);
+    render();
+    showToast('Modo PARCIAL ativado: informe % e Justificativa, depois clique PARCIAL novamente.', 'warning');
+    return;
+  }
 
   const lk = lockKey(context, task, 'partial');
   if (taskActionLocks.has(lk)) return;
   taskActionLocks.add(lk);
 
   try {
-    if (!task.inicio) { showToast('Rotina não iniciada!', 'error'); return; }
+    const d = ensureDraft(task.id);
+    const percent = String(d.percent || '').trim();
+    const motivo = String(d.motivo || '').trim();
 
-    // entra em modo parcial (habilita justificativa e bloqueia "Finalizar")
-    if (task.status === 'in_progress' && !isPartialMode(context, task)) {
-      setPartialMode(context, task.id, true);
-      render();
-    }
+    if (!percent) { showToast('Informe a porcentagem!', 'warning'); return; }
+    if (!motivo) { showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning'); return; }
 
-    // re-localiza índice após render (para garantir ids corretos)
-    const idx = findTaskIndexById(context, task.id);
-    if (idx < 0) return;
-
-    const percentEl = document.getElementById(`percent-${context}-${idx}`);
-    const percent = String(percentEl?.value || '').trim();
-    if (!percent) {
-      showToast('Informe a porcentagem!', 'warning');
-      if (percentEl) percentEl.focus();
-      return;
-    }
-
-    const analistaSelect = document.getElementById(`analista-${context}-${idx}`);
-    const motivoSelect = document.getElementById(`motivo-${context}-${idx}`);
-
+    const analistaSelect = document.getElementById(`analista-${context}-${index}`);
     const analista = analistaSelect.value;
-    const motivo = String(motivoSelect?.value || '').trim();
-
-    if (!motivo) {
-      showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning');
-      if (motivoSelect) motivoSelect.focus();
-      return;
-    }
 
     const fim = nowTimeStr();
     const endTs = Date.now();
@@ -1541,11 +1556,9 @@ async function partialTask(context, index) {
 
     rebuildEffectiveHistory();
 
-    // sai do modo parcial (já finalizou)
-    clearPartialModeForTask(context, task.id);
+    exitPartialMode(task.id);
 
-    // só aqui manda pro final
-    moveTaskToEnd(list, idx);
+    moveTaskToEnd(list, index);
 
     await saveData();
     render();
@@ -1595,7 +1608,6 @@ function render() {
 function renderList(context, list, container) {
   container.innerHTML = "";
   const options = `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
-  const motivosOptions = motivos.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
 
   list.forEach((r, i) => {
     let rowClass = "task";
@@ -1611,21 +1623,31 @@ function renderList(context, list, container) {
     const canFinish = (r.status === 'in_progress');
     const canPartial = (r.status === 'in_progress');
 
-    const inPartialMode = isPartialMode(context, r);
-    const motivoEnabled = (r.status === 'in_progress' && inPartialMode);
+    const taskId = String(r.id || `${context}_${i}`);
+    const partialMode = isPartialMode(taskId) && (r.status === 'in_progress');
+    const draft = partialDraftByTaskId[taskId] || { percent:'', motivo:'' };
+
+    const motivoDisabled = !partialMode;
+    const percentDisabled = !partialMode;
+
+    const motivosOptions = motivos.map(m => {
+      const sel = (draft.motivo && draft.motivo === m) ? 'selected' : '';
+      return `<option value="${escapeHtml(m)}" ${sel}>${escapeHtml(m)}</option>`;
+    }).join('');
+
+    const finishDisabled = (!canFinish) || partialMode;
 
     container.innerHTML += `
       <div class="${rowClass}">
         <span title="${escapeHtml(r.nome)}">${escapeHtml(r.nome)}</span>
         <select id="analista-${context}-${i}">${options}</select>
-
         <div class="prio-badge ${badgeClass}">${escapeHtml(badgeText)}</div>
 
         <select
           id="motivo-${context}-${i}"
           style="width:100%"
-          ${motivoEnabled ? '' : 'disabled'}
-          onchange="handlePartialFieldsChange('${context}', '${escapeHtml(r.id)}')"
+          ${motivoDisabled ? 'disabled' : ''}
+          onchange="onMotivoDraftChange('${context}', '${escapeHtml(taskId)}', this.value)"
         >
           <option value="">-- Selecione --</option>
           ${motivosOptions}
@@ -1635,22 +1657,19 @@ function renderList(context, list, container) {
         <span class="fim">${escapeHtml(r.fim || "-")}</span>
 
         <input
-          id="percent-${context}-${i}"
           type="number"
           min="1"
           max="99"
           placeholder="%"
-          value="${escapeHtml(r.percent || '')}"
-          oninput="handlePartialFieldsChange('${context}', '${escapeHtml(r.id)}')"
+          value="${partialMode ? escapeHtml(draft.percent || '') : ''}"
+          ${percentDisabled ? 'disabled' : ''}
+          oninput="onPercentDraftInput('${context}', '${escapeHtml(taskId)}', this.value)"
         >
 
         <div>
           <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
-
           <button class="partial" ${canPartial ? '' : 'disabled'} onclick="partialTask('${context}', ${i})">Parcial</button>
-
-          <button class="finish" ${(canFinish && !inPartialMode) ? '' : 'disabled'} onclick="finishTask('${context}', ${i})">Finalizar</button>
-
+          <button class="finish" ${finishDisabled ? 'disabled' : ''} onclick="finishTask('${context}', ${i})">Finalizar</button>
           ${hasPriv ? `
             <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
             <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
@@ -1664,6 +1683,8 @@ function renderList(context, list, container) {
         const sel = document.getElementById(`analista-${context}-${i}`);
         if (sel) sel.value = r.analista;
       }
+      const ms = document.getElementById(`motivo-${context}-${i}`);
+      if (ms && partialMode) ms.value = draft.motivo || '';
     }, 0);
   });
 }
@@ -1765,9 +1786,10 @@ async function removeRotina(context, i) {
 
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[i];
-  list.splice(i, 1);
 
-  clearPartialModeForTask(context, task?.id);
+  if (task?.id) exitPartialMode(task.id);
+
+  list.splice(i, 1);
 
   await logGovernanceAction('DELETE_ROUTINE', `Rotina removida: ${task.nome}`, context);
   await saveData();
@@ -1782,9 +1804,6 @@ async function resetRotinas(context) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   list.forEach(resetRoutineFields);
 
-  // limpa modo parcial (apenas memória)
-  Object.keys(partialModeState).forEach(k => { if (k.startsWith(`${context}:`)) delete partialModeState[k]; });
-
   applyDefaultPrioritiesAndOrder(context);
 
   await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas (com prioridade/ordem padrão): ${context}`, context);
@@ -1793,27 +1812,56 @@ async function resetRotinas(context) {
   showToast('Rotinas reiniciadas', 'success');
 }
 
+/**
+ * LIMPAR HISTÓRICO:
+ * - ADMIN: limpa apenas o visível (mantém arquivo anual do MASTER)
+ * - MASTER: limpa visível + apaga do arquivo anual (TODOS os anos), e some visualmente na hora
+ */
 async function clearHistory() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
 
-  const initialLength = visibleHistory.length;
+  const purgeType = (currentView === 'pc') ? 'pc' : 'analistas';
 
-  visibleHistory = visibleHistory.filter(h => {
-    if (currentView === 'pc') return h.type === 'analistas';
-    return !h.type || h.type === 'pc';
-  });
+  // 1) sempre limpa o VISÍVEL (pra todo mundo)
+  visibleHistory = (visibleHistory || []).filter(h => !matchTypeForPurge(h, purgeType));
 
-  const removedCount = initialLength - visibleHistory.length;
+  // 2) MASTER: limpa também o ARQUIVO (todos os anos) e zera a tela imediatamente
+  if (currentUserRole === 'master') {
+    try {
+      showToast('MASTER: limpando também o arquivo anual...', 'warning');
 
-  if (currentUserRole === 'master') addVisibleIntoArchiveMemoryIfMissing();
-  rebuildEffectiveHistory();
+      await purgeArchiveAllYearsByType(purgeType);
 
-  await logGovernanceAction('CLEAR_HISTORY', `Histórico limpo: ${currentView} (${removedCount} itens)`);
+      // zera memória local
+      archiveHistory = (archiveHistory || []).filter(h => !matchTypeForPurge(h, purgeType));
+
+      // não re-injeta nada (visível já está limpo desse tipo)
+      rebuildEffectiveHistory();
+
+      // some imediatamente na UI
+      renderHistory();
+      updateCharts();
+
+      await logGovernanceAction('MASTER_PURGE_HISTORY', `MASTER limpou histórico (visível + arquivo anual): ${purgeType}`);
+      showToast('Histórico removido (visível + arquivo anual)', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast('Erro ao limpar arquivo anual (MASTER)', 'error');
+    }
+  } else {
+    rebuildEffectiveHistory();
+    await logGovernanceAction('CLEAR_HISTORY', `Histórico limpo (visível): ${purgeType}`);
+    showToast('Histórico limpo (visível)', 'success');
+  }
+
+  // salva o visível
   await saveData();
+
+  // garante UI atualizada mesmo para ADMIN/USER
+  rebuildEffectiveHistory();
   renderHistory();
   updateCharts();
-  showToast('Histórico limpo', 'success');
 }
 
 /* ===========================
@@ -2110,7 +2158,7 @@ async function editAnalista(i) {
 }
 
 /* ===========================
-   EXPORT / KPI
+   KPI / EXPORT
 =========================== */
 function exportToExcel() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
@@ -2290,18 +2338,11 @@ async function exportKpiDashboardToExcel() {
     showToast('Exportando dashboard KPI...', 'success');
 
     let countDone = 0, countPartial = 0;
-    const rankingMap = {};
-    const motivosMap = {};
     let totalSeconds = 0, slaCount = 0;
 
     filteredHistory.forEach(h => {
       if (h.status === 'Concluído') countDone++;
       else if (h.status === 'Parcial') countPartial++;
-
-      rankingMap[h.analista] = (rankingMap[h.analista] || 0) + 1;
-
-      const motivo = h.motivo || "";
-      if (motivo && motivo !== "CONCLUÍDO" && motivo !== "PARCIAL") motivosMap[motivo] = (motivosMap[motivo] || 0) + 1;
 
       if (h.status === 'Concluído') {
         const sec = (typeof h.durationSec === 'number' && h.durationSec > 0) ? h.durationSec : 0;
