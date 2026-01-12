@@ -559,6 +559,9 @@ const COLL_HISTORY = 'history';
 const COLL_CONFIG = 'config';
 const COLL_GOV = 'governance';
 
+/* arquivo anual (append-only) */
+const COLL_HISTORY_ARCHIVE = 'history_archive';
+
 let permissionsLoaded = false;
 let usersLoaded = false;
 
@@ -607,7 +610,16 @@ const DEFAULT_MOTIVOS = ["FALTA DE TEMPO","SISTEMA INDISPONÍVEL","SEM DEMANDA",
 
 let rotinasPC = [];
 let rotinasAnalistas = [];
+
+/**
+ * history (EFFECTIVE): o que a UI/KPI usa
+ * visibleHistory: histórico "limpável" por ADMIN/privileged
+ * archiveHistory: histórico anual
+ */
 let history = [];
+let visibleHistory = [];
+let archiveHistory = [];
+
 let analistas = [...DEFAULT_ANALISTAS];
 let motivos = [...DEFAULT_MOTIVOS];
 let governanceLog = [];
@@ -629,27 +641,34 @@ function isPrivileged() { return currentUserRole === 'admin' || currentUserRole 
 =========================== */
 const PRIORITY_ORDER = { alta: 0, media: 1, baixa: 2 };
 
-/* === FIX: ordenação por status + prioridade (sem alterar outras telas) === */
-const STATUS_ORDER = { pending: 0, in_progress: 1, partial: 2, done: 3 };
-
+/**
+ * IMPORTANTE (fix do "pular pro fim ao iniciar"):
+ * - Ordena SOMENTE as rotinas ativas (pending/in_progress) por prioridade.
+ * - Rotinas done/partial ficam no final, respeitando a ordem atual do array.
+ * Assim, só vai pro final quando você faz Parcial/Finalizar (moveTaskToEnd).
+ */
 function sortByStatusAndPriority(context) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
 
-  ensureOrderIndex(list);
+  const active = [];
+  const finished = [];
 
-  list.sort((a, b) => {
-    const sa = STATUS_ORDER[a.status] ?? 99;
-    const sb = STATUS_ORDER[b.status] ?? 99;
-    if (sa !== sb) return sa - sb;
+  for (const t of list) {
+    if (t && (t.status === 'done' || t.status === 'partial')) finished.push(t);
+    else active.push(t);
+  }
 
+  ensureOrderIndex(active);
+
+  active.sort((a, b) => {
     const pa = PRIORITY_ORDER[a.prioridade] ?? 99;
     const pb = PRIORITY_ORDER[b.prioridade] ?? 99;
     if (pa !== pb) return pa - pb;
-
     return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
   });
+
+  list.splice(0, list.length, ...active, ...finished);
 }
-/* === /FIX === */
 
 function ensureOrderIndex(list) {
   let changed = false;
@@ -719,6 +738,107 @@ function rebuildUsersMap() {
   });
 }
 
+/* ===========================
+   HISTORY ARCHIVE (MASTER mantém histórico anual)
+=========================== */
+function localIsoDate(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function toJsDateMaybe(ts) {
+  if (!ts) return null;
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'object' && typeof ts.toDate === 'function') return ts.toDate();
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function safeTime(ts) {
+  const d = toJsDateMaybe(ts);
+  return d ? d.getTime() : 0;
+}
+
+function rebuildEffectiveHistory() {
+  if (currentUserRole === 'master') {
+    const map = new Map();
+
+    (Array.isArray(archiveHistory) ? archiveHistory : []).forEach(h => {
+      if (h && typeof h.id !== 'undefined') map.set(String(h.id), h);
+    });
+    (Array.isArray(visibleHistory) ? visibleHistory : []).forEach(h => {
+      if (h && typeof h.id !== 'undefined') map.set(String(h.id), h);
+    });
+
+    history = Array.from(map.values()).sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+  } else {
+    history = Array.isArray(visibleHistory) ? visibleHistory.slice() : [];
+  }
+}
+
+function addVisibleIntoArchiveMemoryIfMissing() {
+  if (currentUserRole !== 'master') return;
+
+  const ids = new Set((archiveHistory || []).map(h => String(h?.id)));
+  (visibleHistory || []).forEach(h => {
+    const id = String(h?.id);
+    if (!id || ids.has(id)) return;
+    archiveHistory.unshift(h);
+    ids.add(id);
+  });
+
+  archiveHistory.sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+}
+
+async function archiveHistoryEntry(entry) {
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+  if (!entry || typeof entry !== 'object') return;
+
+  const dateIso = entry.dateIso || localIsoDate(new Date());
+  const docRef = db.collection(COLL_HISTORY_ARCHIVE).doc(dateIso);
+
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(docRef);
+    const data = doc.exists ? doc.data() : null;
+    let arr = (data && Array.isArray(data.history)) ? data.history.slice() : [];
+
+    const idStr = String(entry.id);
+    const exists = arr.some(x => String(x?.id) === idStr);
+    if (!exists) arr.unshift(entry);
+
+    if (arr.length > 800) arr = arr.slice(0, 800);
+
+    tx.set(docRef, { dateIso, history: arr, lastUpdate: new Date() }, { merge: true });
+  });
+}
+
+async function loadArchiveHistoryForYear(year) {
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+
+  const y = Number(year || (new Date()).getFullYear());
+  const start = `${y}-01-01`;
+  const end = `${y}-12-31`;
+
+  const qs = await db.collection(COLL_HISTORY_ARCHIVE)
+    .where(firebase.firestore.FieldPath.documentId(), '>=', start)
+    .where(firebase.firestore.FieldPath.documentId(), '<=', end)
+    .get();
+
+  let arr = [];
+  qs.forEach((doc) => {
+    const data = doc.data();
+    if (data && Array.isArray(data.history)) arr = arr.concat(data.history);
+  });
+
+  arr.sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+  return arr;
+}
+
+/* ===========================
+   PERMISSIONS / USERS
+=========================== */
 async function loadPermissions() {
   if (permissionsLoaded) return;
   const p = await loadFromFirebase(COLL_PERMISSIONS);
@@ -887,7 +1007,15 @@ function setupRealtimeListeners() {
   realTimeListeners.history = db.collection(COLL_HISTORY).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
-      history = data.history || [];
+      visibleHistory = data.history || [];
+
+      if (currentUserRole === 'master') {
+        addVisibleIntoArchiveMemoryIfMissing();
+        rebuildEffectiveHistory();
+      } else {
+        rebuildEffectiveHistory();
+      }
+
       if (currentView !== 'governance') renderHistory();
       updateCharts();
     }
@@ -1020,7 +1148,17 @@ async function loadData() {
   ensureOrderIndex(rotinasAnalistas);
 
   const savedHistory = await loadFromFirebase(COLL_HISTORY);
-  history = savedHistory ? (savedHistory.history || []) : [];
+  visibleHistory = savedHistory ? (savedHistory.history || []) : [];
+
+  if (currentUserRole === 'master') {
+    const year = (new Date()).getFullYear();
+    archiveHistory = await loadArchiveHistoryForYear(year);
+    addVisibleIntoArchiveMemoryIfMissing();
+  } else {
+    archiveHistory = [];
+  }
+
+  rebuildEffectiveHistory();
 
   const savedConfig = await loadFromFirebase(COLL_CONFIG);
   if (savedConfig) {
@@ -1033,7 +1171,7 @@ async function loadData() {
   const savedGov = await loadFromFirebase(COLL_GOV);
   governanceLog = savedGov ? (savedGov.log || []) : [];
 
-  // RESET DIÁRIO: agora também restaura ordem/prioridades padrão
+  // RESET DIÁRIO
   const lastDate = savedPC?.lastDate || '';
   if (lastDate !== TODAY_STR) {
     await resetDailyData();
@@ -1044,7 +1182,6 @@ async function resetDailyData() {
   rotinasPC.forEach(resetRoutineFields);
   rotinasAnalistas.forEach(resetRoutineFields);
 
-  // volta prioridade/ordem padrão
   applyDefaultPrioritiesAndOrder('pc');
   applyDefaultPrioritiesAndOrder('analistas');
 
@@ -1056,7 +1193,7 @@ async function saveData() {
   await Promise.all([
     saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
-    saveToFirebase(COLL_HISTORY, { history, lastUpdate: new Date() }),
+    saveToFirebase(COLL_HISTORY, { history: visibleHistory, lastUpdate: new Date() }),
     saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
     saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
     saveToFirebase(COLL_PERMISSIONS, { adminEmails: adminEmails.slice(), lastUpdate: new Date() }),
@@ -1065,7 +1202,7 @@ async function saveData() {
 }
 
 /* ===========================
-   GOVERNANCE (log admin+master / view master)
+   GOVERNANCE
 =========================== */
 async function logGovernanceAction(action, details, target = null) {
   if (!isPrivileged()) return;
@@ -1087,14 +1224,6 @@ async function logGovernanceAction(action, details, target = null) {
   await saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() });
 
   if (currentView === 'governance' && currentUserRole === 'master') renderGovernanceLog();
-}
-
-function toJsDateMaybe(ts) {
-  if (!ts) return null;
-  if (ts instanceof Date) return ts;
-  if (typeof ts === 'object' && typeof ts.toDate === 'function') return ts.toDate();
-  const d = new Date(ts);
-  return isNaN(d.getTime()) ? null : d;
 }
 
 function renderGovernanceLog() {
@@ -1182,7 +1311,7 @@ async function clearGovernanceLog() {
 }
 
 /* ===========================
-   ROTINAS (lock + move to end)
+   ROTINAS
 =========================== */
 let currentContext = 'pc';
 let currentEditId = null;
@@ -1241,10 +1370,11 @@ async function finishTask(context, index) {
 
     const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
 
-    history.unshift({
+    const entry = {
       id: Date.now(),
       type: context,
       data: TODAY_STR,
+      dateIso: localIsoDate(new Date()),
       rotina: task.nome,
       analista,
       motivo,
@@ -1256,8 +1386,15 @@ async function finishTask(context, index) {
       status: 'Concluído',
       prioridade: task.prioridade,
       timestamp: new Date()
-    });
+    };
 
+    visibleHistory.unshift(entry);
+    await archiveHistoryEntry(entry);
+    if (currentUserRole === 'master') archiveHistory.unshift(entry);
+
+    rebuildEffectiveHistory();
+
+    // só aqui manda pro final
     moveTaskToEnd(list, index);
 
     await saveData();
@@ -1305,10 +1442,11 @@ async function partialTask(context, index) {
 
     const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
 
-    history.unshift({
+    const entry = {
       id: Date.now(),
       type: context,
       data: TODAY_STR,
+      dateIso: localIsoDate(new Date()),
       rotina: task.nome,
       analista,
       motivo,
@@ -1320,8 +1458,15 @@ async function partialTask(context, index) {
       status: 'Parcial',
       prioridade: task.prioridade,
       timestamp: new Date()
-    });
+    };
 
+    visibleHistory.unshift(entry);
+    await archiveHistoryEntry(entry);
+    if (currentUserRole === 'master') archiveHistory.unshift(entry);
+
+    rebuildEffectiveHistory();
+
+    // só aqui manda pro final
     moveTaskToEnd(list, index);
 
     await saveData();
@@ -1360,10 +1505,8 @@ function openTab(id) {
 }
 
 function render() {
-  /* === FIX: garante ordem Alta->Média->Baixa (e status) ao renderizar === */
   sortByStatusAndPriority('pc');
   sortByStatusAndPriority('analistas');
-  /* === /FIX === */
 
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
@@ -1446,7 +1589,7 @@ function renderHistory() {
 }
 
 /* ===========================
-   MODAL ROTINA (ADMIN+MASTER)
+   MODAL ROTINA
 =========================== */
 const modal = document.getElementById("modal");
 const panelModal = document.getElementById("panelModal");
@@ -1528,9 +1671,6 @@ async function removeRotina(context, i) {
   showToast('Rotina removida', 'success');
 }
 
-/**
- * RESET MANUAL: agora também restaura prioridade/ordem padrão
- */
 async function resetRotinas(context) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm(`Reiniciar todas as rotinas de ${context === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
@@ -1550,13 +1690,18 @@ async function clearHistory() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
 
-  const initialLength = history.length;
-  history = history.filter(h => {
+  const initialLength = visibleHistory.length;
+
+  visibleHistory = visibleHistory.filter(h => {
     if (currentView === 'pc') return h.type === 'analistas';
     return !h.type || h.type === 'pc';
   });
 
-  const removedCount = initialLength - history.length;
+  const removedCount = initialLength - visibleHistory.length;
+
+  if (currentUserRole === 'master') addVisibleIntoArchiveMemoryIfMissing();
+  rebuildEffectiveHistory();
+
   await logGovernanceAction('CLEAR_HISTORY', `Histórico limpo: ${currentView} (${removedCount} itens)`);
   await saveData();
   renderHistory();
@@ -1565,7 +1710,7 @@ async function clearHistory() {
 }
 
 /* ===========================
-   PAINEL (ADMIN+MASTER) + USERS (MASTER)
+   PAINEL
 =========================== */
 function openManagementPanel(context) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
@@ -1607,9 +1752,7 @@ function tempChangePriority(taskId, value) {
 async function savePriorities() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
 
-  /* === FIX: reordena antes de salvar/renderizar === */
   sortByStatusAndPriority(currentContext);
-  /* === /FIX === */
 
   await logGovernanceAction('UPDATE_PRIORITIES', `Prioridades atualizadas: ${currentContext}`);
   await saveData();
