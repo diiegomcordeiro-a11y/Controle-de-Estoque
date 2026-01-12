@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Controle de Rotinas – Estoque | Minerva Foods</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -17,966 +17,270 @@
 <script src="https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js"></script>
 
 <style>
-:root {
-  --minerva-red: #7A1417;
-  --minerva-dark: #4a0c0e;
-  --minerva-gold: #C69C6D;
-  --bg: #eef1f5;
-  --card-bg: #ffffff;
-  --text-main: #333;
-  --success-bg: #d1e7dd; 
-  --success-text: #0f5132;
-  --warning-bg: #fff3cd; 
-  --warning-text: #664d03;
-  --info: #0d6efd;
-  --danger: #dc3545;
-}
-
-* { 
-  box-sizing: border-box; 
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-}
-
-body { 
-  margin: 0; 
-  background: var(--bg); 
-  color: var(--text-main); 
-  font-size: 13px; 
-}
-
-/* LOGIN SCREEN */
-.login-overlay {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, var(--minerva-red) 0%, var(--minerva-dark) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.login-container {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-}
-
-.login-logo {
-  color: var(--minerva-red);
-  font-size: 28px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-.login-subtitle {
-  color: #666;
-  margin-bottom: 30px;
-  font-size: 14px;
-}
-
-.login-form input, .login-form select {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  border: 2px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.login-form input:focus, .login-form select:focus {
-  outline: none;
-  border-color: var(--minerva-red);
-}
-
-.login-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--minerva-red);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-bottom: 10px;
-}
-
-.login-btn:hover {
-  background: var(--minerva-dark);
-}
-
-.login-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.loading {
-  display: none;
-  margin: 20px 0;
-}
-
-.spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid var(--minerva-red);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Connection Status */
-.connection-status {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  background: rgba(0,0,0,0.8);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.connection-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #4CAF50;
-  animation: pulse 2s infinite;
-}
-
-.connection-status.disconnected .connection-dot {
-  background: #f44336;
-  animation: none;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* MAIN APP */
-.main-app {
-  display: none;
-}
-
-/* --- HEADER --- */
-header {
-  background: linear-gradient(135deg, var(--minerva-red) 0%, var(--minerva-dark) 100%);
-  color: #fff; 
-  padding: 12px 25px;
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.header-left h1 { 
-  margin: 0; 
-  font-weight: 800; 
-  font-size: 26px; 
-  letter-spacing: 1px; 
-  line-height: 1.1; 
-  text-transform: uppercase; 
-}
-
-.header-left h2 { 
-  margin: 0; 
-  font-weight: 400; 
-  font-size: 15px; 
-  opacity: 0.9; 
-  margin-top: 2px; 
-}
-
-.date-display { 
-  font-size: 12px; 
-  opacity: 0.7; 
-  margin-top: 4px; 
-  font-weight: 600; 
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.online-counter {
-  background: rgba(255,255,255,0.15);
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.online-indicator {
-  width: 8px;
-  height: 8px;
-  background: #4CAF50;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-size: 12px;
-}
-
-.user-role {
-  background: var(--minerva-gold);
-  color: var(--minerva-dark);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 10px;
-}
-
-.logout-btn {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.3s;
-}
-
-.logout-btn:hover {
-  background: rgba(255,255,255,0.3);
-}
-
-nav button {
-  background: none; 
-  border: none; 
-  color: rgba(255,255,255,0.7);
-  margin-left: 10px; 
-  font-size: 13px; 
-  cursor: pointer;
-  padding: 5px 10px; 
-  border-radius: 4px; 
-  transition: 0.3s;
-}
-
-nav button.active { 
-  background: rgba(255,255,255,0.15); 
-  color: #fff; 
-  font-weight: 600; 
-}
-
-/* --- CONTEÚDO --- */
-section { 
-  display: none; 
-  padding: 15px; 
-  width: 99%; 
-  max-width: 100%; 
-  margin: 0 auto; 
-}
-
-section.active { 
-  display: block; 
-}
-
-.card {
-  background: var(--card-bg); 
-  border-radius: 8px;
-  padding: 15px; 
-  margin-bottom: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-  border-top: 3px solid var(--minerva-red);
-}
-
-/* ADMIN ONLY ELEMENTS */
-.admin-only {
-  display: none;
-}
-
-body.user-admin .admin-only {
-  display: inline-block;
-}
-
-body.user-admin .admin-only.flex {
-  display: flex;
-}
-
-body.user-admin .admin-only.block {
-  display: block;
-}
-
-/* DEV ONLY ELEMENTS */
-.dev-only {
-  display: none;
-}
-
-body.user-dev .dev-only {
-  display: inline-block;
-}
-
-body.user-dev .dev-only.flex {
-  display: flex;
-}
-
-body.user-dev .dev-only.block {
-  display: block;
-}
-
-/* --- KPI --- */
-.kpi-filters-container {
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 10px; 
-  align-items: flex-end;
-  background: #f8f9fa; 
-  padding: 15px; 
-  border-radius: 6px; 
-  border: 1px solid #ddd;
-  margin-bottom: 20px;
-}
-
-.filter-group { 
-  display: flex; 
-  flex-direction: column; 
-  gap: 4px; 
-}
-
-.filter-group label { 
-  font-size: 11px; 
-  font-weight: bold; 
-  color: #555; 
-  text-transform: uppercase; 
-}
-
-.filter-group select, .filter-group input {
-  padding: 6px; 
-  border: 1px solid #ccc; 
-  border-radius: 4px; 
-  font-size: 12px; 
-  min-width: 130px;
-}
-
-.filter-group button {
-  padding: 6px 15px; 
-  background: var(--minerva-red); 
-  color: #fff; 
-  border: none; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: bold; 
-  height: 30px;
-}
-
-.filter-group button:hover { 
-  background: var(--minerva-dark); 
-}
-
-.kpi-grid { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 20px; 
-}
-
-.chart-container { 
-  position: relative; 
-  height: 300px; 
-  width: 100%; 
-}
-
-.kpi-card-big { 
-  background: #fff; 
-  padding: 20px; 
-  border-radius: 8px; 
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06); 
-  border-top: 3px solid var(--minerva-gold); 
-}
-
-.sla-box { 
-  text-align: center; 
-  padding: 40px; 
-}
-
-.sla-value { 
-  font-size: 42px; 
-  font-weight: 800; 
-  color: var(--minerva-red); 
-}
-
-.sla-label { 
-  font-size: 16px; 
-  color: #666; 
-  text-transform: uppercase; 
-  letter-spacing: 1px; 
-}
-
-.status-legend { 
-  display: flex; 
-  justify-content: center; 
-  gap: 15px; 
-  margin-top: 10px; 
-  font-size: 12px; 
-  font-weight: bold; 
-}
-
-.legend-item span { 
-  display: inline-block; 
-  width: 10px; 
-  height: 10px; 
-  border-radius: 50%; 
-  margin-right: 5px; 
-}
-
-/* --- TAREFAS --- */
-.task-header {
-  display: grid;
-  grid-template-columns: 1.8fr 1fr 0.5fr 1.2fr 0.5fr 0.5fr 0.4fr 1.4fr;
-  gap: 8px; 
-  padding: 0 8px 8px 8px;
-  border-bottom: 2px solid #eee; 
-  margin-bottom: 8px;
-  font-weight: bold; 
-  color: var(--minerva-red); 
-  text-transform: uppercase; 
-  font-size: 11px;
-}
-
-.task {
-  display: grid;
-  grid-template-columns: 1.8fr 1fr 0.5fr 1.2fr 0.5fr 0.5fr 0.4fr 1.4fr;
-  gap: 8px; 
-  align-items: center;
-  background: #fff; 
-  padding: 4px 8px; 
-  margin-bottom: 4px;
-  border: 1px solid #eee; 
-  border-radius: 4px; 
-  font-size: 12px;
-  transition: background 0.3s;
-}
-
-.task:hover { 
-  border-color: #ccc; 
-}
-
-.task span { 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
-}
-
-/* Badges */
-.prio-badge { 
-  font-size: 10px; 
-  padding: 2px 6px; 
-  border-radius: 4px; 
-  color: #fff; 
-  font-weight: bold; 
-  text-align: center; 
-}
-
-.p-alta { background: #dc3545; }
-.p-media { background: #ffc107; color: #333; }
-.p-baixa { background: #6c757d; }
-
-.task input, .task select {
-  padding: 3px 6px; 
-  font-size: 11px; 
-  border: 1px solid #ccc;
-  border-radius: 3px; 
-  width: 100%; 
-  background: #fff;
-}
-
-.task input:focus, .task select:focus { 
-  outline: none; 
-  border-color: var(--minerva-red); 
-}
-
-.task div { 
-  display: flex; 
-  gap: 4px; 
-}
-
-.task button { 
-  padding: 3px 8px; 
-  border: none; 
-  border-radius: 3px; 
-  font-size: 10px; 
-  color: #fff; 
-  cursor: pointer; 
-  font-weight: 600; 
-  text-transform: uppercase; 
-}
-
-.task button:hover { 
-  opacity: 0.8; 
-}
-
-button:disabled { 
-  opacity: 0.3; 
-  cursor: not-allowed; 
-  filter: grayscale(100%); 
-  pointer-events: none; 
-}
-
-.start { background: var(--info); }
-.finish { background: var(--success-text); }
-.partial { background: #e0a800; }
-.edit { background: #666; }
-.delete { background: var(--danger); }
-
-.row-done { 
-  background: var(--success-bg); 
-  border-left: 3px solid var(--success-text); 
-  color: var(--success-text); 
-}
-
-.row-partial { 
-  background: var(--warning-bg); 
-  border-left: 3px solid var(--warning-text); 
-  color: var(--warning-text); 
-}
-
-/* --- BOTÕES --- */
-.actions-bar { 
-  display: flex; 
-  gap: 10px; 
-  margin-bottom: 15px; 
-}
-
-.primary-btn { 
-  background: var(--minerva-red); 
-  color: #fff; 
-  border: none; 
-  padding: 8px 16px; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: 600; 
-}
-
-.primary-btn:hover { 
-  background: #5e0d11; 
-}
-
-.panel-btn { 
-  background: #374151; 
-  color: #fff; 
-  border: none; 
-  padding: 8px 16px; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: 600; 
-}
-
-.panel-btn:hover { 
-  background: #1f2937; 
-}
-
-.reset-btn { 
-  background: #e0a800; 
-  color: #fff; 
-  border: none; 
-  padding: 8px 16px; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: 600; 
-}
-
-.reset-btn:hover { 
-  background: #d39e00; 
-}
-
-.clear-btn { 
-  background: var(--danger); 
-  color: #fff; 
-  padding: 5px 10px; 
-  border: none; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: bold; 
-  font-size: 11px; 
-}
-
-.save-btn { 
-  background: #28a745; 
-  color: #fff; 
-  border: none; 
-  padding: 8px 16px; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: 600; 
-  width: 100%; 
-  margin-top: 10px; 
-}
-
-.save-btn:hover { 
-  background: #218838; 
-}
-
-.excel-btn { 
-  background: #217346; 
-  color: #fff; 
-  padding: 6px 12px; 
-  border: none; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  font-weight: bold; 
-  font-size: 11px; 
-  margin-right: 5px; 
-}
-
-.excel-btn:hover { 
-  background: #154b2e; 
-}
-
-.kpi-filters-container .excel-btn { 
-  height: 30px; 
-}
-
-/* Histórico */
-.history-container { 
-  max-height: 300px; 
-  overflow-y: auto; 
-  border: 1px solid #eee; 
-  border-radius: 4px; 
-}
-
-.table { 
-  width: 100%; 
-  border-collapse: collapse; 
-  font-size: 12px; 
-}
-
-.table th { 
-  background: #fff; 
-  position: sticky; 
-  top: 0; 
-  z-index: 1; 
-  text-align: left; 
-  padding: 6px 8px; 
-  border-bottom: 2px solid #eee; 
-}
-
-.table td { 
-  border-bottom: 1px solid #eee; 
-  padding: 6px 8px; 
-}
-
-/* Modais */
-.modal { 
-  position: fixed; 
-  inset: 0; 
-  background: rgba(0,0,0,0.6); 
-  display: none; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 1000; 
-}
-
-.modal-content { 
-  background: #fff; 
-  padding: 20px; 
-  border-radius: 8px; 
-  width: 500px; 
-  max-height: 90vh; 
-  overflow-y: auto; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
-}
-
-.modal h3 { 
-  margin-top: 0; 
-  color: var(--minerva-red); 
-}
-
-.modal-content input, .modal-content select { 
-  width: 100%; 
-  padding: 8px; 
-  margin-bottom: 10px; 
-  border: 1px solid #ccc; 
-  border-radius: 4px; 
-}
-
-/* Painel Gerencial */
-.panel-section { 
-  margin-bottom: 25px; 
-  border-bottom: 1px solid #eee; 
-  padding-bottom: 15px; 
-}
-
-.panel-section:last-child { 
-  border-bottom: none; 
-}
-
-.panel-title { 
-  font-size: 14px; 
-  font-weight: bold; 
-  color: var(--text-main); 
-  margin-bottom: 10px; 
-}
-
-/* Listas */
-.list-container { 
-  max-height: 150px; 
-  overflow-y: auto; 
-  margin-bottom: 15px; 
-  border: 1px solid #eee; 
-  border-radius: 4px; 
-}
-
-.list-item { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 8px; 
-  border-bottom: 1px solid #eee; 
-}
-
-.list-item:last-child { 
-  border-bottom: none; 
-}
-
-.icon-btn { 
-  cursor: pointer; 
-  padding: 4px 8px; 
-  font-size: 12px; 
-  margin-left: 5px; 
-  border-radius: 3px; 
-  border: none; 
-  color: #fff; 
-}
-
-.btn-edit { 
-  background: #666; 
-}
-
-.btn-del { 
-  background: var(--danger); 
-}
-
-.btn-lock { 
-  background: #999; 
-  cursor: not-allowed; 
-}
-
-/* Governance Log */
-.governance-section {
-  margin-bottom: 20px;
-}
-
-.governance-log {
-  max-height: 250px;
-  overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  background: #f9f9f9;
-}
-
-.log-entry {
-  padding: 8px 12px;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.log-entry:last-child {
-  border-bottom: none;
-}
-
-.log-timestamp {
-  color: #666;
-  font-size: 11px;
-}
-
-.log-action {
-  font-weight: 600;
-}
-
-.log-details {
-  color: #555;
-}
+:root{
+  --minerva-red:#7A1417;--minerva-dark:#4a0c0e;--minerva-gold:#C69C6D;
+  --bg:#eef1f5;--card-bg:#fff;--text-main:#333;
+  --success-bg:#d1e7dd;--success-text:#0f5132;
+  --warning-bg:#fff3cd;--warning-text:#664d03;
+  --info:#0d6efd;--danger:#dc3545;
+}
+*{box-sizing:border-box;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,var(--minerva-red) 0%,var(--minerva-dark) 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-container{background:#fff;padding:40px;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.3);width:100%;max-width:400px;text-align:center}
+.login-logo{color:var(--minerva-red);font-size:28px;font-weight:800;margin-bottom:10px;text-transform:uppercase}
+.login-subtitle{color:#666;margin-bottom:30px;font-size:14px}
+.login-form input{width:100%;padding:12px;margin-bottom:15px;border:2px solid #ddd;border-radius:6px;font-size:14px;transition:border-color .3s}
+.login-form input:focus{outline:none;border-color:var(--minerva-red)}
+.login-btn{width:100%;padding:12px;background:var(--minerva-red);color:#fff;border:none;border-radius:6px;font-size:16px;font-weight:600;cursor:pointer;transition:background .3s;margin-bottom:10px}
+.login-btn:hover{background:var(--minerva-dark)}
+.login-btn:disabled{background:#ccc;cursor:not-allowed}
+.login-offline-alert{display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.12);color:#fff;font-size:12px;text-align:left;line-height:1.35;border:1px solid rgba(255,255,255,.18)}
+.loading{display:none;margin:20px 0}
+.spinner{border:3px solid #f3f3f3;border-top:3px solid var(--minerva-red);border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+/* Status Firebase no header */
+.connection-status{background:rgba(255,255,255,.15);color:#fff;padding:8px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
+.connection-dot{width:8px;height:8px;border-radius:50%;background:#4CAF50;animation:pulse 2s infinite}
+.connection-status.disconnected .connection-dot{background:#f44336;animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.main-app{display:none}
+
+/* HEADER */
+header{background:linear-gradient(135deg,var(--minerva-red) 0%,var(--minerva-dark) 100%);color:#fff;padding:12px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.header-left h1{margin:0;font-weight:800;font-size:26px;letter-spacing:1px;line-height:1.1;text-transform:uppercase}
+.header-left h2{margin:0;font-weight:400;font-size:15px;opacity:.9;margin-top:2px}
+.date-display{font-size:12px;opacity:.7;margin-top:4px;font-weight:600}
+.header-right{display:flex;align-items:center;gap:20px}
+.online-counter{background:rgba(255,255,255,.15);padding:8px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
+.online-indicator{width:8px;height:8px;background:#4CAF50;border-radius:50%;animation:pulse 2s infinite}
+.user-info{display:flex;flex-direction:column;align-items:flex-end;font-size:12px}
+.user-role{background:var(--minerva-gold);color:var(--minerva-dark);padding:2px 8px;border-radius:10px;font-weight:600;font-size:10px}
+.user-role.master{background:linear-gradient(45deg,#FFD700,#FFA500);color:#333;text-shadow:0 1px 1px rgba(255,255,255,.5);border:1px solid #FFD700}
+.logout-btn{background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;transition:background .3s}
+.logout-btn:hover{background:rgba(255,255,255,.3)}
+nav button{background:none;border:none;color:rgba(255,255,255,.7);margin-left:10px;font-size:13px;cursor:pointer;padding:5px 10px;border-radius:4px;transition:.3s}
+nav button.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+
+/* CONTENT */
+section{display:none;padding:15px;width:99%;max-width:100%;margin:0 auto}
+section.active{display:block}
+.card{background:var(--card-bg);border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.06);border-top:3px solid var(--minerva-red)}
+
+/* ROLES */
+.admin-only,.master-only,.privileged-only{display:none}
+body.user-admin .admin-only{display:inline-block}
+body.user-master .admin-only{display:inline-block}
+body.user-master .master-only{display:inline-block}
+body.user-master .master-only.block{display:block}
+body.user-admin .privileged-only{display:inline-block}
+body.user-admin .privileged-only.flex{display:flex}
+body.user-admin .privileged-only.block{display:block}
+body.user-master .privileged-only{display:inline-block}
+body.user-master .privileged-only.flex{display:flex}
+body.user-master .privileged-only.block{display:block}
+
+/* KPI */
+.kpi-filters-container{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;background:#f8f9fa;padding:15px;border-radius:6px;border:1px solid #ddd;margin-bottom:20px}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-group label{font-size:11px;font-weight:bold;color:#555;text-transform:uppercase}
+.filter-group select,.filter-group input{padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;min-width:130px}
+.filter-group button{padding:6px 15px;background:var(--minerva-red);color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:bold;height:30px}
+.filter-group button:hover{background:var(--minerva-dark)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.chart-container{position:relative;height:300px;width:100%}
+.kpi-card-big{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.06);border-top:3px solid var(--minerva-gold)}
+.sla-box{text-align:center;padding:40px}
+.sla-value{font-size:42px;font-weight:800;color:var(--minerva-red)}
+.sla-label{font-size:16px;color:#666;text-transform:uppercase;letter-spacing:1px}
+.status-legend{display:flex;justify-content:center;gap:15px;margin-top:10px;font-size:12px;font-weight:bold}
+.legend-item span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+
+/* TASKS */
+.task-header{display:grid;grid-template-columns:1.8fr 1fr .5fr 1.2fr .5fr .5fr .4fr 1.4fr;gap:8px;padding:0 8px 8px;border-bottom:2px solid #eee;margin-bottom:8px;font-weight:bold;color:var(--minerva-red);text-transform:uppercase;font-size:11px}
+.task{display:grid;grid-template-columns:1.8fr 1fr .5fr 1.2fr .5fr .5fr .4fr 1.4fr;gap:8px;align-items:center;background:#fff;padding:4px 8px;margin-bottom:4px;border:1px solid #eee;border-radius:4px;font-size:12px;transition:background .3s}
+.task:hover{border-color:#ccc}
+.task span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prio-badge{font-size:10px;padding:2px 6px;border-radius:4px;color:#fff;font-weight:bold;text-align:center}
+.p-alta{background:#dc3545}
+.p-media{background:#ffc107;color:#333}
+.p-baixa{background:#6c757d}
+.task input,.task select{padding:3px 6px;font-size:11px;border:1px solid #ccc;border-radius:3px;width:100%;background:#fff}
+.task input:focus,.task select:focus{outline:none;border-color:var(--minerva-red)}
+.task div{display:flex;gap:4px}
+.task button{padding:3px 8px;border:none;border-radius:3px;font-size:10px;color:#fff;cursor:pointer;font-weight:600;text-transform:uppercase}
+.task button:hover{opacity:.8}
+button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-events:none}
+.start{background:var(--info)}
+.finish{background:var(--success-text)}
+.partial{background:#e0a800}
+.edit{background:#666}
+.delete{background:var(--danger)}
+.row-done{background:var(--success-bg);border-left:3px solid var(--success-text);color:var(--success-text)}
+.row-partial{background:var(--warning-bg);border-left:3px solid var(--warning-text);color:var(--warning-text)}
+
+/* Buttons */
+.actions-bar{display:flex;gap:10px;margin-bottom:15px}
+.primary-btn{background:var(--minerva-red);color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:600}
+.primary-btn:hover{background:#5e0d11}
+.panel-btn{background:#374151;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:600}
+.panel-btn:hover{background:#1f2937}
+.reset-btn{background:#e0a800;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:600}
+.reset-btn:hover{background:#d39e00}
+.clear-btn{background:var(--danger);color:#fff;padding:5px 10px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:11px}
+.save-btn{background:#28a745;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:600;width:100%;margin-top:10px}
+.save-btn:hover{background:#218838}
+.excel-btn{background:#217346;color:#fff;padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:11px;margin-right:5px}
+.excel-btn:hover{background:#154b2e}
+.kpi-filters-container .excel-btn{height:30px}
+
+/* History */
+.history-container{max-height:300px;overflow-y:auto;border:1px solid #eee;border-radius:4px}
+.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th{background:#fff;position:sticky;top:0;z-index:1;text-align:left;padding:6px 8px;border-bottom:2px solid #eee}
+.table td{border-bottom:1px solid #eee;padding:6px 8px}
+
+/* Modals */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-content{background:#fff;padding:20px;border-radius:8px;width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 25px rgba(0,0,0,.2)}
+.modal h3{margin-top:0;color:var(--minerva-red)}
+.modal-content input,.modal-content select{width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px}
+
+/* Panel */
+.panel-section{margin-bottom:25px;border-bottom:1px solid #eee;padding-bottom:15px}
+.panel-section:last-child{border-bottom:none}
+.panel-title{font-size:14px;font-weight:bold;color:var(--text-main);margin-bottom:10px}
+.list-container{max-height:180px;overflow-y:auto;margin-bottom:15px;border:1px solid #eee;border-radius:4px}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #eee;gap:10px}
+.list-item:last-child{border-bottom:none}
+.icon-btn{cursor:pointer;padding:4px 8px;font-size:12px;margin-left:5px;border-radius:3px;border:none;color:#fff}
+.btn-edit{background:#666}
+.btn-del{background:var(--danger)}
+.badge{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.badge.master{background:#ffd54a;color:#333}
+.badge.admin{background:#7A1417;color:#fff}
+.badge.user{background:#6c757d;color:#fff}
+
+/* Governance */
+.governance-log{max-height:250px;overflow-y:auto;border:1px solid #eee;border-radius:4px;background:#f9f9f9}
+.log-entry{padding:8px 12px;border-bottom:1px solid #e0e0e0;font-size:12px;display:flex;justify-content:space-between;align-items:center}
+.log-entry:last-child{border-bottom:none}
+.log-timestamp{color:#666;font-size:11px}
 
 /* Responsive */
-@media (max-width: 768px) {
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .header-right {
-    flex-direction: column;
-    gap: 10px;
-  }
+@media(max-width:768px){
+  .kpi-grid{grid-template-columns:1fr}
+  .header-right{flex-direction:column;gap:10px}
 }
 
-/* Toast notifications */
-.toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: var(--minerva-red);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 6px;
-  z-index: 10000;
-  animation: slideIn 0.3s ease-out;
-}
-
-.toast.success {
-  background: #28a745;
-}
-
-.toast.error {
-  background: #dc3545;
-}
-
-.toast.warning {
-  background: #ffc107;
-  color: #333;
-}
-
-@keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-
-/* Master Badge */
-.user-role.master {
-  background: linear-gradient(45deg, #FFD700, #FFA500);
-  color: #333;
-  text-shadow: 0 1px 1px rgba(255,255,255,0.5);
-  border: 1px solid #FFD700;
-}
+/* Toast */
+.toast{position:fixed;top:20px;right:20px;background:var(--minerva-red);color:#fff;padding:12px 20px;border-radius:6px;z-index:10000;animation:slideIn .3s ease-out}
+.toast.success{background:#28a745}
+.toast.error{background:#dc3545}
+.toast.warning{background:#ffc107;color:#333}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
 </style>
 </head>
 
 <body>
-
-<!-- Connection Status -->
-<div class="connection-status" id="connectionStatus">
-  <div class="connection-dot"></div>
-  <span id="connectionText">Conectando...</span>
-</div>
-
-<!-- LOGIN OVERLAY -->
+<!-- LOGIN -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-container">
     <div class="login-logo">Minerva Foods</div>
     <div class="login-subtitle">Controle de Rotinas Operacionais</div>
-    
-    <div class="login-form">
-      <input type="email" id="loginEmail" placeholder="E-mail corporativo" autocomplete="email">
-      <input type="password" id="loginPassword" placeholder="Senha" autocomplete="current-password">
-      
-      <button class="login-btn" id="loginBtn" onclick="loginUser()">🚀 ENTRAR NO SISTEMA</button>
-      
+
+    <form class="login-form" id="loginForm">
+      <input type="email" id="loginEmail" name="username" placeholder="E-mail corporativo" autocomplete="username" required>
+      <input type="password" id="loginPassword" name="password" placeholder="Senha" autocomplete="current-password" required>
+      <button class="login-btn" id="loginBtn" type="submit">🚀 ENTRAR NO SISTEMA</button>
+
       <div class="loading" id="loginLoading">
         <div class="spinner"></div>
         <p>Conectando...</p>
       </div>
-    </div>
+
+      <div class="login-offline-alert" id="loginOfflineAlert">
+        <strong>Modo offline bloqueado.</strong><br>
+        Não foi possível conectar ao Firebase. Verifique a internet/VPN e recarregue a página.
+      </div>
+    </form>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 <div class="main-app" id="mainApp">
-
 <header>
   <div class="header-left">
     <h1>Minerva Foods</h1>
     <h2>Controle de rotinas Operacionais Estoque</h2>
     <div class="date-display" id="dateDisplay"></div>
   </div>
-  
+
   <div class="header-right">
+    <div class="connection-status" id="connectionStatus">
+      <div class="connection-dot"></div>
+      <span id="connectionText">Conectando...</span>
+    </div>
+
     <div class="online-counter">
       <div class="online-indicator"></div>
       <span id="onlineCount">0 online</span>
     </div>
-    
+
     <div class="user-info">
       <div id="userDisplayName">Usuário</div>
       <div class="user-role" id="userRole">USER</div>
     </div>
-    
+
     <button class="logout-btn" onclick="logoutUser()">Sair</button>
   </div>
-  
+
   <nav>
     <button class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
     <button onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
     <button onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
-    <button class="admin-only dev-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
+    <button class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
   </nav>
 </header>
 
-<!-- SEÇÃO PC -->
 <section id="pc" class="active">
   <div class="card">
     <div class="actions-bar">
-      <button class="primary-btn admin-only dev-only" onclick="openModal('pc')">+ NOVA ROTINA</button>
-      <button class="panel-btn admin-only dev-only" onclick="openManagementPanel('pc')">⚙️ PAINEL GERENCIAL</button>
-      <button class="reset-btn admin-only dev-only" onclick="resetRotinas('pc')">REINICIAR ROTINAS</button>
+      <button class="primary-btn privileged-only" onclick="openModal('pc')">+ NOVA ROTINA</button>
+      <button class="panel-btn privileged-only" onclick="openManagementPanel('pc')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn privileged-only" onclick="resetRotinas('pc')">REINICIAR ROTINAS</button>
     </div>
 
     <div class="task-header">
-      <span>Rotina</span>
-      <span>Analista</span>
-      <span>Prioridade</span>
-      <span>Status/Justificativa</span>
-      <span>Início</span>
-      <span>Fim</span>
-      <span>%</span>
-      <span>Ações</span>
+      <span>Rotina</span><span>Analista</span><span>Prioridade</span><span>Status/Justificativa</span>
+      <span>Início</span><span>Fim</span><span>%</span><span>Ações</span>
     </div>
 
     <div id="tasks"></div>
   </div>
 </section>
 
-<!-- SEÇÃO ANALISTAS -->
 <section id="analistas">
   <div class="card">
     <div class="actions-bar">
-      <button class="primary-btn admin-only dev-only" onclick="openModal('analistas')">+ NOVA ROTINA (ANALISTA)</button>
-      <button class="panel-btn admin-only dev-only" onclick="openManagementPanel('analistas')">⚙️ PAINEL GERENCIAL</button>
-      <button class="reset-btn admin-only dev-only" onclick="resetRotinas('analistas')">REINICIAR ROTINAS</button>
+      <button class="primary-btn privileged-only" onclick="openModal('analistas')">+ NOVA ROTINA (ANALISTA)</button>
+      <button class="panel-btn privileged-only" onclick="openManagementPanel('analistas')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn privileged-only" onclick="resetRotinas('analistas')">REINICIAR ROTINAS</button>
     </div>
 
     <div class="task-header">
-      <span>Rotina</span>
-      <span>Analista</span>
-      <span>Prioridade</span>
-      <span>Status/Justificativa</span>
-      <span>Início</span>
-      <span>Fim</span>
-      <span>%</span>
-      <span>Ações</span>
+      <span>Rotina</span><span>Analista</span><span>Prioridade</span><span>Status/Justificativa</span>
+      <span>Início</span><span>Fim</span><span>%</span><span>Ações</span>
     </div>
 
     <div id="tasksAnalistas"></div>
   </div>
 </section>
 
-<!-- SEÇÃO KPI -->
 <section id="kpi">
   <div class="card">
     <h3 style="margin:0 0 10px 0; color:var(--minerva-red)">Dashboard de Performance</h3>
@@ -1027,7 +331,7 @@ button:disabled {
         <button onclick="updateCharts()">Filtrar</button>
       </div>
 
-      <div class="filter-group admin-only dev-only">
+      <div class="filter-group privileged-only">
         <label>&nbsp;</label>
         <button class="excel-btn" onclick="exportKpiDashboardToExcel()">📥 EXCEL (DASHBOARD)</button>
       </div>
@@ -1037,24 +341,18 @@ button:disabled {
   <div class="kpi-grid">
     <div class="kpi-card-big">
       <h3 style="text-align:center; color:var(--text-main); margin-bottom:15px;">📊 Status (Período Selecionado)</h3>
-      <div class="chart-container">
-        <canvas id="chartStatus"></canvas>
-      </div>
+      <div class="chart-container"><canvas id="chartStatus"></canvas></div>
       <div id="statusLegend" class="status-legend"></div>
     </div>
 
     <div class="kpi-card-big">
       <h3 style="text-align:center; color:var(--text-main); margin-bottom:15px;">🏆 Ranking de Produtividade</h3>
-      <div class="chart-container">
-        <canvas id="chartRanking"></canvas>
-      </div>
+      <div class="chart-container"><canvas id="chartRanking"></canvas></div>
     </div>
 
     <div class="kpi-card-big">
       <h3 style="text-align:center; color:var(--text-main); margin-bottom:15px;">🛑 Top Motivos (Paradas)</h3>
-      <div class="chart-container">
-        <canvas id="chartMotivos"></canvas>
-      </div>
+      <div class="chart-container"><canvas id="chartMotivos"></canvas></div>
     </div>
 
     <div class="kpi-card-big">
@@ -1068,68 +366,47 @@ button:disabled {
   </div>
 </section>
 
-<!-- SEÇÃO GOVERNANÇA (ADMIN/DEV ONLY) -->
-<section id="governance" class="admin-only dev-only">
+<section id="governance" class="master-only">
   <div class="card">
     <h3 style="margin:0 0 15px 0; color:var(--minerva-red)">📋 Relatório de Governança</h3>
-    
-    <div class="governance-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h4>Log de Ações Administrativas</h4>
-        <div>
-          <button class="excel-btn" onclick="exportGovernanceToExcel()">📥 EXCEL</button>
-          <button class="clear-btn" onclick="clearGovernanceLog()">LIMPAR LOG</button>
-        </div>
-      </div>
-      
-      <div class="governance-log" id="governanceLog">
-        <!-- Logs will be populated here -->
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h4>Log de Ações Administrativas</h4>
+      <div>
+        <button class="excel-btn master-only" onclick="exportGovernanceToExcel()">📥 EXCEL</button>
+        <button class="clear-btn master-only" onclick="clearGovernanceLog()">LIMPAR LOG</button>
       </div>
     </div>
-    
-    <div class="governance-section">
-      <h4>Estatísticas de Uso</h4>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
-          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="totalActions">0</div>
-          <div style="font-size: 12px; color: #666;">Ações Totais</div>
-        </div>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
-          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="totalAdmins">0</div>
-          <div style="font-size: 12px; color: #666;">Usuários Online</div>
-        </div>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; text-align: center;">
-          <div style="font-size: 24px; font-weight: bold; color: var(--minerva-red);" id="todayActions">0</div>
-          <div style="font-size: 12px; color: #666;">Ações Hoje</div>
-        </div>
-      </div>
-    </div>
+
+    <div class="governance-log" id="governanceLog"></div>
   </div>
 </section>
 
-<!-- HISTÓRICO -->
-<div class="card" style="width: 99%; margin: 0 auto 20px auto;" id="historyCard">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <h3 style="margin:0; color:var(--minerva-red)">Histórico de Execução - <span id="historyTitle">OPERACIONAIS</span></h3>
+<div class="card" style="width:99%;margin:0 auto 20px auto;" id="historyCard">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <h3 style="margin:0;color:var(--minerva-red)">Histórico de Execução - <span id="historyTitle">OPERACIONAIS</span></h3>
     <div>
-      <button class="excel-btn admin-only dev-only" onclick="exportToExcel()">📥 EXCEL (ATUAL)</button>
-      <button class="clear-btn admin-only dev-only" onclick="clearHistory()">LIMPAR HISTÓRICO</button>
+      <button class="excel-btn privileged-only" onclick="exportToExcel()">📥 EXCEL (ATUAL)</button>
+      <button class="clear-btn privileged-only" onclick="clearHistory()">LIMPAR HISTÓRICO</button>
     </div>
   </div>
 
   <div class="history-container">
     <table class="table" id="historyTable">
       <thead>
-        <tr><th>Data</th><th>Rotina</th><th>Analista</th><th>Prioridade</th><th>Status/Justificativa</th><th>Início</th><th>Fim</th><th>Duração</th><th>%</th><th>Status</th></tr>
+        <tr>
+          <th>Data</th><th>Rotina</th><th>Analista</th><th>Prioridade</th><th>Status/Justificativa</th>
+          <th>Início</th><th>Fim</th><th>Duração</th><th>%</th><th>Status</th>
+        </tr>
       </thead>
       <tbody id="history"></tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal Nova/Editar Rotina -->
+<!-- Modal Rotina -->
 <div class="modal" id="modal">
-  <div class="modal-content" style="width: 400px;">
+  <div class="modal-content" style="width:400px;">
     <h3 id="modalTitle">Gerenciar Rotina</h3>
     <input id="rotinaInput" placeholder="Nome da rotina...">
     <select id="rotinaPrio">
@@ -1137,27 +414,27 @@ button:disabled {
       <option value="media" selected>🟡 Média</option>
       <option value="baixa">🔵 Baixa</option>
     </select>
-    <div style="text-align: right;">
-      <button class="primary-btn" style="background:#ccc; color:#333;" onclick="closeModal()">Cancelar</button>
+    <div style="text-align:right;">
+      <button class="primary-btn" style="background:#ccc;color:#333;" onclick="closeModal()">Cancelar</button>
       <button class="primary-btn" onclick="saveRotina()">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Painel Gerencial -->
+<!-- Modal Painel -->
 <div class="modal" id="panelModal">
   <div class="modal-content">
     <h3>Painel Gerencial</h3>
 
     <div id="sectionPrio" class="panel-section">
       <div class="panel-title">🔥 Prioridades das Rotinas (<span id="panelContextTitle"></span>)</div>
-      <div class="list-container" id="prioList" style="max-height: 150px;"></div>
+      <div class="list-container" id="prioList"></div>
       <button class="save-btn" onclick="savePriorities()">💾 SALVAR PRIORIDADES</button>
     </div>
 
     <div id="sectionMotivos" class="panel-section">
       <div class="panel-title">📋 Motivos de Status/Justificativa</div>
-      <div style="display:flex; gap:5px; margin-bottom:10px;">
+      <div style="display:flex;gap:5px;margin-bottom:10px;">
         <input id="newMotivoInput" placeholder="Novo Motivo..." style="margin-bottom:0;">
         <button class="primary-btn" onclick="addMotivo()">Adicionar</button>
       </div>
@@ -1166,15 +443,51 @@ button:disabled {
 
     <div id="sectionTeam" class="panel-section">
       <div class="panel-title">👥 Equipe Operacional</div>
-      <div style="display:flex; gap:5px; margin-bottom:10px;">
+      <div style="display:flex;gap:5px;margin-bottom:10px;">
         <input id="newAnalistaInput" placeholder="Novo Analista..." style="margin-bottom:0;">
         <button class="primary-btn" onclick="addAnalista()">Adicionar</button>
       </div>
       <div class="list-container" id="teamList"></div>
     </div>
 
-    <div style="text-align: right; margin-top:10px;">
-      <button class="primary-btn" style="background:#ccc; color:#333;" onclick="closePanelModal()">Fechar Painel</button>
+    <div id="sectionPerms" class="panel-section master-only block">
+      <div class="panel-title">🔐 Permissões (ADMIN)</div>
+      <div style="display:flex;gap:5px;margin-bottom:10px;">
+        <input id="newAdminEmailInput" placeholder="E-mail para ADMIN..." style="margin-bottom:0;">
+        <button class="primary-btn" onclick="addAdminEmail()">Adicionar</button>
+      </div>
+      <div class="list-container" id="adminList"></div>
+      <small style="color:#666;display:block;margin-top:6px;">
+        Obs.: sem Firebase Authentication, isso controla apenas o acesso via interface/login local (não é segurança de backend).
+      </small>
+    </div>
+
+    <div id="sectionUsers" class="panel-section master-only block">
+      <div class="panel-title">👤 Usuários e Senhas (MASTER)</div>
+
+      <div style="background:#f8f9fa;border:1px solid #e5e7eb;padding:12px;border-radius:8px;margin-bottom:10px;">
+        <div style="font-weight:700;margin-bottom:6px;">Cadastrar novo usuário</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input id="newUserName" placeholder="Nome" style="margin:0;">
+          <input id="newUserEmail" placeholder="E-mail" style="margin:0;">
+          <input id="newUserPassword" placeholder="Senha" style="margin:0;" type="password">
+          <select id="newUserRole" style="margin:0;">
+            <option value="user">USER</option>
+            <option value="admin">ADMIN</option>
+          </select>
+        </div>
+        <button class="primary-btn" style="margin-top:10px;" onclick="addNewUser()">Cadastrar</button>
+      </div>
+
+      <div style="font-weight:700;margin-bottom:6px;">Usuários cadastrados</div>
+      <div class="list-container" id="usersList"></div>
+      <small style="color:#666;display:block;margin-top:6px;">
+        Obs.: as senhas ficam salvas no Firebase (texto puro) porque não usamos Firebase Authentication.
+      </small>
+    </div>
+
+    <div style="text-align:right;margin-top:10px;">
+      <button class="primary-btn" style="background:#ccc;color:#333;" onclick="closePanelModal()">Fechar Painel</button>
     </div>
   </div>
 </div>
@@ -1182,11 +495,9 @@ button:disabled {
 </div>
 
 <script>
-// ===========================
-// CONFIGURAÇÃO DO FIREBASE
-// ===========================
-
-// Configure com suas credenciais do Firebase
+/* ===========================
+   FIREBASE
+=========================== */
 const firebaseConfig = {
   apiKey: "AIzaSyDg92nX83l0yAA2KjjRgIB-m-C-a8YywYo",
   authDomain: "rotinas-estoque.firebaseapp.com",
@@ -1198,9 +509,6 @@ const firebaseConfig = {
   measurementId: "G-YMWTY70911"
 };
 
-// ATENÇÃO: Configure as credenciais reais do Firebase aqui ☝️
-
-// Inicializar Firebase
 let app, db, isFirebaseConnected = false;
 
 try {
@@ -1210,75 +518,92 @@ try {
   updateConnectionStatus(true, 'Online - Conectado ao Firebase');
 } catch (error) {
   console.error('Erro ao conectar com Firebase:', error);
-  updateConnectionStatus(false, 'Offline - Usando dados locais');
+  isFirebaseConnected = false;
+  updateConnectionStatus(false, 'Offline - Acesso bloqueado');
+}
+
+function enforceOnlineOnlyUI() {
+  const offlineAlert = document.getElementById('loginOfflineAlert');
+  const loginBtn = document.getElementById('loginBtn');
+
+  if (!isFirebaseConnected) {
+    if (offlineAlert) offlineAlert.style.display = 'block';
+    if (loginBtn) loginBtn.disabled = true;
+  } else {
+    if (offlineAlert) offlineAlert.style.display = 'none';
+    if (loginBtn) loginBtn.disabled = false;
+  }
 }
 
 function updateConnectionStatus(connected, message) {
   const statusEl = document.getElementById('connectionStatus');
   const textEl = document.getElementById('connectionText');
-  
-  if (connected) {
-    statusEl.classList.remove('disconnected');
-  } else {
-    statusEl.classList.add('disconnected');
-  }
-  
+  if (!statusEl || !textEl) return;
+
+  if (connected) statusEl.classList.remove('disconnected');
+  else statusEl.classList.add('disconnected');
+
   textEl.textContent = message;
 }
 
-// ===========================
-// DADOS DEMO E CONFIGURAÇÕES
-// ===========================
+/* ===========================
+   CONFIG / USERS
+=========================== */
+const MASTER_EMAIL = 'diego.cordeiro@minervafoods.com';
 
-// Usuários do sistema - CREDENCIAIS MANTIDAS EXATAMENTE COMO SOLICITADO
-const DEMO_USERS = {
-  'roni.silva@minervafoods.com': { 
-    password: 'picanha@123', 
-    role: 'admin', 
-    name: 'Roni Silva',
-    displayRole: 'ADMIN'
-  },
-  'analistas@minervafoods.com': { 
-    password: 'estoque1234', 
-    role: 'user', 
-    name: 'Equipe Analistas',
-    displayRole: 'USER'
-  },
-  'diego.cordeiro@minervafoods.com': { 
-    password: '040293@Dmc', 
-    role: 'dev', 
-    name: 'Diego Cordeiro',
-    displayRole: 'MASTER',
-    isMaster: true
-  }
-};
+const COLL_PERMISSIONS = 'permissions';
+const COLL_USERS = 'users_credentials';
+const COLL_ROTINAS_PC = 'rotinas_pc';
+const COLL_ROTINAS_ANALISTAS = 'rotinas_analistas';
+const COLL_HISTORY = 'history';
+const COLL_CONFIG = 'config';
+const COLL_GOV = 'governance';
 
-// Variáveis globais
+let permissionsLoaded = false;
+let usersLoaded = false;
+
+let adminEmails = ['roni.silva@minervafoods.com'];
+
+/**
+ * Importante: Por segurança, este HTML não precisa carregar senhas reais.
+ * As credenciais devem estar no Firestore (users_credentials/data.users).
+ * Se o doc não existir, será criado com placeholders.
+ */
+let usersList = [
+  { email: 'diego.cordeiro@minervafoods.com', name: 'Diego Cordeiro', password: 'CHANGE_ME' },
+  { email: 'roni.silva@minervafoods.com', name: 'Roni Silva', password: 'CHANGE_ME' },
+  { email: 'analistas@minervafoods.com', name: 'Equipe Analistas', password: 'CHANGE_ME' }
+];
+let usersMap = {};
+
+/* ===========================
+   APP STATE
+=========================== */
 let currentUser = null;
 let currentUserRole = 'user';
 let currentView = 'pc';
 let onlineUsers = 0;
 let realTimeListeners = {};
+const taskActionLocks = new Set();
 
-// Dados iniciais
 const DEFAULT_ROTINAS_PC = [
-"FEFO SEPARAÇÃO ESPECIFICO","FEFO SEPARAÇÃO CRITICO","VENCIDOS NO ESTOQUE",
-"AUDITORIA DE POSIÇÃO PICKING","ARMAZENAMENTO ONDA DE ABASTECIMENTO",
-"PONTA DE ESTOQUE","DE-PARA PICKING","RETORNO DE CAIXAS PARA DEVOLUÇÃO",
-"FANTASMINHA","MIGRAÇÃO DE ENDEREÇO PARA PERDIDOS","BAIXA PARA OPERAÇÃO",
-"INSERÇÃO DE ISCAS","CONFERENCIA AÊREO","ONDA REVERSA"
+  "FEFO SEPARAÇÃO ESPECIFICO","FEFO SEPARAÇÃO CRITICO","VENCIDOS NO ESTOQUE",
+  "AUDITORIA DE POSIÇÃO PICKING","ARMAZENAMENTO ONDA DE ABASTECIMENTO",
+  "PONTA DE ESTOQUE","DE-PARA PICKING","RETORNO DE CAIXAS PARA DEVOLUÇÃO",
+  "FANTASMINHA","MIGRAÇÃO DE ENDEREÇO PARA PERDIDOS","BAIXA PARA OPERAÇÃO",
+  "INSERÇÃO DE ISCAS","CONFERENCIA AÊREO","ONDA REVERSA"
 ];
 
 const DEFAULT_ROTINAS_ANALISTAS = [
-"FECHAMENTO DE OPS", "LANÇAMENTO DE CUSTOS EXTRAS", "ACOMPANHAMENTO DE ANDAMENTO FEFO",
-"ACOMPANHAMENTO DE VENCIDOS RETIRADOS DO ESTOQUE", "% DE DIVERGENCIA DA AUDITORIA DE POSIÇÃO",
-"RETIRADA DE NÃO LOCALIZADAS", "TROCA ENTRE NEGOCIOS", "ARMAZENAGEM DA ONDA",
-"ACOMPANHAMENTO PONTA DE ESTOQUE", "% DE-PARA DO PICKING", "RETIRADA DAS SOLICITAÇÕES DE FANTASMINHA",
-"BAIXA PENDENTE PARA OPERAÇÃO", "ISCAS INSERIDAS", "CONFERÊNCIA 429 SQL", "CONFERENCIA DO AEREO POR CAMARA"
+  "FECHAMENTO DE OPS", "LANÇAMENTO DE CUSTOS EXTRAS", "ACOMPANHAMENTO DE ANDAMENTO FEFO",
+  "ACOMPANHAMENTO DE VENCIDOS RETIRADOS DO ESTOQUE", "% DE DIVERGENCIA DA AUDITORIA DE POSIÇÃO",
+  "RETIRADA DE NÃO LOCALIZADAS", "TROCA ENTRE NEGOCIOS", "ARMAZENAGEM DA ONDA",
+  "ACOMPANHAMENTO PONTA DE ESTOQUE", "% DE-PARA DO PICKING", "RETIRADA DAS SOLICITAÇÕES DE FANTASMINHA",
+  "BAIXA PENDENTE PARA OPERAÇÃO", "ISCAS INSERIDAS", "CONFERÊNCIA 429 SQL", "CONFERENCIA DO AEREO POR CAMARA"
 ];
 
-const DEFAULT_ANALISTAS = ["LIVIA PORTA", "WILLIAN SILAS", "RODRIGO PRADO", "EVERTON MORAES", "PAULO AFONSO", "ERICK SALES"];
-const DEFAULT_MOTIVOS = ["FALTA DE TEMPO", "SISTEMA INDISPONÍVEL", "SEM DEMANDA", "AGUARDANDO OUTRA ÁREA"];
+const DEFAULT_ANALISTAS = ["LIVIA PORTA","WILLIAN SILAS","RODRIGO PRADO","EVERTON MORAES","PAULO AFONSO","ERICK SALES"];
+const DEFAULT_MOTIVOS = ["FALTA DE TEMPO","SISTEMA INDISPONÍVEL","SEM DEMANDA","AGUARDANDO OUTRA ÁREA"];
 
 let rotinasPC = [];
 let rotinasAnalistas = [];
@@ -1287,7 +612,6 @@ let analistas = [...DEFAULT_ANALISTAS];
 let motivos = [...DEFAULT_MOTIVOS];
 let governanceLog = [];
 
-// Chart instances
 let chartStatus = null;
 let chartRanking = null;
 let chartMotivos = null;
@@ -1295,76 +619,259 @@ let chartMotivos = null;
 const TODAY_STR = new Date().toLocaleDateString('pt-BR');
 document.getElementById('dateDisplay').innerText = TODAY_STR;
 
-// ===========================
-// FIREBASE FUNCTIONS
-// ===========================
+function nowTimeStr() {
+  return new Date().toLocaleTimeString('pt-BR', { hour12: false });
+}
+function isPrivileged() { return currentUserRole === 'admin' || currentUserRole === 'master'; }
 
+/* ===========================
+   RESET: ORDEM + PRIORIDADES PADRÃO
+=========================== */
+const PRIORITY_ORDER = { alta: 0, media: 1, baixa: 2 };
+
+function ensureOrderIndex(list) {
+  let changed = false;
+  list.forEach((t, i) => {
+    if (typeof t.orderIndex !== 'number') { t.orderIndex = i; changed = true; }
+  });
+  return changed;
+}
+
+function applyDefaultPrioritiesAndOrder(context) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+
+  ensureOrderIndex(list);
+
+  // base: ordem de criação (orderIndex)
+  list.sort((a,b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+
+  // prioridades padrão
+  if (context === 'pc') {
+    list.forEach((t, i) => {
+      t.prioridade = i < 5 ? 'alta' : (i < 10 ? 'media' : 'baixa');
+    });
+  } else {
+    list.forEach(t => { t.prioridade = 'alta'; });
+  }
+
+  // ordena para exibir: alta -> média -> baixa, mantendo orderIndex dentro do grupo
+  list.sort((a,b) => {
+    const pa = PRIORITY_ORDER[a.prioridade] ?? 99;
+    const pb = PRIORITY_ORDER[b.prioridade] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+  });
+}
+
+function resetRoutineFields(task) {
+  task.status = 'pending';
+  delete task.inicio;
+  delete task.fim;
+  delete task.analista;
+  delete task.percent;
+  delete task.inicioTs;
+}
+
+/* ===========================
+   FIRESTORE HELPERS
+=========================== */
 async function saveToFirebase(collection, data) {
-  if (!isFirebaseConnected) {
-    return saveToLocalStorage(collection, data);
-  }
-  
-  try {
-    await db.collection(collection).doc('data').set(data);
-    return true;
-  } catch (error) {
-    console.error('Erro ao salvar no Firebase:', error);
-    return saveToLocalStorage(collection, data);
-  }
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+  await db.collection(collection).doc('data').set(data);
+  return true;
 }
-
 async function loadFromFirebase(collection) {
-  if (!isFirebaseConnected) {
-    return loadFromLocalStorage(collection);
-  }
-  
-  try {
-    const doc = await db.collection(collection).doc('data').get();
-    if (doc.exists) {
-      return doc.data();
-    }
-    return null;
-  } catch (error) {
-    console.error('Erro ao carregar do Firebase:', error);
-    return loadFromLocalStorage(collection);
-  }
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+  const doc = await db.collection(collection).doc('data').get();
+  return doc.exists ? doc.data() : null;
 }
 
+function normalizeEmail(email) { return String(email || '').trim().toLowerCase(); }
+
+function rebuildUsersMap() {
+  usersMap = {};
+  usersList.forEach(u => {
+    const e = normalizeEmail(u.email);
+    if (!e) return;
+    usersMap[e] = { email: e, name: String(u.name || '').trim() || e, password: String(u.password || '') };
+  });
+}
+
+async function loadPermissions() {
+  if (permissionsLoaded) return;
+  const p = await loadFromFirebase(COLL_PERMISSIONS);
+  if (p && Array.isArray(p.adminEmails)) {
+    adminEmails = p.adminEmails.map(normalizeEmail).filter(Boolean).filter(e => e !== MASTER_EMAIL);
+  } else {
+    await saveToFirebase(COLL_PERMISSIONS, { adminEmails: adminEmails.slice(), lastUpdate: new Date() });
+  }
+  permissionsLoaded = true;
+}
+
+async function savePermissions() {
+  if (currentUserRole !== 'master') return;
+  adminEmails = Array.from(new Set(adminEmails.map(normalizeEmail).filter(Boolean))).filter(e => e !== MASTER_EMAIL);
+  await saveToFirebase(COLL_PERMISSIONS, { adminEmails: adminEmails.slice(), lastUpdate: new Date() });
+}
+
+async function loadUsers() {
+  if (usersLoaded) return;
+  const u = await loadFromFirebase(COLL_USERS);
+  if (u && Array.isArray(u.users)) {
+    usersList = u.users.map(x => ({
+      email: normalizeEmail(x.email),
+      name: String(x.name || '').trim(),
+      password: String(x.password || '')
+    })).filter(x => x.email);
+  } else {
+    usersList = usersList.map(x => ({ email: normalizeEmail(x.email), name: x.name, password: x.password })).filter(x => x.email);
+    await saveToFirebase(COLL_USERS, { users: usersList.slice(), lastUpdate: new Date() });
+  }
+  rebuildUsersMap();
+  usersLoaded = true;
+}
+
+async function saveUsers() {
+  if (currentUserRole !== 'master') return;
+
+  const masterExists = usersList.some(u => normalizeEmail(u.email) === MASTER_EMAIL);
+  if (!masterExists) usersList.push({ email: MASTER_EMAIL, name: 'Diego Cordeiro', password: usersMap[MASTER_EMAIL]?.password || '' });
+
+  const seen = new Set();
+  const cleaned = [];
+  for (const u of usersList) {
+    const e = normalizeEmail(u.email);
+    if (!e || seen.has(e)) continue;
+    seen.add(e);
+    cleaned.push({ email: e, name: String(u.name || '').trim() || e, password: String(u.password || '') });
+  }
+  usersList = cleaned;
+  rebuildUsersMap();
+
+  await saveToFirebase(COLL_USERS, { users: usersList.slice(), lastUpdate: new Date() });
+}
+
+/* ===========================
+   LOGIN
+=========================== */
+document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); loginUser(); });
+
+function resolveRoleForEmail(email) {
+  const e = normalizeEmail(email);
+  if (e === MASTER_EMAIL) return 'master';
+  if (adminEmails.includes(e)) return 'admin';
+  return 'user';
+}
+function displayRoleForRole(role) {
+  if (role === 'master') return 'MASTER';
+  if (role === 'admin') return 'ADMIN';
+  return 'USER';
+}
+
+async function loginUser() {
+  if (!isFirebaseConnected) {
+    showToast('Firebase offline. Acesso bloqueado.', 'error');
+    enforceOnlineOnlyUI();
+    return;
+  }
+
+  const email = normalizeEmail(document.getElementById('loginEmail').value);
+  const password = String(document.getElementById('loginPassword').value || '');
+
+  if (!email || !password) { showToast('Preencha email e senha', 'error'); return; }
+
+  await loadPermissions();
+  await loadUsers();
+
+  const user = usersMap[email];
+  if (!user || user.password !== password) {
+    showToast('Email ou senha incorretos!', 'error');
+    return;
+  }
+
+  const role = resolveRoleForEmail(email);
+
+  const loginBtn = document.getElementById('loginBtn');
+  const loading = document.getElementById('loginLoading');
+
+  loginBtn.disabled = true;
+  loading.style.display = 'block';
+
+  setTimeout(() => {
+    currentUser = { email, name: user.name, displayRole: displayRoleForRole(role), isMaster: (email === MASTER_EMAIL) };
+    currentUserRole = role;
+    setupUserInterface();
+    initializeApp();
+    loginBtn.disabled = false;
+    loading.style.display = 'none';
+  }, 450);
+}
+
+function setupUserInterface() {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  let bodyClass = 'user-user';
+  if (currentUserRole === 'admin') bodyClass = 'user-admin';
+  if (currentUserRole === 'master') bodyClass = 'user-master user-admin';
+  document.body.className = bodyClass;
+
+  document.getElementById('userDisplayName').textContent = currentUser.name;
+  const roleElement = document.getElementById('userRole');
+  roleElement.textContent = currentUser.displayRole;
+  if (currentUser.isMaster) roleElement.classList.add('master');
+
+  showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
+}
+
+function logoutUser() {
+  destroyRealtimeListeners();
+  document.getElementById('loginOverlay').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+
+  currentUser = null;
+  currentUserRole = 'user';
+
+  showToast('Logout realizado com sucesso', 'success');
+}
+
+/* ===========================
+   REALTIME LISTENERS
+=========================== */
 function setupRealtimeListeners() {
   if (!isFirebaseConnected || !currentUser) return;
-  
-  // Listener para rotinas PC
-  realTimeListeners.rotinasPC = db.collection('rotinas_pc').doc('data').onSnapshot((doc) => {
+
+  realTimeListeners.rotinasPC = db.collection(COLL_ROTINAS_PC).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
       rotinasPC = data.rotinas || [];
+      ensureOrderIndex(rotinasPC);
       if (currentView === 'pc') render();
     }
   });
-  
-  // Listener para rotinas Analistas
-  realTimeListeners.rotinasAnalistas = db.collection('rotinas_analistas').doc('data').onSnapshot((doc) => {
+
+  realTimeListeners.rotinasAnalistas = db.collection(COLL_ROTINAS_ANALISTAS).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
       rotinasAnalistas = data.rotinas || [];
+      ensureOrderIndex(rotinasAnalistas);
       if (currentView === 'analistas') render();
     }
   });
-  
-  // Listener para histórico
-  realTimeListeners.history = db.collection('history').doc('data').onSnapshot((doc) => {
+
+  realTimeListeners.history = db.collection(COLL_HISTORY).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
       history = data.history || [];
-      if (currentView !== 'kpi' && currentView !== 'governance') {
-        renderHistory();
-        updateCharts();
-      }
+      if (currentView !== 'governance') renderHistory();
+      updateCharts();
     }
   });
-  
-  // Listener para configurações
-  realTimeListeners.config = db.collection('config').doc('data').onSnapshot((doc) => {
+
+  realTimeListeners.config = db.collection(COLL_CONFIG).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
       analistas = data.analistas || [...DEFAULT_ANALISTAS];
@@ -1372,30 +879,25 @@ function setupRealtimeListeners() {
       populateAnalystFilter();
     }
   });
-  
-  // Listener para governança
-  if (currentUserRole === 'admin' || currentUserRole === 'dev') {
-    realTimeListeners.governance = db.collection('governance').doc('data').onSnapshot((doc) => {
+
+  if (currentUserRole === 'master') {
+    realTimeListeners.governance = db.collection(COLL_GOV).doc('data').onSnapshot((doc) => {
       if (doc.exists) {
         const data = doc.data();
         governanceLog = data.log || [];
-        if (currentView === 'governance') {
-          renderGovernanceLog();
-        }
+        if (currentView === 'governance') renderGovernanceLog();
       }
     });
   }
-  
-  // Listener para usuários online
+
   setupOnlineTraking();
 }
 
 function setupOnlineTraking() {
   if (!isFirebaseConnected || !currentUser) return;
-  
+
   const userRef = db.collection('users_online').doc(currentUser.email.replace(/[.#$[\]]/g, '_'));
-  
-  // Marcar usuário como online
+
   const setUserOnline = () => {
     userRef.set({
       name: currentUser.name,
@@ -1405,41 +907,31 @@ function setupOnlineTraking() {
       isOnline: true
     });
   };
-  
-  // Marcar usuário como offline ao sair
+
   const setUserOffline = () => {
     userRef.update({
       isOnline: false,
       lastSeen: firebase.firestore.FieldValue.serverTimestamp()
     });
   };
-  
+
   setUserOnline();
-  
-  // Atualizar presença a cada 30 segundos
   setInterval(setUserOnline, 30000);
-  
-  // Cleanup ao sair
   window.addEventListener('beforeunload', setUserOffline);
-  
-  // Listener para contar usuários online
+
   realTimeListeners.usersOnline = db.collection('users_online').where('isOnline', '==', true)
     .onSnapshot((snapshot) => {
       onlineUsers = snapshot.size;
       document.getElementById('onlineCount').textContent = `${onlineUsers} online`;
-      document.getElementById('totalAdmins').textContent = onlineUsers;
     });
 }
 
 function destroyRealtimeListeners() {
   Object.values(realTimeListeners).forEach(unsubscribe => {
-    if (typeof unsubscribe === 'function') {
-      unsubscribe();
-    }
+    if (typeof unsubscribe === 'function') unsubscribe();
   });
   realTimeListeners = {};
-  
-  // Marcar usuário como offline
+
   if (isFirebaseConnected && currentUser) {
     const userRef = db.collection('users_online').doc(currentUser.email.replace(/[.#$[\]]/g, '_'));
     userRef.update({
@@ -1449,242 +941,114 @@ function destroyRealtimeListeners() {
   }
 }
 
-// Fallback para localStorage
-function saveToLocalStorage(collection, data) {
-  localStorage.setItem(`minerva_${collection}`, JSON.stringify(data));
-  return true;
-}
-
-function loadFromLocalStorage(collection) {
-  const saved = localStorage.getItem(`minerva_${collection}`);
-  return saved ? JSON.parse(saved) : null;
-}
-
-// ===========================
-// SISTEMA DE LOGIN
-// ===========================
-
-function loginUser() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  
-  if (!email || !password) {
-    showToast('Preencha email e senha', 'error');
-    return;
-  }
-  
-  const user = DEMO_USERS[email];
-  if (!user || user.password !== password) {
-    showToast('Email ou senha incorretos!', 'error');
-    return;
-  }
-  
-  // Simular loading
-  const loginBtn = document.getElementById('loginBtn');
-  const loading = document.getElementById('loginLoading');
-  
-  loginBtn.disabled = true;
-  loading.style.display = 'block';
-  
-  setTimeout(() => {
-    currentUser = { email, name: user.name, displayRole: user.displayRole, isMaster: user.isMaster };
-    currentUserRole = user.role;
-    
-    setupUserInterface();
-    initializeApp();
-    
-    loginBtn.disabled = false;
-    loading.style.display = 'none';
-  }, 1000);
-}
-
-function setupUserInterface() {
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-  
-  // Configurar interface baseada no role
-  let bodyClass = 'user-normal';
-  if (currentUserRole === 'admin') bodyClass = 'user-admin';
-  if (currentUserRole === 'dev') bodyClass = 'user-dev user-admin'; // Dev tem acesso admin também
-  
-  document.body.className = bodyClass;
-  
-  // Atualizar informações do usuário
-  document.getElementById('userDisplayName').textContent = currentUser.name;
-  const roleElement = document.getElementById('userRole');
-  roleElement.textContent = currentUser.displayRole;
-  
-  // Badge especial para MASTER
-  if (currentUser.isMaster) {
-    roleElement.classList.add('master');
-  }
-  
-  showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
-}
-
-function logoutUser() {
-  destroyRealtimeListeners();
-  
-  document.getElementById('loginOverlay').style.display = 'flex';
-  document.getElementById('mainApp').style.display = 'none';
-  
-  // Reset
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginPassword').value = '';
-  
-  currentUser = null;
-  currentUserRole = 'user';
-  
-  showToast('Logout realizado com sucesso', 'success');
-}
-
-// ===========================
-// INICIALIZAÇÃO
-// ===========================
-
+/* ===========================
+   INIT / LOAD DATA
+=========================== */
 async function initializeApp() {
-  await loadData();
-  setupKpiFilters();
-  setupRealtimeListeners();
-  render();
-  updateCharts();
-  
-  if (currentUserRole === 'admin' || currentUserRole === 'dev') {
-    renderGovernanceLog();
+  try {
+    await loadData();
+    setupKpiFilters();
+    setupRealtimeListeners();
+    render();
+    updateCharts();
+    if (currentUserRole === 'master') renderGovernanceLog();
+  } catch (error) {
+    console.error('Falha na inicialização (online-only):', error);
+    showToast('Falha ao carregar dados do Firebase. Acesso bloqueado.', 'error');
+    logoutUser();
+    enforceOnlineOnlyUI();
   }
 }
 
 async function loadData() {
-  try {
-    // Carregar rotinas PC
-    const savedPC = await loadFromFirebase('rotinas_pc');
-    if (savedPC && savedPC.rotinas) {
-      rotinasPC = savedPC.rotinas;
-    } else {
-      rotinasPC = DEFAULT_ROTINAS_PC.map((nome, i) => ({
-        id: 'pc_' + i,
-        nome,
-        status: 'pending',
-        prioridade: i < 5 ? 'alta' : i < 10 ? 'media' : 'baixa'
-      }));
-      await saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastUpdate: new Date() });
-    }
-    
-    // Carregar rotinas Analistas
-    const savedAnalistas = await loadFromFirebase('rotinas_analistas');
-    if (savedAnalistas && savedAnalistas.rotinas) {
-      rotinasAnalistas = savedAnalistas.rotinas;
-    } else {
-      rotinasAnalistas = DEFAULT_ROTINAS_ANALISTAS.map((nome, i) => ({
-        id: 'an_' + i,
-        nome,
-        status: 'pending',
-        prioridade: 'alta'
-      }));
-      await saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastUpdate: new Date() });
-    }
-    
-    // Carregar histórico
-    const savedHistory = await loadFromFirebase('history');
-    history = savedHistory ? savedHistory.history || [] : [];
-    
-    // Carregar configurações
-    const savedConfig = await loadFromFirebase('config');
-    if (savedConfig) {
-      analistas = savedConfig.analistas || [...DEFAULT_ANALISTAS];
-      motivos = savedConfig.motivos || [...DEFAULT_MOTIVOS];
-    } else {
-      await saveToFirebase('config', { analistas, motivos, lastUpdate: new Date() });
-    }
-    
-    // Carregar governança
-    const savedGov = await loadFromFirebase('governance');
-    governanceLog = savedGov ? savedGov.log || [] : [];
-    
-    // Verificar reset diário
-    const lastDate = savedPC?.lastDate || '';
-    if (lastDate !== TODAY_STR) {
-      await resetDailyData();
-    }
-    
-  } catch (error) {
-    console.error('Erro ao carregar dados:', error);
-    showToast('Erro ao carregar dados. Usando dados locais.', 'warning');
-    loadLocalFallbackData();
+  await loadPermissions();
+  await loadUsers();
+
+  const savedPC = await loadFromFirebase(COLL_ROTINAS_PC);
+  if (savedPC && savedPC.rotinas) {
+    rotinasPC = savedPC.rotinas;
+  } else {
+    rotinasPC = DEFAULT_ROTINAS_PC.map((nome, i) => ({
+      id: 'pc_' + i,
+      nome,
+      status: 'pending',
+      prioridade: i < 5 ? 'alta' : (i < 10 ? 'media' : 'baixa'),
+      orderIndex: i
+    }));
+    applyDefaultPrioritiesAndOrder('pc');
+    await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastUpdate: new Date(), lastDate: TODAY_STR });
+  }
+
+  const savedAnalistas = await loadFromFirebase(COLL_ROTINAS_ANALISTAS);
+  if (savedAnalistas && savedAnalistas.rotinas) {
+    rotinasAnalistas = savedAnalistas.rotinas;
+  } else {
+    rotinasAnalistas = DEFAULT_ROTINAS_ANALISTAS.map((nome, i) => ({
+      id: 'an_' + i,
+      nome,
+      status: 'pending',
+      prioridade: 'alta',
+      orderIndex: i
+    }));
+    applyDefaultPrioritiesAndOrder('analistas');
+    await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastUpdate: new Date(), lastDate: TODAY_STR });
+  }
+
+  ensureOrderIndex(rotinasPC);
+  ensureOrderIndex(rotinasAnalistas);
+
+  const savedHistory = await loadFromFirebase(COLL_HISTORY);
+  history = savedHistory ? (savedHistory.history || []) : [];
+
+  const savedConfig = await loadFromFirebase(COLL_CONFIG);
+  if (savedConfig) {
+    analistas = savedConfig.analistas || [...DEFAULT_ANALISTAS];
+    motivos = savedConfig.motivos || [...DEFAULT_MOTIVOS];
+  } else {
+    await saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() });
+  }
+
+  const savedGov = await loadFromFirebase(COLL_GOV);
+  governanceLog = savedGov ? (savedGov.log || []) : [];
+
+  // RESET DIÁRIO: agora também restaura ordem/prioridades padrão
+  const lastDate = savedPC?.lastDate || '';
+  if (lastDate !== TODAY_STR) {
+    await resetDailyData();
   }
 }
 
 async function resetDailyData() {
-  // Reset diário das rotinas
-  rotinasPC.forEach(r => {
-    r.status = 'pending';
-    delete r.inicio;
-    delete r.fim;
-    delete r.analista;
-    delete r.percent;
-  });
-  
-  rotinasAnalistas.forEach(r => {
-    r.status = 'pending';
-    delete r.inicio;
-    delete r.fim;
-    delete r.analista;
-    delete r.percent;
-  });
-  
-  await saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
-  await saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
-}
+  rotinasPC.forEach(resetRoutineFields);
+  rotinasAnalistas.forEach(resetRoutineFields);
 
-function loadLocalFallbackData() {
-  // Carregar dados do localStorage como fallback
-  const savedPC = loadFromLocalStorage('rotinas_pc');
-  const savedAnalistas = loadFromLocalStorage('rotinas_analistas');
-  const savedHistory = loadFromLocalStorage('history');
-  const savedConfig = loadFromLocalStorage('config');
-  const savedGov = loadFromLocalStorage('governance');
-  
-  if (savedPC) rotinasPC = savedPC.rotinas || [];
-  if (savedAnalistas) rotinasAnalistas = savedAnalistas.rotinas || [];
-  if (savedHistory) history = savedHistory.history || [];
-  if (savedConfig) {
-    analistas = savedConfig.analistas || [...DEFAULT_ANALISTAS];
-    motivos = savedConfig.motivos || [...DEFAULT_MOTIVOS];
-  }
-  if (savedGov) governanceLog = savedGov.log || [];
+  // volta prioridade/ordem padrão
+  applyDefaultPrioritiesAndOrder('pc');
+  applyDefaultPrioritiesAndOrder('analistas');
+
+  await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
 }
 
 async function saveData() {
-  try {
-    // Salvar todos os dados principais
-    await Promise.all([
-      saveToFirebase('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
-      saveToFirebase('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
-      saveToFirebase('history', { history, lastUpdate: new Date() }),
-      saveToFirebase('config', { analistas, motivos, lastUpdate: new Date() }),
-      saveToFirebase('governance', { log: governanceLog, lastUpdate: new Date() })
-    ]);
-  } catch (error) {
-    console.error('Erro ao salvar dados:', error);
-    showToast('Erro ao salvar. Dados salvos localmente.', 'warning');
-    
-    // Fallback para localStorage
-    saveToLocalStorage('rotinas_pc', { rotinas: rotinasPC, lastDate: TODAY_STR });
-    saveToLocalStorage('rotinas_analistas', { rotinas: rotinasAnalistas, lastDate: TODAY_STR });
-    saveToLocalStorage('history', { history });
-    saveToLocalStorage('config', { analistas, motivos });
-    saveToLocalStorage('governance', { log: governanceLog });
-  }
+  await Promise.all([
+    saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_HISTORY, { history, lastUpdate: new Date() }),
+    saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
+    saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
+    saveToFirebase(COLL_PERMISSIONS, { adminEmails: adminEmails.slice(), lastUpdate: new Date() }),
+    ...(currentUserRole === 'master' ? [saveToFirebase(COLL_USERS, { users: usersList.slice(), lastUpdate: new Date() })] : [])
+  ]);
 }
 
-// ===========================
-// LOGGING E GOVERNANÇA
-// ===========================
-
+/* ===========================
+   GOVERNANCE (log admin+master / view master)
+=========================== */
 async function logGovernanceAction(action, details, target = null) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') return;
-  
-  const logEntry = {
+  if (!isPrivileged()) return;
+
+  governanceLog.unshift({
     id: Date.now(),
     userId: currentUser.email,
     userName: currentUser.name,
@@ -1694,222 +1058,279 @@ async function logGovernanceAction(action, details, target = null) {
     target,
     timestamp: new Date(),
     date: TODAY_STR
-  };
-  
-  governanceLog.unshift(logEntry);
-  
-  // Manter apenas os últimos 100 logs
-  if (governanceLog.length > 100) {
-    governanceLog = governanceLog.slice(0, 100);
-  }
-  
-  await saveToFirebase('governance', { log: governanceLog, lastUpdate: new Date() });
-  
-  if (currentView === 'governance') {
-    renderGovernanceLog();
-  }
+  });
+
+  if (governanceLog.length > 100) governanceLog = governanceLog.slice(0, 100);
+
+  await saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() });
+
+  if (currentView === 'governance' && currentUserRole === 'master') renderGovernanceLog();
+}
+
+function toJsDateMaybe(ts) {
+  if (!ts) return null;
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'object' && typeof ts.toDate === 'function') return ts.toDate();
+  const d = new Date(ts);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function renderGovernanceLog() {
-  const logContainer = document.getElementById('governanceLog');
-  if (!logContainer) return;
-  
-  if (governanceLog.length === 0) {
-    logContainer.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Nenhuma ação registrada</div>';
+  const el = document.getElementById('governanceLog');
+  if (!el) return;
+
+  if (!governanceLog.length) {
+    el.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">Nenhuma ação registrada</div>';
     return;
   }
-  
-  logContainer.innerHTML = governanceLog.map(log => {
-    const timestamp = new Date(log.timestamp).toLocaleString('pt-BR');
-    const roleColor = log.userRole === 'MASTER' ? 'color: #FFD700; font-weight: bold;' : 
-                     log.userRole === 'ADMIN' ? 'color: var(--minerva-red);' : '';
+
+  el.innerHTML = governanceLog.map(log => {
+    const dt = toJsDateMaybe(log.timestamp);
+    const ts = dt ? dt.toLocaleString('pt-BR') : '-';
+    const roleColor =
+      log.userRole === 'MASTER' ? 'color:#FFD700; font-weight:700;' :
+      log.userRole === 'ADMIN' ? 'color:#7A1417; font-weight:700;' : '';
     return `
       <div class="log-entry">
         <div>
-          <div class="log-action">${log.action}</div>
-          <div class="log-details">${log.details}</div>
-          <small style="color:#888;">Por: <span style="${roleColor}">${log.userName} (${log.userRole})</span></small>
+          <div class="log-action">${escapeHtml(log.action || '')}</div>
+          <div class="log-details">${escapeHtml(log.details || '')}</div>
+          <small style="color:#888;">Por: <span style="${roleColor}">${escapeHtml(log.userName||'')} (${escapeHtml(log.userRole||'')})</span></small>
         </div>
-        <div class="log-timestamp">${timestamp}</div>
+        <div class="log-timestamp">${escapeHtml(ts)}</div>
       </div>
     `;
   }).join('');
-  
-  // Atualizar estatísticas
-  document.getElementById('totalActions').textContent = governanceLog.length;
-  document.getElementById('todayActions').textContent = 
-    governanceLog.filter(log => log.date === TODAY_STR).length;
 }
 
 async function exportGovernanceToExcel() {
-  showToast('Exportando relatório de governança...', 'success');
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+  if (!governanceLog.length) { showToast('Sem dados para exportar', 'warning'); return; }
+
+  try {
+    showToast('Exportando governança...', 'success');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Minerva Foods - Rotinas Estoque';
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet('Governança');
+    ws.columns = [
+      { header: 'Data (PT-BR)', key: 'date', width: 14 },
+      { header: 'Timestamp', key: 'timestamp', width: 22 },
+      { header: 'Usuário', key: 'userName', width: 22 },
+      { header: 'E-mail', key: 'userId', width: 28 },
+      { header: 'Role', key: 'userRole', width: 10 },
+      { header: 'Ação', key: 'action', width: 18 },
+      { header: 'Detalhes', key: 'details', width: 45 },
+      { header: 'Target', key: 'target', width: 14 },
+    ];
+    ws.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF7A1417' } };
+    ws.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } };
+
+    governanceLog.forEach((log) => {
+      const dt = toJsDateMaybe(log.timestamp);
+      ws.addRow({
+        date: log.date || '',
+        timestamp: dt ? dt.toLocaleString('pt-BR') : '',
+        userName: log.userName || '',
+        userId: log.userId || '',
+        userRole: log.userRole || '',
+        action: log.action || '',
+        details: log.details || '',
+        target: log.target || ''
+      });
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `Governanca_${TODAY_STR.replace(/\//g,'-')}.xlsx`);
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao exportar governança', 'error');
+  }
 }
 
 async function clearGovernanceLog() {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
   if (!confirm('Limpar todo o log de governança?')) return;
-  
   governanceLog = [];
   await logGovernanceAction('CLEAR_LOG', 'Log de governança limpo');
   renderGovernanceLog();
   showToast('Log de governança limpo', 'success');
 }
 
-// ===========================
-// GERENCIAMENTO DE ROTINAS
-// ===========================
-
+/* ===========================
+   ROTINAS (lock + move to end)
+=========================== */
 let currentContext = 'pc';
 let currentEditId = null;
+
+function lockKey(context, task, action) { return `${context}:${task?.id || ''}:${action}`; }
+function moveTaskToEnd(list, index) { const t = list.splice(index, 1)[0]; list.push(t); }
 
 async function startTask(context, index) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[index];
-  
+
   const analistaSelect = document.getElementById(`analista-${context}-${index}`);
-  if (!analistaSelect.value) {
-    showToast('Selecione um analista!', 'warning');
-    analistaSelect.focus();
-    return;
-  }
-  
-  task.inicio = new Date().toLocaleTimeString();
+  if (!analistaSelect.value) { showToast('Selecione um analista!', 'warning'); analistaSelect.focus(); return; }
+
+  task.inicio = nowTimeStr();
+  task.inicioTs = Date.now();
   task.status = 'in_progress';
   task.analista = analistaSelect.value;
-  
+
   await saveData();
   render();
   showToast('Tarefa iniciada', 'success');
 }
 
+function calcDurationFromTimestamps(startTs, endTs) {
+  if (!startTs || !endTs || endTs < startTs) return { text: '-', seconds: 0 };
+  const diffSec = Math.floor((endTs - startTs) / 1000);
+  return { text: formatSeconds(diffSec), seconds: diffSec };
+}
+
 async function finishTask(context, index) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[index];
-  
-  if (!task.inicio) {
-    showToast('Rotina não iniciada!', 'error');
-    return;
+  if (!task) return;
+
+  if (task.status === 'done' || task.status === 'partial') { showToast('Tarefa já finalizada', 'warning'); return; }
+
+  const lk = lockKey(context, task, 'finish');
+  if (taskActionLocks.has(lk)) return;
+  taskActionLocks.add(lk);
+
+  try {
+    if (!task.inicio) { showToast('Rotina não iniciada!', 'error'); return; }
+
+    const analistaSelect = document.getElementById(`analista-${context}-${index}`);
+    const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
+
+    const analista = analistaSelect.value;
+    const motivo = motivoSelect.value || "CONCLUÍDO";
+
+    const fim = nowTimeStr();
+    const endTs = Date.now();
+
+    task.fim = fim;
+    task.status = 'done';
+
+    const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
+
+    history.unshift({
+      id: Date.now(),
+      type: context,
+      data: TODAY_STR,
+      rotina: task.nome,
+      analista,
+      motivo,
+      inicio: task.inicio,
+      fim,
+      duracao: dur.text,
+      durationSec: dur.seconds,
+      percent: '-',
+      status: 'Concluído',
+      prioridade: task.prioridade,
+      timestamp: new Date()
+    });
+
+    moveTaskToEnd(list, index);
+
+    await saveData();
+    render();
+    updateCharts();
+    showToast('Tarefa concluída', 'success');
+  } finally {
+    taskActionLocks.delete(lk);
   }
-  
-  const analistaSelect = document.getElementById(`analista-${context}-${index}`);
-  const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
-  
-  const analista = analistaSelect.value;
-  let motivo = motivoSelect.value || "CONCLUÍDO";
-  
-  const fim = new Date().toLocaleTimeString();
-  
-  // Atualizar rotina
-  task.fim = fim;
-  task.status = 'done';
-  
-  // Salvar no histórico
-  const historyEntry = {
-    id: Date.now(),
-    type: context,
-    data: TODAY_STR,
-    rotina: task.nome,
-    analista,
-    motivo,
-    inicio: task.inicio,
-    fim,
-    duracao: calcDuration(task.inicio, fim),
-    percent: '-',
-    status: 'Concluído',
-    prioridade: task.prioridade,
-    timestamp: new Date()
-  };
-  
-  history.unshift(historyEntry);
-  
-  await saveData();
-  render();
-  updateCharts();
-  showToast('Tarefa concluída', 'success');
 }
 
 async function partialTask(context, index) {
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[index];
-  
-  if (!task.inicio) {
-    showToast('Rotina não iniciada!', 'error');
-    return;
+  if (!task) return;
+
+  if (task.status === 'done' || task.status === 'partial') { showToast('Tarefa já finalizada', 'warning'); return; }
+
+  const lk = lockKey(context, task, 'partial');
+  if (taskActionLocks.has(lk)) return;
+  taskActionLocks.add(lk);
+
+  try {
+    if (!task.inicio) { showToast('Rotina não iniciada!', 'error'); return; }
+
+    const percentInput = document.querySelector(`#${context === 'pc' ? 'tasks' : 'tasksAnalistas'} .task:nth-child(${index + 1}) input[type="number"]`);
+    const percent = percentInput.value;
+
+    if (!percent) { showToast('Informe a porcentagem!', 'warning'); percentInput.focus(); return; }
+
+    const analistaSelect = document.getElementById(`analista-${context}-${index}`);
+    const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
+
+    const analista = analistaSelect.value;
+    const motivo = motivoSelect.value;
+
+    if (!motivo) { showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning'); motivoSelect.focus(); return; }
+
+    const fim = nowTimeStr();
+    const endTs = Date.now();
+
+    task.fim = fim;
+    task.status = 'partial';
+    task.percent = percent;
+
+    const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
+
+    history.unshift({
+      id: Date.now(),
+      type: context,
+      data: TODAY_STR,
+      rotina: task.nome,
+      analista,
+      motivo,
+      inicio: task.inicio,
+      fim,
+      duracao: dur.text,
+      durationSec: dur.seconds,
+      percent: percent + '%',
+      status: 'Parcial',
+      prioridade: task.prioridade,
+      timestamp: new Date()
+    });
+
+    moveTaskToEnd(list, index);
+
+    await saveData();
+    render();
+    updateCharts();
+    showToast('Tarefa marcada como parcial', 'success');
+  } finally {
+    taskActionLocks.delete(lk);
   }
-  
-  const percentInput = document.querySelector(`#${context === 'pc' ? 'tasks' : 'tasksAnalistas'} .task:nth-child(${index + 1}) input[type="number"]`);
-  const percent = percentInput.value;
-  
-  if (!percent) {
-    showToast('Informe a porcentagem!', 'warning');
-    percentInput.focus();
-    return;
-  }
-  
-  const analistaSelect = document.getElementById(`analista-${context}-${index}`);
-  const motivoSelect = document.getElementById(`motivo-${context}-${index}`);
-  
-  const analista = analistaSelect.value;
-  let motivo = motivoSelect.value;
-  
-  if (!motivo) {
-    showToast('Selecione um motivo para finalizar como PARCIAL!', 'warning');
-    motivoSelect.focus();
-    return;
-  }
-  
-  const fim = new Date().toLocaleTimeString();
-  
-  // Atualizar rotina
-  task.fim = fim;
-  task.status = 'partial';
-  task.percent = percent;
-  
-  // Salvar no histórico
-  const historyEntry = {
-    id: Date.now(),
-    type: context,
-    data: TODAY_STR,
-    rotina: task.nome,
-    analista,
-    motivo,
-    inicio: task.inicio,
-    fim,
-    duracao: calcDuration(task.inicio, fim),
-    percent: percent + '%',
-    status: 'Parcial',
-    prioridade: task.prioridade,
-    timestamp: new Date()
-  };
-  
-  history.unshift(historyEntry);
-  
-  await saveData();
-  render();
-  updateCharts();
-  showToast('Tarefa marcada como parcial', 'success');
 }
 
-// ===========================
-// INTERFACE E RENDERING
-// ===========================
-
+/* ===========================
+   UI / RENDER
+=========================== */
 function openTab(id) {
   currentView = id;
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  
+
   const btns = document.querySelectorAll("nav button");
   if (id === 'pc') btns[0].classList.add("active");
   else if (id === 'analistas') btns[1].classList.add("active");
   else if (id === 'kpi') btns[2].classList.add("active");
   else if (id === 'governance') btns[3].classList.add("active");
-  
+
   const histCard = document.getElementById("historyCard");
   if (id === 'kpi' || id === 'governance') {
     histCard.style.display = 'none';
     if (id === 'kpi') updateCharts();
-    if (id === 'governance') renderGovernanceLog();
+    if (id === 'governance' && currentUserRole === 'master') renderGovernanceLog();
   } else {
     histCard.style.display = 'block';
     render();
@@ -1925,51 +1346,53 @@ function render() {
 
 function renderList(context, list, container) {
   container.innerHTML = "";
-  const options = `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${a}">${a}</option>`).join('');
-  const motivosOptions = motivos.map(m => `<option value="${m}">${m}</option>`).join('');
-  
+  const options = `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+  const motivosOptions = motivos.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+
   list.forEach((r, i) => {
     let rowClass = "task";
     if (r.status === 'done') rowClass += " row-done";
     else if (r.status === 'partial') rowClass += " row-partial";
-    
+
     let badgeClass = "p-media";
     let badgeText = "Média";
     if (r.prioridade === 'alta') { badgeClass = "p-alta"; badgeText = "ALTA"; }
     if (r.prioridade === 'baixa') { badgeClass = "p-baixa"; badgeText = "Baixa"; }
-    
-    const hasAdminAccess = currentUserRole === 'admin' || currentUserRole === 'dev';
-    
+
+    const hasPriv = isPrivileged();
+    const canFinish = (r.status === 'in_progress');
+    const canPartial = (r.status === 'in_progress');
+
     container.innerHTML += `
-    <div class="${rowClass}">
-      <span title="${r.nome}">${r.nome}</span>
-      <select id="analista-${context}-${i}">${options}</select>
-      <div class="prio-badge ${badgeClass}">${badgeText}</div>
-      <select id="motivo-${context}-${i}" style="width:100%">
-        <option value="">-- Selecione --</option>
-        ${motivosOptions}
-      </select>
-      <span class="inicio">${r.inicio || "-"}</span>
-      <span class="fim">${r.fim || "-"}</span>
-      <input type="number" min="1" max="99" placeholder="%" value="${r.percent || ''}">
-      <div>
-        <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
-        <button class="partial" ${r.status === 'pending' ? 'disabled' : ''} onclick="partialTask('${context}', ${i})">Parcial</button>
-        <button class="finish" ${r.status === 'pending' ? 'disabled' : ''} onclick="finishTask('${context}', ${i})">Finalizar</button>
-        ${hasAdminAccess ? `
-          <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
-          <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
-        ` : ''}
+      <div class="${rowClass}">
+        <span title="${escapeHtml(r.nome)}">${escapeHtml(r.nome)}</span>
+        <select id="analista-${context}-${i}">${options}</select>
+        <div class="prio-badge ${badgeClass}">${escapeHtml(badgeText)}</div>
+        <select id="motivo-${context}-${i}" style="width:100%">
+          <option value="">-- Selecione --</option>
+          ${motivosOptions}
+        </select>
+        <span class="inicio">${escapeHtml(r.inicio || "-")}</span>
+        <span class="fim">${escapeHtml(r.fim || "-")}</span>
+        <input type="number" min="1" max="99" placeholder="%" value="${escapeHtml(r.percent || '')}">
+        <div>
+          <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
+          <button class="partial" ${canPartial ? '' : 'disabled'} onclick="partialTask('${context}', ${i})">Parcial</button>
+          <button class="finish" ${canFinish ? '' : 'disabled'} onclick="finishTask('${context}', ${i})">Finalizar</button>
+          ${hasPriv ? `
+            <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
+            <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
+          ` : ''}
+        </div>
       </div>
-    </div>`;
-    
-    // Definir valores selecionados
+    `;
+
     setTimeout(() => {
       if (r.analista) {
         const sel = document.getElementById(`analista-${context}-${i}`);
         if (sel) sel.value = r.analista;
       }
-    }, 100);
+    }, 0);
   });
 }
 
@@ -1978,36 +1401,31 @@ function renderHistory() {
     if (currentView === 'pc') return !h.type || h.type === 'pc';
     return h.type === 'analistas';
   });
-  
+
   document.getElementById("history").innerHTML = filteredHistory.map(h => `
     <tr>
-      <td>${h.data}</td>
-      <td>${h.rotina}</td>
-      <td>${h.analista}</td>
-      <td>${h.prioridade || '-'}</td>
-      <td>${h.motivo || "-"}</td>
-      <td>${h.inicio}</td>
-      <td>${h.fim}</td>
-      <td>${h.duracao}</td>
-      <td>${h.percent}</td>
-      <td>${h.status}</td>
+      <td>${escapeHtml(h.data)}</td>
+      <td>${escapeHtml(h.rotina)}</td>
+      <td>${escapeHtml(h.analista)}</td>
+      <td>${escapeHtml(h.prioridade || '-')}</td>
+      <td>${escapeHtml(h.motivo || "-")}</td>
+      <td>${escapeHtml(h.inicio || "-")}</td>
+      <td>${escapeHtml(h.fim || "-")}</td>
+      <td>${escapeHtml(h.duracao || "-")}</td>
+      <td>${escapeHtml(h.percent || "-")}</td>
+      <td>${escapeHtml(h.status || "-")}</td>
     </tr>
   `).join("");
 }
 
-// ===========================
-// MODAIS
-// ===========================
-
+/* ===========================
+   MODAL ROTINA (ADMIN+MASTER)
+=========================== */
 const modal = document.getElementById("modal");
 const panelModal = document.getElementById("panelModal");
 
 function openModal(context) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   currentContext = context;
   currentEditId = null;
   document.getElementById('rotinaInput').value = "";
@@ -2015,44 +1433,43 @@ function openModal(context) {
   modal.style.display = "flex";
 }
 
-function closeModal() {
-  modal.style.display = "none";
+function closeModal() { modal.style.display = "none"; }
+
+function nextOrderIndexFor(list) {
+  let max = -1;
+  list.forEach(t => { if (typeof t.orderIndex === 'number' && t.orderIndex > max) max = t.orderIndex; });
+  return max + 1;
 }
 
 async function saveRotina() {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+
   const nome = document.getElementById('rotinaInput').value.trim();
   const prioridade = document.getElementById('rotinaPrio').value;
-  
-  if (!nome) {
-    showToast('Informe o nome da rotina', 'error');
-    return;
-  }
-  
+  if (!nome) { showToast('Informe o nome da rotina', 'error'); return; }
+
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
-  
+
   if (currentEditId !== null) {
-    // Editar
     const task = list.find(t => t.id === currentEditId);
     if (task) {
       const oldName = task.nome;
       task.nome = nome;
       task.prioridade = prioridade;
-      
       await logGovernanceAction('UPDATE_ROUTINE', `Rotina atualizada: ${oldName} -> ${nome}`, currentContext);
     }
   } else {
-    // Nova
     const newTask = {
       id: currentContext + '_' + Date.now(),
       nome,
       prioridade,
-      status: 'pending'
+      status: 'pending',
+      orderIndex: nextOrderIndexFor(list)
     };
     list.push(newTask);
-    
     await logGovernanceAction('CREATE_ROUTINE', `Nova rotina criada: ${nome}`, currentContext);
   }
-  
+
   closeModal();
   await saveData();
   render();
@@ -2060,14 +1477,9 @@ async function saveRotina() {
 }
 
 function editRotina(context, i) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[i];
-  
   currentContext = context;
   currentEditId = task.id;
   document.getElementById('rotinaInput').value = task.nome;
@@ -2076,64 +1488,48 @@ function editRotina(context, i) {
 }
 
 async function removeRotina(context, i) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm("Excluir rotina?")) return;
-  
+
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list[i];
-  
   list.splice(i, 1);
-  
+
   await logGovernanceAction('DELETE_ROUTINE', `Rotina removida: ${task.nome}`, context);
   await saveData();
   render();
   showToast('Rotina removida', 'success');
 }
 
+/**
+ * RESET MANUAL: agora também restaura prioridade/ordem padrão
+ */
 async function resetRotinas(context) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm(`Reiniciar todas as rotinas de ${context === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
-  
+
   const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  
-  list.forEach(r => {
-    r.status = 'pending';
-    delete r.inicio;
-    delete r.fim;
-    delete r.percent;
-    delete r.analista;
-  });
-  
-  await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas: ${context}`);
+  list.forEach(resetRoutineFields);
+
+  applyDefaultPrioritiesAndOrder(context);
+
+  await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas (com prioridade/ordem padrão): ${context}`, context);
   await saveData();
   render();
   showToast('Rotinas reiniciadas', 'success');
 }
 
 async function clearHistory() {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
-  
+
   const initialLength = history.length;
   history = history.filter(h => {
     if (currentView === 'pc') return h.type === 'analistas';
     return !h.type || h.type === 'pc';
   });
-  
+
   const removedCount = initialLength - history.length;
-  
   await logGovernanceAction('CLEAR_HISTORY', `Histórico limpo: ${currentView} (${removedCount} itens)`);
   await saveData();
   renderHistory();
@@ -2141,37 +1537,34 @@ async function clearHistory() {
   showToast('Histórico limpo', 'success');
 }
 
-// ===========================
-// PAINEL GERENCIAL
-// ===========================
-
+/* ===========================
+   PAINEL (ADMIN+MASTER) + USERS (MASTER)
+=========================== */
 function openManagementPanel(context) {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   currentContext = context;
   document.getElementById('panelContextTitle').innerText = context === 'pc' ? "OPERACIONAIS" : "ANALISTAS";
-  
+
   renderPrioList();
   renderTeamList();
   renderMotivosList();
-  
+
+  if (currentUserRole === 'master') {
+    renderAdminList();
+    renderUsersList();
+  }
+
   panelModal.style.display = "flex";
 }
 
-async function closePanelModal() {
-  panelModal.style.display = "none";
-  await saveData();
-}
+async function closePanelModal() { panelModal.style.display = "none"; await saveData(); }
 
 function renderPrioList() {
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
-  document.getElementById('prioList').innerHTML = list.map((r, i) => `
+  document.getElementById('prioList').innerHTML = list.map((r) => `
     <div class="list-item">
-      <span style="font-size:12px;">${r.nome}</span>
-      <select onchange="tempChangePriority('${r.id}', this.value)" style="width:100px; padding:4px;">
+      <span style="font-size:12px;">${escapeHtml(r.nome)}</span>
+      <select onchange="tempChangePriority('${escapeHtml(r.id)}', this.value)" style="width:100px; padding:4px;">
         <option value="alta" ${r.prioridade === 'alta' ? 'selected' : ''}>🔥 Alta</option>
         <option value="media" ${r.prioridade === 'media' ? 'selected' : ''}>🟡 Média</option>
         <option value="baixa" ${r.prioridade === 'baixa' ? 'selected' : ''}>🔵 Baixa</option>
@@ -2179,16 +1572,13 @@ function renderPrioList() {
     </div>
   `).join("");
 }
-
 function tempChangePriority(taskId, value) {
   const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
   const task = list.find(t => t.id === taskId);
-  if (task) {
-    task.prioridade = value;
-  }
+  if (task) task.prioridade = value;
 }
-
 async function savePriorities() {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   await logGovernanceAction('UPDATE_PRIORITIES', `Prioridades atualizadas: ${currentContext}`);
   await saveData();
   render();
@@ -2198,7 +1588,7 @@ async function savePriorities() {
 function renderTeamList() {
   document.getElementById('teamList').innerHTML = analistas.map((a, i) => `
     <div class="list-item">
-      <span>${a}</span>
+      <span>${escapeHtml(a)}</span>
       <div>
         <button class="icon-btn btn-edit" onclick="editAnalista(${i})">Editar</button>
         <button class="icon-btn btn-del" onclick="deleteAnalista(${i})">X</button>
@@ -2206,31 +1596,176 @@ function renderTeamList() {
     </div>
   `).join("");
 }
-
 function renderMotivosList() {
   document.getElementById('motivosList').innerHTML = motivos.map((m, i) => `
     <div class="list-item">
-      <span>${m}</span>
+      <span>${escapeHtml(m)}</span>
       <button class="icon-btn btn-del" onclick="deleteMotivo(${i})">X</button>
     </div>
   `).join("");
 }
 
-async function addAnalista() {
-  const input = document.getElementById('newAnalistaInput');
-  const nome = input.value.trim().toUpperCase();
-  
-  if (!nome) return;
-  
-  if (analistas.includes(nome)) {
-    showToast('Analista já existe', 'warning');
-    return;
+function renderAdminList() {
+  if (currentUserRole !== 'master') return;
+  const container = document.getElementById('adminList');
+  if (!container) return;
+
+  const list = adminEmails.map(normalizeEmail).filter(Boolean).filter(e => e !== MASTER_EMAIL);
+  if (!list.length) { container.innerHTML = `<div style="padding:10px; color:#666;">Nenhum ADMIN cadastrado.</div>`; return; }
+
+  container.innerHTML = list.map((email) => `
+    <div class="list-item">
+      <span>${escapeHtml(email)}</span>
+      <button class="icon-btn btn-del" onclick="removeAdminEmail('${escapeHtml(email)}')">Remover</button>
+    </div>
+  `).join("");
+}
+async function addAdminEmail() {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+  const input = document.getElementById('newAdminEmailInput');
+  const email = normalizeEmail(input.value);
+
+  if (!email || !email.includes('@')) { showToast('Informe um e-mail válido', 'warning'); return; }
+  if (email === MASTER_EMAIL) { showToast('MASTER não pode ser ADMIN', 'warning'); return; }
+  if (adminEmails.includes(email)) { showToast('E-mail já está como ADMIN', 'warning'); return; }
+
+  adminEmails.push(email);
+  input.value = '';
+
+  await savePermissions();
+  await logGovernanceAction('ADD_ADMIN', `ADMIN adicionado: ${email}`, 'permissions');
+  renderAdminList();
+  renderUsersList();
+  showToast('Permissão ADMIN adicionada', 'success');
+}
+async function removeAdminEmail(email) {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+  const e = normalizeEmail(email);
+  if (!confirm(`Remover ADMIN: ${e}?`)) return;
+
+  adminEmails = adminEmails.filter(x => normalizeEmail(x) !== e);
+
+  await savePermissions();
+  await logGovernanceAction('REMOVE_ADMIN', `ADMIN removido: ${e}`, 'permissions');
+  renderAdminList();
+  renderUsersList();
+  showToast('Permissão ADMIN removida', 'success');
+}
+
+function roleBadgeHTML(email) {
+  const role = resolveRoleForEmail(email);
+  if (role === 'master') return `<span class="badge master">MASTER</span>`;
+  if (role === 'admin') return `<span class="badge admin">ADMIN</span>`;
+  return `<span class="badge user">USER</span>`;
+}
+
+function renderUsersList() {
+  if (currentUserRole !== 'master') return;
+  const container = document.getElementById('usersList');
+  if (!container) return;
+
+  const rows = usersList
+    .map(u => ({ email: normalizeEmail(u.email), name: String(u.name||'').trim() }))
+    .filter(u => u.email)
+    .sort((a,b) => {
+      const ra = resolveRoleForEmail(a.email);
+      const rb = resolveRoleForEmail(b.email);
+      const order = { master: 0, admin: 1, user: 2 };
+      if (order[ra] !== order[rb]) return order[ra] - order[rb];
+      return a.email.localeCompare(b.email);
+    });
+
+  container.innerHTML = rows.map(u => {
+    const isMasterRow = u.email === MASTER_EMAIL;
+    return `
+      <div class="list-item">
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            ${roleBadgeHTML(u.email)}
+            <span style="font-weight:700;">${escapeHtml(u.name || u.email)}</span>
+          </div>
+          <div style="color:#666;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(u.email)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="icon-btn btn-edit" ${isMasterRow ? 'disabled title="Senha do MASTER não é editável aqui"' : ''} onclick="editUserPasswordPrompt('${escapeHtml(u.email)}')">Alterar Senha</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function addNewUser() {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+
+  const name = String(document.getElementById('newUserName').value || '').trim();
+  const email = normalizeEmail(document.getElementById('newUserEmail').value);
+  const password = String(document.getElementById('newUserPassword').value || '');
+  const role = String(document.getElementById('newUserRole').value || 'user');
+
+  if (!name) { showToast('Informe o nome', 'warning'); return; }
+  if (!email || !email.includes('@')) { showToast('Informe um e-mail válido', 'warning'); return; }
+  if (!password || password.length < 4) { showToast('Senha muito curta (mín. 4)', 'warning'); return; }
+  if (email === MASTER_EMAIL) { showToast('MASTER não pode ser cadastrado aqui', 'warning'); return; }
+
+  await loadUsers();
+  if (usersMap[email]) { showToast('Usuário já existe', 'warning'); return; }
+
+  usersList.push({ email, name, password });
+  rebuildUsersMap();
+
+  if (role === 'admin') {
+    if (!adminEmails.includes(email)) adminEmails.push(email);
+  } else {
+    adminEmails = adminEmails.filter(x => normalizeEmail(x) !== email);
   }
-  
+
+  await savePermissions();
+  await saveUsers();
+  await logGovernanceAction('CREATE_USER', `Usuário criado: ${email} (${role.toUpperCase()})`, 'users_credentials');
+
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserEmail').value = '';
+  document.getElementById('newUserPassword').value = '';
+  document.getElementById('newUserRole').value = 'user';
+
+  renderAdminList();
+  renderUsersList();
+  showToast('Usuário cadastrado com sucesso', 'success');
+}
+
+async function editUserPasswordPrompt(email) {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+  const e = normalizeEmail(email);
+  if (!e || e === MASTER_EMAIL) return;
+
+  await loadUsers();
+  if (!usersMap[e]) { showToast('Usuário não encontrado', 'error'); return; }
+
+  const newPass = prompt(`Nova senha para ${e}:`);
+  if (newPass === null) return;
+  const p = String(newPass || '');
+  if (p.length < 4) { showToast('Senha muito curta (mín. 4)', 'warning'); return; }
+
+  usersList = usersList.map(u => normalizeEmail(u.email) === e ? { ...u, password: p } : u);
+  rebuildUsersMap();
+
+  await saveUsers();
+  await logGovernanceAction('UPDATE_PASSWORD', `Senha alterada para: ${e}`, 'users_credentials');
+
+  showToast('Senha atualizada', 'success');
+}
+
+async function addAnalista() {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  const input = document.getElementById('newAnalistaInput');
+  const nome = String(input.value || '').trim().toUpperCase();
+  if (!nome) return;
+
+  if (analistas.includes(nome)) { showToast('Analista já existe', 'warning'); return; }
   analistas.push(nome);
   input.value = '';
-  
-  await logGovernanceAction('ADD_ANALYST', `Analista adicionado: ${nome}`);
+
+  await logGovernanceAction('ADD_ANALYST', `Analista adicionado: ${nome}`, 'config');
   await saveData();
   renderTeamList();
   populateAnalystFilter();
@@ -2238,32 +1773,28 @@ async function addAnalista() {
 }
 
 async function addMotivo() {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   const input = document.getElementById('newMotivoInput');
-  const motivo = input.value.trim().toUpperCase();
-  
+  const motivo = String(input.value || '').trim().toUpperCase();
   if (!motivo) return;
-  
-  if (motivos.includes(motivo)) {
-    showToast('Motivo já existe', 'warning');
-    return;
-  }
-  
+
+  if (motivos.includes(motivo)) { showToast('Motivo já existe', 'warning'); return; }
   motivos.push(motivo);
   input.value = '';
-  
-  await logGovernanceAction('ADD_REASON', `Motivo adicionado: ${motivo}`);
+
+  await logGovernanceAction('ADD_REASON', `Motivo adicionado: ${motivo}`, 'config');
   await saveData();
   renderMotivosList();
   showToast('Motivo adicionado', 'success');
 }
 
 async function deleteAnalista(i) {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm("Remover analista?")) return;
-  
   const name = analistas[i];
   analistas.splice(i, 1);
-  
-  await logGovernanceAction('DELETE_ANALYST', `Analista removido: ${name}`);
+
+  await logGovernanceAction('DELETE_ANALYST', `Analista removido: ${name}`, 'config');
   await saveData();
   renderTeamList();
   populateAnalystFilter();
@@ -2271,46 +1802,39 @@ async function deleteAnalista(i) {
 }
 
 async function deleteMotivo(i) {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm("Remover motivo?")) return;
-  
   const motivo = motivos[i];
   motivos.splice(i, 1);
-  
-  await logGovernanceAction('DELETE_REASON', `Motivo removido: ${motivo}`);
+
+  await logGovernanceAction('DELETE_REASON', `Motivo removido: ${motivo}`, 'config');
   await saveData();
   renderMotivosList();
   showToast('Motivo removido', 'success');
 }
 
 async function editAnalista(i) {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   const nome = prompt("Nome:", analistas[i]);
-  if (nome) {
-    const oldName = analistas[i];
-    analistas[i] = nome.toUpperCase();
-    
-    await logGovernanceAction('EDIT_ANALYST', `Analista editado: ${oldName} -> ${nome}`);
-    await saveData();
-    renderTeamList();
-    populateAnalystFilter();
-    showToast('Analista editado', 'success');
-  }
+  if (!nome) return;
+  const oldName = analistas[i];
+  analistas[i] = String(nome).toUpperCase();
+
+  await logGovernanceAction('EDIT_ANALYST', `Analista editado: ${oldName} -> ${nome}`, 'config');
+  await saveData();
+  renderTeamList();
+  populateAnalystFilter();
+  showToast('Analista editado', 'success');
 }
 
-// ===========================
-// EXPORT EXCEL
-// ===========================
-
+/* ===========================
+   EXPORT / KPI
+=========================== */
 function exportToExcel() {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
-  const filteredHistory = history.filter(h => {
-    if (currentView === 'pc') return !h.type || h.type === 'pc';
-    return h.type === 'analistas';
-  });
-  
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+
+  const filteredHistory = history.filter(h => (currentView === 'pc' ? (!h.type || h.type === 'pc') : (h.type === 'analistas')));
+
   let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head><meta charset="utf-8"></head>
     <body>
@@ -2322,17 +1846,17 @@ function exportToExcel() {
           </tr>
         </thead>
         <tbody>`;
-  
+
   filteredHistory.forEach(h => {
     html += `<tr>
-      <td>${h.data}</td><td>${h.rotina}</td><td>${h.analista}</td><td>${h.prioridade || "-"}</td>
-      <td>${h.motivo || ""}</td><td>${h.inicio}</td><td>${h.fim}</td><td>${h.duracao}</td>
-      <td>${h.percent}</td><td>${h.status}</td>
+      <td>${escapeHtml(h.data)}</td><td>${escapeHtml(h.rotina)}</td><td>${escapeHtml(h.analista)}</td><td>${escapeHtml(h.prioridade || "-")}</td>
+      <td>${escapeHtml(h.motivo || "")}</td><td>${escapeHtml(h.inicio || "-")}</td><td>${escapeHtml(h.fim || "-")}</td><td>${escapeHtml(h.duracao || "-")}</td>
+      <td>${escapeHtml(h.percent || "-")}</td><td>${escapeHtml(h.status || "-")}</td>
     </tr>`;
   });
-  
+
   html += `</tbody></table></body></html>`;
-  
+
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -2343,107 +1867,67 @@ function exportToExcel() {
   document.body.removeChild(a);
 }
 
-function exportKpiDashboardToExcel() {
-  if (currentUserRole !== 'admin' && currentUserRole !== 'dev') {
-    showToast('Acesso negado', 'error');
-    return;
-  }
-  
-  showToast('Exportando dashboard KPI...', 'success');
-}
-
-// ===========================
-// KPI E CHARTS
-// ===========================
-
 function setupKpiFilters() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('kpiDateStart').value = today;
   document.getElementById('kpiDateEnd').value = today;
-  
   populateAnalystFilter();
 }
 
 function populateAnalystFilter() {
   const select = document.getElementById('kpiAnalista');
   if (!select) return;
-  
+
   const currentValue = select.value;
   select.innerHTML = '<option value="">Todos</option>';
-  
+
   analistas.forEach(a => {
     const option = document.createElement('option');
     option.value = a;
     option.textContent = a;
     select.appendChild(option);
   });
-  
+
   if (currentValue) select.value = currentValue;
 }
 
 function updateCharts() {
   const filteredHistory = filterHistoryForKpi();
-  
+
   let countDone = 0, countPartial = 0;
   const rankingMap = {};
   const motivosMap = {};
   let totalSeconds = 0, slaCount = 0;
-  
+
   filteredHistory.forEach(h => {
     if (h.status === 'Concluído') countDone++;
     else if (h.status === 'Parcial') countPartial++;
-    
-    // Ranking
-    if (!rankingMap[h.analista]) rankingMap[h.analista] = 0;
-    rankingMap[h.analista]++;
-    
-    // Motivos
+
+    rankingMap[h.analista] = (rankingMap[h.analista] || 0) + 1;
+
     const motivo = h.motivo || "";
-    if (motivo !== "CONCLUÍDO" && motivo !== "PARCIAL" && motivo !== "") {
-      if (!motivosMap[motivo]) motivosMap[motivo] = 0;
-      motivosMap[motivo]++;
-    }
-    
-    // SLA
-    if (h.status === 'Concluído' && h.duracao !== "-") {
-      const durStr = h.duracao;
-      let hours = 0, mins = 0, secs = 0;
-      let hMatch = durStr.match(/(\d+)h/); 
-      if (hMatch) hours = parseInt(hMatch[1]);
-      let mMatch = durStr.match(/(\d+)m/); 
-      if (mMatch) mins = parseInt(mMatch[1]);
-      let sMatch = durStr.match(/(\d+)s/); 
-      if (sMatch) secs = parseInt(sMatch[1]);
-      
-      if (hours > 0 || mins > 0 || secs > 0) {
-        totalSeconds += (hours * 3600) + (mins * 60) + secs;
-        slaCount++;
-      }
+    if (motivo && motivo !== "CONCLUÍDO" && motivo !== "PARCIAL") motivosMap[motivo] = (motivosMap[motivo] || 0) + 1;
+
+    if (h.status === 'Concluído') {
+      const sec = (typeof h.durationSec === 'number' && h.durationSec > 0) ? h.durationSec : 0;
+      if (sec > 0) { totalSeconds += sec; slaCount++; }
     }
   });
-  
-  // Update status legend
-  document.getElementById("statusLegend").innerHTML = `
-    <div class="legend-item"><span style="background:#0f5132"></span>Concluídas: ${countDone}</div>
-    <div class="legend-item"><span style="background:#f9a825"></span>Parciais: ${countPartial}</div>
-  `;
-  
-  // Update SLA
-  if (slaCount > 0) {
-    const avg = totalSeconds / slaCount;
-    const h = Math.floor(avg / 3600);
-    const m = Math.floor((avg % 3600) / 60);
-    const s = Math.floor(avg % 60);
-    document.getElementById("slaValue").innerText = 
-      `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
-  } else {
-    document.getElementById("slaValue").innerText = "00h 00m 00s";
+
+  const legend = document.getElementById("statusLegend");
+  if (legend) {
+    legend.innerHTML = `
+      <div class="legend-item"><span style="background:#0f5132"></span>Concluídas: ${countDone}</div>
+      <div class="legend-item"><span style="background:#f9a825"></span>Parciais: ${countPartial}</div>
+    `;
   }
-  
-  // Update charts
-  updateStatusChart(countDone, countPartial);
-  updateRankingChart(rankingMap);
-  updateMotivosChart(motivosMap);
+
+  const slaEl = document.getElementById("slaValue");
+  if (slaEl) slaEl.innerText = slaCount > 0 ? formatSeconds(Math.floor(totalSeconds / slaCount)) : "00h 00m 00s";
+
+  if (document.getElementById('chartStatus')) updateStatusChart(countDone, countPartial);
+  if (document.getElementById('chartRanking')) updateRankingChart(rankingMap);
+  if (document.getElementById('chartMotivos')) updateMotivosChart(motivosMap);
 }
 
 function filterHistoryForKpi() {
@@ -2453,181 +1937,169 @@ function filterHistoryForKpi() {
   const analistaFilter = document.getElementById('kpiAnalista').value;
   const statusFilter = document.getElementById('kpiStatus').value;
   const prioFilter = document.getElementById('kpiPrioridade').value;
-  
+
   return history.filter(h => {
-    // Filtro de data
     if (dateStart || dateEnd) {
       const hDate = parseDatePTBR(h.data);
+      if (!hDate) return false;
       if (dateStart && hDate < parseDateInput(dateStart)) return false;
       if (dateEnd && hDate > parseDateInput(dateEnd)) return false;
     }
-    
-    // Filtro de tipo
     if (typeFilter === 'pc' && h.type === 'analistas') return false;
     if (typeFilter === 'analistas' && (!h.type || h.type === 'pc')) return false;
-    
-    // Filtro de analista
     if (analistaFilter && h.analista !== analistaFilter) return false;
-    
-    // Filtro de status
     if (statusFilter === 'done' && h.status !== 'Concluído') return false;
     if (statusFilter === 'partial' && h.status !== 'Parcial') return false;
-    
-    // Filtro de prioridade
     if (prioFilter !== 'all' && h.prioridade !== prioFilter) return false;
-    
     return true;
   });
 }
 
 function updateStatusChart(done, partial) {
   const ctx = document.getElementById('chartStatus');
-  
+  if (!ctx) return;
   if (chartStatus) chartStatus.destroy();
   chartStatus = new Chart(ctx, {
     type: 'doughnut',
-    data: {
-      labels: ['Concluídas', 'Parciais'],
-      datasets: [{
-        data: [done, partial],
-        backgroundColor: ['#0f5132', '#f9a825']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
+    data: { labels: ['Concluídas', 'Parciais'], datasets: [{ data: [done, partial], backgroundColor: ['#0f5132', '#f9a825'] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
   });
 }
 
 function updateRankingChart(rankingMap) {
   const ctx = document.getElementById('chartRanking');
-  const sorted = Object.entries(rankingMap).sort((a, b) => b[1] - a[1]);
-  
+  if (!ctx) return;
+  const sorted = Object.entries(rankingMap).sort((a,b) => b[1]-a[1]);
   if (chartRanking) chartRanking.destroy();
   chartRanking = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels: sorted.map(x => x[0]),
-      datasets: [{
-        label: 'Tarefas',
-        data: sorted.map(x => x[1]),
-        backgroundColor: '#7A1417'
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: { x: { ticks: { stepSize: 1 } } }
-    }
+    data: { labels: sorted.map(x => x[0]), datasets: [{ label: 'Tarefas', data: sorted.map(x => x[1]), backgroundColor: '#7A1417' }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { stepSize: 1 } } } }
   });
 }
 
 function updateMotivosChart(motivosMap) {
   const ctx = document.getElementById('chartMotivos');
-  const sorted = Object.entries(motivosMap).sort((a, b) => b[1] - a[1]);
-  
+  if (!ctx) return;
+  const sorted = Object.entries(motivosMap).sort((a,b) => b[1]-a[1]);
   if (chartMotivos) chartMotivos.destroy();
-  
-  if (sorted.length === 0) {
+
+  if (!sorted.length) {
     chartMotivos = new Chart(ctx, {
       type: 'pie',
-      data: {
-        labels: ['Sem dados'],
-        datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }]
-      },
+      data: { labels: ['Sem dados'], datasets: [{ data: [1], backgroundColor: ['#e0e0e0'] }] },
       options: { responsive: true, maintainAspectRatio: false }
     });
   } else {
     chartMotivos = new Chart(ctx, {
       type: 'pie',
-      data: {
-        labels: sorted.map(x => x[0]),
-        datasets: [{
-          data: sorted.map(x => x[1]),
-          backgroundColor: ['#dc3545', '#ffc107', '#6c757d', '#17a2b8']
-        }]
-      },
+      data: { labels: sorted.map(x => x[0]), datasets: [{ data: sorted.map(x => x[1]), backgroundColor: ['#dc3545', '#ffc107', '#6c757d', '#17a2b8', '#8e44ad', '#2ecc71'] }] },
       options: { responsive: true, maintainAspectRatio: false }
     });
   }
 }
 
-// ===========================
-// UTILITÁRIOS
-// ===========================
+async function exportKpiDashboardToExcel() {
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  const filteredHistory = filterHistoryForKpi();
+  if (!filteredHistory.length) { showToast('Sem dados para exportar (filtros atuais)', 'warning'); return; }
 
-function calcDuration(start, end) {
-  if (!start || start === "-" || !end) return "-";
-  
-  const d1 = new Date("01/01/2020 " + start);
-  const d2 = new Date("01/01/2020 " + end);
-  let diff = (d2 - d1) / 1000;
-  if (diff < 0) diff = 0;
-  
-  const h = Math.floor(diff / 3600);
-  const m = Math.floor((diff % 3600) / 60);
-  const s = diff % 60;
-  
-  let result = "";
-  if (h > 0) result += `${h.toString().padStart(2, '0')}h `;
-  if (m > 0 || h > 0) result += `${m.toString().padStart(2, '0')}m `;
-  result += `${s.toString().padStart(2, '0')}s`;
-  
-  return result;
+  try {
+    showToast('Exportando dashboard KPI...', 'success');
+
+    let countDone = 0, countPartial = 0;
+    const rankingMap = {};
+    const motivosMap = {};
+    let totalSeconds = 0, slaCount = 0;
+
+    filteredHistory.forEach(h => {
+      if (h.status === 'Concluído') countDone++;
+      else if (h.status === 'Parcial') countPartial++;
+
+      rankingMap[h.analista] = (rankingMap[h.analista] || 0) + 1;
+
+      const motivo = h.motivo || "";
+      if (motivo && motivo !== "CONCLUÍDO" && motivo !== "PARCIAL") motivosMap[motivo] = (motivosMap[motivo] || 0) + 1;
+
+      if (h.status === 'Concluído') {
+        const sec = (typeof h.durationSec === 'number' && h.durationSec > 0) ? h.durationSec : 0;
+        if (sec > 0) { totalSeconds += sec; slaCount++; }
+      }
+    });
+
+    const avgSeconds = slaCount > 0 ? Math.floor(totalSeconds / slaCount) : 0;
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Minerva Foods - Rotinas Estoque';
+    wb.created = new Date();
+
+    const wsResumo = wb.addWorksheet('Resumo KPI');
+    wsResumo.columns = [{ header: 'Métrica', key: 'k', width: 30 }, { header: 'Valor', key: 'v', width: 30 }];
+    wsResumo.getRow(1).fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF7A1417' } };
+    wsResumo.getRow(1).font = { bold:true, color:{ argb:'FFFFFFFF' } };
+
+    wsResumo.addRow({ k: 'Concluídas', v: countDone });
+    wsResumo.addRow({ k: 'Parciais', v: countPartial });
+    wsResumo.addRow({ k: 'SLA Médio (segundos)', v: avgSeconds });
+    wsResumo.addRow({ k: 'SLA Médio (hh mm ss)', v: formatSeconds(avgSeconds) });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `KPI_${TODAY_STR.replace(/\//g,'-')}.xlsx`);
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao exportar KPI', 'error');
+  }
 }
 
+/* ===========================
+   HELPERS
+=========================== */
+function formatSeconds(total) {
+  const t = Math.max(0, Math.floor(total || 0));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = Math.floor(t % 60);
+  return `${h.toString().padStart(2,'0')}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
+}
 function parseDatePTBR(str) {
   if (!str) return null;
-  const parts = str.split('/');
+  const parts = String(str).split('/');
+  if (parts.length !== 3) return null;
   return new Date(parts[2], parts[1] - 1, parts[0]);
 }
-
 function parseDateInput(str) {
   if (!str) return null;
-  const parts = str.split('-');
+  const parts = String(str).split('-');
+  if (parts.length !== 3) return null;
   return new Date(parts[0], parts[1] - 1, parts[2]);
 }
-
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#39;");
+}
 function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.textContent = message;
   document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
+  setTimeout(() => toast.remove(), 3000);
 }
 
-// ===========================
-// INICIALIZAÇÃO
-// ===========================
-
+/* ===========================
+   ONLOAD
+=========================== */
 window.onload = function() {
-  console.log('Sistema Minerva Foods com Firebase carregado!');
-  console.log('Usuários disponíveis:');
-  Object.entries(DEMO_USERS).forEach(([email, user]) => {
-    console.log(`- ${email} (${user.displayRole})`);
-  });
-  
-  // Tentar conectar com Firebase
-  if (isFirebaseConnected) {
-    console.log('✅ Firebase conectado com sucesso!');
-    updateConnectionStatus(true, 'Online - Conectado');
-  } else {
-    console.log('❌ Firebase não conectado. Usando modo offline.');
-    updateConnectionStatus(false, 'Offline - Configure o Firebase');
-  }
+  if (isFirebaseConnected) updateConnectionStatus(true, 'Online - Conectado');
+  else updateConnectionStatus(false, 'Offline - Acesso bloqueado');
+  enforceOnlineOnlyUI();
 };
 
-// Cleanup ao fechar a página
-window.addEventListener('beforeunload', () => {
-  destroyRealtimeListeners();
-});
+window.addEventListener('beforeunload', () => { destroyRealtimeListeners(); });
 </script>
-
 </body>
 </html>
