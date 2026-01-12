@@ -629,6 +629,28 @@ function isPrivileged() { return currentUserRole === 'admin' || currentUserRole 
 =========================== */
 const PRIORITY_ORDER = { alta: 0, media: 1, baixa: 2 };
 
+/* === FIX: ordenação por status + prioridade (sem alterar outras telas) === */
+const STATUS_ORDER = { pending: 0, in_progress: 1, partial: 2, done: 3 };
+
+function sortByStatusAndPriority(context) {
+  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+
+  ensureOrderIndex(list);
+
+  list.sort((a, b) => {
+    const sa = STATUS_ORDER[a.status] ?? 99;
+    const sb = STATUS_ORDER[b.status] ?? 99;
+    if (sa !== sb) return sa - sb;
+
+    const pa = PRIORITY_ORDER[a.prioridade] ?? 99;
+    const pb = PRIORITY_ORDER[b.prioridade] ?? 99;
+    if (pa !== pb) return pa - pb;
+
+    return (a.orderIndex ?? 0) - (b.orderIndex ?? 0);
+  });
+}
+/* === /FIX === */
+
 function ensureOrderIndex(list) {
   let changed = false;
   list.forEach((t, i) => {
@@ -1338,6 +1360,11 @@ function openTab(id) {
 }
 
 function render() {
+  /* === FIX: garante ordem Alta->Média->Baixa (e status) ao renderizar === */
+  sortByStatusAndPriority('pc');
+  sortByStatusAndPriority('analistas');
+  /* === /FIX === */
+
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
   document.getElementById("historyTitle").innerText = currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS';
@@ -1579,6 +1606,11 @@ function tempChangePriority(taskId, value) {
 }
 async function savePriorities() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+
+  /* === FIX: reordena antes de salvar/renderizar === */
+  sortByStatusAndPriority(currentContext);
+  /* === /FIX === */
+
   await logGovernanceAction('UPDATE_PRIORITIES', `Prioridades atualizadas: ${currentContext}`);
   await saveData();
   render();
