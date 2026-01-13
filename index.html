@@ -536,13 +536,16 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <button class="logout-btn" onclick="logoutUser()">Sair</button>
   </div>
 
-  <nav>
-    <button class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
-    <button onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
-    <button onclick="openTab('mobile')">📱 MOBILE</button>
-    <button onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
-    <button class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
-  </nav>
+<nav>
+  <button id="navPcBtn" class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
+  <button id="navAnalistasBtn" onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
+
+  <!-- MOBILE: apenas ADMIN/MASTER -->
+  <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
+
+  <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
+  <button id="navGovBtn" class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
+</nav>
 </header>
 
 <section id="pc" class="active">
@@ -1950,6 +1953,16 @@ async function partialTask(context, index) {
    UI / RENDER
 =========================== */
 function openTab(id) {
+  // BLOQUEIOS (para não abrir via JS mesmo que alguém chame openTab('mobile'))
+  if (id === 'mobile' && !isPrivileged()) {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+  if (id === 'governance' && currentUserRole !== 'master') {
+    showToast('Acesso negado', 'error');
+    return;
+  }
+
   currentView = id;
 
   // Limpa timer se sair da mobile
@@ -1962,12 +1975,16 @@ function openTab(id) {
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 
-  const btns = document.querySelectorAll("nav button");
-  if (id === 'pc') btns[0].classList.add("active");
-  else if (id === 'analistas') btns[1].classList.add("active");
-  else if (id === 'mobile') btns[2].classList.add("active");
-  else if (id === 'kpi') btns[3].classList.add("active");
-  else if (id === 'governance') btns[4].classList.add("active");
+  // ATIVO por ID (não quebra quando o botão Mobile está oculto)
+  const navMap = {
+    pc: 'navPcBtn',
+    analistas: 'navAnalistasBtn',
+    mobile: 'navMobileBtn',
+    kpi: 'navKpiBtn',
+    governance: 'navGovBtn'
+  };
+  const activeBtn = document.getElementById(navMap[id]);
+  if (activeBtn) activeBtn.classList.add("active");
 
   const histCard = document.getElementById("historyCard");
   if (id === 'kpi' || id === 'governance' || id === 'mobile') {
