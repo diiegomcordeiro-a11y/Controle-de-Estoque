@@ -50,21 +50,38 @@ body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
 
 .main-app{display:none}
 
-/* HEADER */
-header{background:linear-gradient(135deg,var(--minerva-red) 0%,var(--minerva-dark) 100%);color:#fff;padding:12px 25px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,.2)}
-.header-left h1{margin:0;font-weight:800;font-size:26px;letter-spacing:1px;line-height:1.1;text-transform:uppercase}
-.header-left h2{margin:0;font-weight:400;font-size:15px;opacity:.9;margin-top:2px}
-.date-display{font-size:12px;opacity:.7;margin-top:4px;font-weight:600}
-.header-right{display:flex;align-items:center;gap:20px}
-.online-counter{background:rgba(255,255,255,.15);padding:8px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
-.online-indicator{width:8px;height:8px;background:#4CAF50;border-radius:50%;animation:pulse 2s infinite}
-.user-info{display:flex;flex-direction:column;align-items:flex-end;font-size:12px}
-.user-role{background:var(--minerva-gold);color:var(--minerva-dark);padding:2px 8px;border-radius:10px;font-weight:600;font-size:10px}
-.user-role.master{background:linear-gradient(45deg,#FFD700,#FFA500);color:#333;text-shadow:0 1px 1px rgba(255,255,255,.5);border:1px solid #FFD700}
-.logout-btn{background:rgba(255,255,255,.2);color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;transition:background .3s}
-.logout-btn:hover{background:rgba(255,255,255,.3)}
-nav button{background:none;border:none;color:rgba(255,255,255,.7);margin-left:10px;font-size:13px;cursor:pointer;padding:5px 10px;border-radius:4px;transition:.3s}
-nav button.active{background:rgba(255,255,255,.15);color:#fff;font-weight:600}
+/* HEADER AJUSTADO (Mobile Friendly) */
+header {
+  background: linear-gradient(135deg,var(--minerva-red) 0%,var(--minerva-dark) 100%);
+  color: #fff;
+  padding: 10px 20px 0 20px;
+  display: flex;
+  flex-wrap: wrap; /* Permite quebrar linha */
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,.2);
+  gap: 15px;
+}
+
+.header-left { flex: 1; min-width: 200px; padding-bottom: 10px; }
+.header-left h1 { margin: 0; font-weight: 800; font-size: 24px; letter-spacing: 1px; line-height: 1.1; text-transform: uppercase; }
+.header-left h2 { margin: 0; font-weight: 400; font-size: 14px; opacity: .9; margin-top: 2px; }
+.date-display { font-size: 12px; opacity: .7; margin-top: 4px; font-weight: 600; }
+
+.header-right { display: flex; align-items: center; gap: 15px; padding-bottom: 10px; }
+.online-counter { background: rgba(255,255,255,.15); padding: 6px 10px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 6px; }
+.online-indicator { width: 8px; height: 8px; background: #4CAF50; border-radius: 50%; animation: pulse 2s infinite; }
+.user-info { display: flex; flex-direction: column; align-items: flex-end; font-size: 12px; }
+.user-role { background: var(--minerva-gold); color: var(--minerva-dark); padding: 2px 8px; border-radius: 10px; font-weight: 600; font-size: 10px; }
+.user-role.master { background: linear-gradient(45deg,#FFD700,#FFA500); color: #333; text-shadow: 0 1px 1px rgba(255,255,255,.5); border: 1px solid #FFD700; }
+.logout-btn { background: rgba(255,255,255,.2); color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; transition: background .3s; }
+.logout-btn:hover { background: rgba(255,255,255,.3); }
+
+/* NAV - Linha separada */
+nav { width: 100%; display: flex; justify-content: center; gap: 5px; padding-bottom: 10px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px; flex-wrap: wrap; }
+nav button { background: none; border: none; color: rgba(255,255,255,.7); font-size: 13px; cursor: pointer; padding: 6px 14px; border-radius: 4px; transition: .3s; white-space: nowrap; font-weight: 600; }
+nav button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+nav button.active { background: rgba(255,255,255,.2); color: #fff; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
 /* CONTENT */
 section{display:none;padding:15px;width:99%;max-width:100%;margin:0 auto}
@@ -183,6 +200,286 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 .toast.error{background:#dc3545}
 .toast.warning{background:#ffc107;color:#333}
 @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+
+/* =========================================
+   ESTILOS MOBILE GESTÃO (NOVA ABA)
+   ========================================= */
+.mob-controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* NOVO: botões de filtro (tipo) */
+.mob-type-bar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mob-filter-btn{
+  flex:1;
+  min-width: 160px;
+  border: 1px solid #e5e7eb;
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: .2s;
+}
+.mob-filter-btn:hover{ border-color:#d1d5db; transform: translateY(-1px); }
+.mob-filter-btn.active{
+  border-color: rgba(122,20,23,.45);
+  background: rgba(122,20,23,.06);
+  box-shadow: 0 6px 14px rgba(122,20,23,.08);
+}
+.mob-filter-title{
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.mob-filter-sub{
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* NOVO: botões de status (executando/fila/concluídos) */
+.mob-status-bar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mob-status-btn{
+  flex:1;
+  min-width: 110px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: .2s;
+}
+.mob-status-btn:hover{ border-color:#d1d5db; transform: translateY(-1px); }
+.mob-status-btn.active{
+  border-color: rgba(13,110,253,.35);
+  box-shadow: 0 6px 16px rgba(13,110,253,.10);
+}
+.mob-status-btn.active.status-running{ border-color: rgba(13,110,253,.50); }
+.mob-status-btn.active.status-pending{ border-color: rgba(107,114,128,.45); }
+.mob-status-btn.active.status-done{ border-color: rgba(15,81,50,.45); }
+
+.mob-summary-bar {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+.mob-kpi-item {
+  text-align: center;
+  flex: 1;
+}
+.mob-kpi-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--minerva-red);
+}
+.mob-kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #666;
+  font-weight: 600;
+}
+
+.mob-section-title {
+  color: #333;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mob-running-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  margin-bottom: 20px;
+  padding: 16px;
+  border-left: 6px solid #4CAF50; /* Verde running */
+  position: relative;
+  animation: pulse-border 2s infinite;
+}
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.mob-running-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.mob-running-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #222;
+  line-height: 1.3;
+}
+.mob-analyst-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 8px;
+}
+.mob-avatar-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--minerva-red);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+.mob-analyst-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+
+.mob-timer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #555;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+.mob-live-timer {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--minerva-red);
+  background: #fff0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* LISTA PENDENTE COMPACTA */
+.mob-pending-list {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.mob-pending-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mob-pending-item:last-child { border-bottom: none; }
+.mob-pending-left { display: flex; align-items: center; gap: 10px; }
+.mob-prio-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.bg-prio-alta { background: #dc3545; }
+.bg-prio-media { background: #ffc107; }
+.bg-prio-baixa { background: #6c757d; }
+
+.mob-pending-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+.mob-pending-ctx {
+  font-size: 10px;
+  color: #999;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* NOVO: lista de concluídos (mobile) */
+.mob-done-list{
+  background:#fff;
+  border-radius: 10px;
+  overflow:hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.mob-done-item{
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.mob-done-item:last-child{border-bottom:none}
+.mob-done-top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.mob-done-title{
+  font-size: 13px;
+  font-weight: 800;
+  color:#111827;
+  line-height: 1.25;
+}
+.mob-done-meta{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  font-size: 11px;
+  color:#6b7280;
+  font-weight: 700;
+}
+.mob-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#f9fafb;
+  color:#374151;
+  font-size:10px;
+  font-weight:800;
+  text-transform: uppercase;
+}
+.mob-pill.done{ background: rgba(15,81,50,.08); border-color: rgba(15,81,50,.25); color: #0f5132; }
+.mob-pill.partial{ background: rgba(249,168,37,.12); border-color: rgba(249,168,37,.30); color: #664d03; }
+.mob-pill.ctx-pc{ background: rgba(122,20,23,.06); border-color: rgba(122,20,23,.20); color: #7A1417; }
+.mob-pill.ctx-an{ background: rgba(13,110,253,.08); border-color: rgba(13,110,253,.22); color: #0d6efd; }
+.mob-done-bottom{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  font-size: 12px;
+  color:#374151;
+}
+.mob-done-strong{ font-weight: 800; }
 </style>
 </head>
 
@@ -242,6 +539,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   <nav>
     <button class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
     <button onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
+    <button onclick="openTab('mobile')">📱 MOBILE</button>
     <button onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
     <button class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
   </nav>
@@ -278,6 +576,81 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     </div>
 
     <div id="tasksAnalistas"></div>
+  </div>
+</section>
+
+<section id="mobile">
+  <div style="margin-bottom:15px; text-align:center;">
+    <h3 style="color:var(--minerva-red); margin:0;">Painel de Monitoramento</h3>
+    <p style="font-size:12px; color:#666;">Visão em tempo real da operação</p>
+  </div>
+
+  <div class="mob-controls-container">
+    <!-- NOVO: filtros por tipo (Operacional / Analistas / Todos) -->
+    <div class="mob-type-bar">
+      <button id="mobTypePcBtn" class="mob-filter-btn" onclick="toggleMobileType('pc')">
+        <div class="mob-filter-title">📦 Operacional</div>
+        <div id="mobCountPc" class="mob-filter-sub">0 rotinas</div>
+      </button>
+
+      <button id="mobTypeAnalistasBtn" class="mob-filter-btn" onclick="toggleMobileType('analistas')">
+        <div class="mob-filter-title">💻 Analistas</div>
+        <div id="mobCountAnalistas" class="mob-filter-sub">0 rotinas</div>
+      </button>
+
+      <button id="mobTypeAllBtn" class="mob-filter-btn" style="min-width:120px;flex:0 0 auto;text-align:center;" onclick="setMobileTypeAll()">
+        <div class="mob-filter-title">🌍 Todos</div>
+        <div class="mob-filter-sub">Ativar ambos</div>
+      </button>
+    </div>
+
+    <!-- NOVO: filtros por status (Executando / Fila / Concluídos) -->
+    <div class="mob-status-bar">
+      <button id="mobStatusRunningBtn" class="mob-status-btn" onclick="setMobileStatusFilter('running')">
+        <div id="mobKpiRunning" class="mob-kpi-value" style="color:#0d6efd">0</div>
+        <div class="mob-kpi-label">Executando</div>
+      </button>
+
+      <button id="mobStatusPendingBtn" class="mob-status-btn" onclick="setMobileStatusFilter('pending')">
+        <div id="mobKpiPending" class="mob-kpi-value" style="color:#666">0</div>
+        <div class="mob-kpi-label">Fila</div>
+      </button>
+
+      <button id="mobStatusDoneBtn" class="mob-status-btn" onclick="setMobileStatusFilter('done')">
+        <div id="mobKpiDone" class="mob-kpi-value" style="color:#0f5132">0</div>
+        <div class="mob-kpi-label">Concluídos</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Executando -->
+  <div id="mobileRunningSection">
+    <div class="mob-section-title">
+      <span>🟢 Em Execução Agora</span>
+    </div>
+    <div id="mobileRunningContainer">
+      <!-- Cards de execução entram aqui -->
+    </div>
+  </div>
+
+  <!-- Fila -->
+  <div id="mobilePendingSection">
+    <div class="mob-section-title" style="margin-top:0;">
+      <span>🕒 Fila de Espera (Pendentes)</span>
+    </div>
+    <div id="mobilePendingContainer" class="mob-pending-list">
+      <!-- Lista pendente entra aqui -->
+    </div>
+  </div>
+
+  <!-- Concluídos -->
+  <div id="mobileDoneSection">
+    <div class="mob-section-title" style="margin-top:0;">
+      <span>✅ Concluídos (Hoje)</span>
+    </div>
+    <div id="mobileDoneContainer" class="mob-done-list">
+      <!-- Lista de concluídos entra aqui -->
+    </div>
   </div>
 </section>
 
@@ -581,6 +954,7 @@ let currentView = 'pc';
 let onlineUsers = 0;
 let realTimeListeners = {};
 const taskActionLocks = new Set();
+let mobileTimerInterval = null;
 
 const DEFAULT_ROTINAS_PC = [
   "FEFO SEPARAÇÃO ESPECIFICO","FEFO SEPARAÇÃO CRITICO","VENCIDOS NO ESTOQUE",
@@ -1074,6 +1448,7 @@ function setupRealtimeListeners() {
       rotinasPC = data.rotinas || [];
       ensureOrderIndex(rotinasPC);
       if (currentView === 'pc') render();
+      if (currentView === 'mobile') renderMobileDashboard();
     }
   });
 
@@ -1083,6 +1458,7 @@ function setupRealtimeListeners() {
       rotinasAnalistas = data.rotinas || [];
       ensureOrderIndex(rotinasAnalistas);
       if (currentView === 'analistas') render();
+      if (currentView === 'mobile') renderMobileDashboard();
     }
   });
 
@@ -1098,8 +1474,9 @@ function setupRealtimeListeners() {
         rebuildEffectiveHistory();
       }
 
-      if (currentView !== 'governance') renderHistory();
+      if (currentView !== 'governance' && currentView !== 'mobile' && currentView !== 'kpi') renderHistory();
       updateCharts();
+      if (currentView === 'mobile') renderMobileDashboard(); // Update counts / lista
     }
   });
 
@@ -1574,6 +1951,13 @@ async function partialTask(context, index) {
 =========================== */
 function openTab(id) {
   currentView = id;
+
+  // Limpa timer se sair da mobile
+  if (mobileTimerInterval && id !== 'mobile') {
+    clearInterval(mobileTimerInterval);
+    mobileTimerInterval = null;
+  }
+
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -1581,14 +1965,16 @@ function openTab(id) {
   const btns = document.querySelectorAll("nav button");
   if (id === 'pc') btns[0].classList.add("active");
   else if (id === 'analistas') btns[1].classList.add("active");
-  else if (id === 'kpi') btns[2].classList.add("active");
-  else if (id === 'governance') btns[3].classList.add("active");
+  else if (id === 'mobile') btns[2].classList.add("active");
+  else if (id === 'kpi') btns[3].classList.add("active");
+  else if (id === 'governance') btns[4].classList.add("active");
 
   const histCard = document.getElementById("historyCard");
-  if (id === 'kpi' || id === 'governance') {
+  if (id === 'kpi' || id === 'governance' || id === 'mobile') {
     histCard.style.display = 'none';
     if (id === 'kpi') updateCharts();
     if (id === 'governance' && currentUserRole === 'master') renderGovernanceLog();
+    if (id === 'mobile') renderMobileDashboard();
   } else {
     histCard.style.display = 'block';
     render();
@@ -1596,6 +1982,11 @@ function openTab(id) {
 }
 
 function render() {
+  if (currentView === 'mobile') {
+    renderMobileDashboard();
+    return;
+  }
+
   sortByStatusAndPriority('pc');
   sortByStatusAndPriority('analistas');
 
@@ -2086,7 +2477,6 @@ async function editUserPasswordPrompt(email) {
   showToast('Senha atualizada', 'success');
 }
 
-/* NOVO: excluir usuário (apenas no Painel Gerencial / MASTER) */
 async function deleteUserPrompt(email) {
   if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
 
@@ -2438,6 +2828,292 @@ function showToast(message, type = 'info') {
   toast.textContent = message;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
+}
+
+/* ===========================
+   LOGICA MOBILE GESTÃO (MONITORAMENTO)
+   - NOVO: filtros por botões (tipo + status)
+=========================== */
+let mobileTypeFilter = { pc: true, analistas: true }; // permite combinar
+let mobileStatusFilter = 'running'; // running | pending | done
+
+function toggleMobileType(type) {
+  if (!mobileTypeFilter || typeof mobileTypeFilter !== 'object') {
+    mobileTypeFilter = { pc: true, analistas: true };
+  }
+  if (type !== 'pc' && type !== 'analistas') return;
+
+  mobileTypeFilter[type] = !mobileTypeFilter[type];
+
+  // não deixa "vazio": se desligar os dois, volta para ambos
+  if (!mobileTypeFilter.pc && !mobileTypeFilter.analistas) {
+    mobileTypeFilter.pc = true;
+    mobileTypeFilter.analistas = true;
+  }
+
+  renderMobileDashboard();
+}
+
+function setMobileTypeAll() {
+  mobileTypeFilter.pc = true;
+  mobileTypeFilter.analistas = true;
+  renderMobileDashboard();
+}
+
+function setMobileStatusFilter(status) {
+  if (!status) return;
+  if (!['running','pending','done'].includes(status)) return;
+  mobileStatusFilter = status;
+  renderMobileDashboard();
+}
+
+function updateMobileButtonsUI() {
+  const pcBtn = document.getElementById('mobTypePcBtn');
+  const anBtn = document.getElementById('mobTypeAnalistasBtn');
+
+  if (pcBtn) pcBtn.classList.toggle('active', !!mobileTypeFilter.pc);
+  if (anBtn) anBtn.classList.toggle('active', !!mobileTypeFilter.analistas);
+
+  const bRun = document.getElementById('mobStatusRunningBtn');
+  const bPen = document.getElementById('mobStatusPendingBtn');
+  const bDon = document.getElementById('mobStatusDoneBtn');
+
+  if (bRun) {
+    bRun.classList.toggle('active', mobileStatusFilter === 'running');
+    bRun.classList.toggle('status-running', mobileStatusFilter === 'running');
+    bRun.classList.toggle('status-pending', false);
+    bRun.classList.toggle('status-done', false);
+  }
+  if (bPen) {
+    bPen.classList.toggle('active', mobileStatusFilter === 'pending');
+    bPen.classList.toggle('status-running', false);
+    bPen.classList.toggle('status-pending', mobileStatusFilter === 'pending');
+    bPen.classList.toggle('status-done', false);
+  }
+  if (bDon) {
+    bDon.classList.toggle('active', mobileStatusFilter === 'done');
+    bDon.classList.toggle('status-running', false);
+    bDon.classList.toggle('status-pending', false);
+    bDon.classList.toggle('status-done', mobileStatusFilter === 'done');
+  }
+
+  const secRun = document.getElementById('mobileRunningSection');
+  const secPen = document.getElementById('mobilePendingSection');
+  const secDon = document.getElementById('mobileDoneSection');
+
+  if (secRun) secRun.style.display = (mobileStatusFilter === 'running') ? 'block' : 'none';
+  if (secPen) secPen.style.display = (mobileStatusFilter === 'pending') ? 'block' : 'none';
+  if (secDon) secDon.style.display = (mobileStatusFilter === 'done') ? 'block' : 'none';
+}
+
+function includeHistoryByTypeForMobile(h) {
+  // h.type: 'pc' (ou vazio), 'analistas'
+  const isPc = (!h.type || h.type === 'pc');
+  const isAn = (h.type === 'analistas');
+
+  if (isPc && mobileTypeFilter.pc) return true;
+  if (isAn && mobileTypeFilter.analistas) return true;
+  return false;
+}
+
+function includeItemByContextForMobile(item) {
+  if (!item || !item.context) return false;
+  if (item.context === 'pc' && mobileTypeFilter.pc) return true;
+  if (item.context === 'analistas' && mobileTypeFilter.analistas) return true;
+  return false;
+}
+
+function renderMobileDashboard() {
+  if (mobileTimerInterval) {
+    clearInterval(mobileTimerInterval);
+    mobileTimerInterval = null;
+  }
+
+  ensureOrderIndex(rotinasPC);
+  ensureOrderIndex(rotinasAnalistas);
+
+  // Contagem de "quantas rotinas" existem de cada tipo (total)
+  const totalPc = Array.isArray(rotinasPC) ? rotinasPC.length : 0;
+  const totalAn = Array.isArray(rotinasAnalistas) ? rotinasAnalistas.length : 0;
+
+  const countPcEl = document.getElementById('mobCountPc');
+  const countAnEl = document.getElementById('mobCountAnalistas');
+  if (countPcEl) countPcEl.textContent = `${totalPc} rotinas`;
+  if (countAnEl) countAnEl.textContent = `${totalAn} rotinas`;
+
+  const pcItems = (rotinasPC || []).map((item, index) => ({ ...item, context: 'pc', realIndex: index }));
+  const analistItems = (rotinasAnalistas || []).map((item, index) => ({ ...item, context: 'analistas', realIndex: index }));
+
+  // Junta e aplica filtro por tipo (pc/analistas)
+  let allItems = [...pcItems, ...analistItems].filter(includeItemByContextForMobile);
+
+  const runningItems = allItems.filter(item => item.status === 'in_progress');
+  const pendingItems = allItems.filter(item => item.status === 'pending');
+
+  // Concluídos (hoje) vem do histórico visível
+  const doneItems = (visibleHistory || [])
+    .filter(h => h && h.data === TODAY_STR && (h.status === 'Concluído' || h.status === 'Parcial'))
+    .filter(includeHistoryByTypeForMobile);
+
+  // KPIs (agora são os números dentro dos botões)
+  const kpiRun = document.getElementById('mobKpiRunning');
+  const kpiPend = document.getElementById('mobKpiPending');
+  const kpiDone = document.getElementById('mobKpiDone');
+
+  if (kpiRun) kpiRun.textContent = runningItems.length;
+  if (kpiPend) kpiPend.textContent = pendingItems.length;
+  if (kpiDone) kpiDone.textContent = doneItems.length;
+
+  // Atualiza UI de botões + mostra só 1 seção por vez (tela grande)
+  updateMobileButtonsUI();
+
+  // --- RENDER RUNNING (somente se o status selecionado for "running") ---
+  const runningContainer = document.getElementById('mobileRunningContainer');
+  if (runningContainer) {
+    runningContainer.innerHTML = '';
+
+    if (mobileStatusFilter === 'running') {
+      if (runningItems.length === 0) {
+        runningContainer.innerHTML = '<div style="padding:15px; color:#666; font-style:italic;">Nenhuma tarefa em execução no momento.</div>';
+      } else {
+        runningItems.sort((a,b) => (a.inicioTs || 0) - (b.inicioTs || 0));
+
+        runningItems.forEach(item => {
+          const initials = item.analista ? item.analista.split(' ').map(n=>n[0]).join('').slice(0,2) : '??';
+          const startTs = item.inicioTs || Date.now();
+
+          runningContainer.innerHTML += `
+            <div class="mob-running-card">
+              <div class="mob-running-header">
+                <div class="mob-running-title">${escapeHtml(item.nome)}</div>
+                <div style="font-size:10px; color:#666; font-weight:bold;">${item.context === 'pc' ? 'OPER' : 'ANALISTA'}</div>
+              </div>
+
+              <div class="mob-analyst-row">
+                <div class="mob-avatar-icon">${escapeHtml(initials)}</div>
+                <div class="mob-analyst-name">${escapeHtml(item.analista || '-')}</div>
+              </div>
+
+              <div class="mob-timer-row">
+                <div>Início: <strong>${escapeHtml(item.inicio || '--:--')}</strong></div>
+                <div class="mob-live-timer" data-start-ts="${startTs}">00:00:00</div>
+              </div>
+            </div>
+          `;
+        });
+
+        updateMobileTimers();
+        mobileTimerInterval = setInterval(updateMobileTimers, 1000);
+      }
+    }
+  }
+
+  // --- RENDER PENDING (somente se o status selecionado for "pending") ---
+  const pendingContainer = document.getElementById('mobilePendingContainer');
+  if (pendingContainer) {
+    pendingContainer.innerHTML = '';
+
+    if (mobileStatusFilter === 'pending') {
+      if (pendingItems.length === 0) {
+        pendingContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Fila zerada!</div>';
+      } else {
+        pendingItems.sort((a,b) => {
+          const pA = PRIORITY_ORDER[a.prioridade] ?? 99;
+          const pB = PRIORITY_ORDER[b.prioridade] ?? 99;
+          if (pA !== pB) return pA - pB;
+          return (a.orderIndex||0) - (b.orderIndex||0);
+        });
+
+        pendingItems.forEach(item => {
+          let dotClass = 'bg-prio-media';
+          if(item.prioridade === 'alta') dotClass = 'bg-prio-alta';
+          if(item.prioridade === 'baixa') dotClass = 'bg-prio-baixa';
+
+          pendingContainer.innerHTML += `
+            <div class="mob-pending-item">
+              <div class="mob-pending-left">
+                <div class="mob-prio-dot ${dotClass}"></div>
+                <div>
+                  <div class="mob-pending-name">${escapeHtml(item.nome)}</div>
+                  <div class="mob-pending-ctx">${item.context === 'pc' ? 'Operacional' : 'Analista'}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+  }
+
+  // --- RENDER DONE (somente se o status selecionado for "done") ---
+  const doneContainer = document.getElementById('mobileDoneContainer');
+  if (doneContainer) {
+    doneContainer.innerHTML = '';
+
+    if (mobileStatusFilter === 'done') {
+      if (!doneItems.length) {
+        doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Nenhuma rotina concluída hoje (com os filtros atuais).</div>';
+      } else {
+        // mais recente primeiro
+        const sorted = doneItems.slice().sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+
+        doneContainer.innerHTML = sorted.map(h => {
+          const isPc = (!h.type || h.type === 'pc');
+          const ctxPill = isPc ? `<span class="mob-pill ctx-pc">OPER</span>` : `<span class="mob-pill ctx-an">ANALISTA</span>`;
+          const stPill = (h.status === 'Parcial') ? `<span class="mob-pill partial">PARCIAL</span>` : `<span class="mob-pill done">CONCLUÍDO</span>`;
+          const percent = (h.status === 'Parcial' && h.percent) ? h.percent : '';
+          const motivo = h.motivo || '';
+          return `
+            <div class="mob-done-item">
+              <div class="mob-done-top">
+                <div class="mob-done-title">${escapeHtml(h.rotina || '-')}</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                  ${ctxPill}
+                  ${stPill}
+                </div>
+              </div>
+
+              <div class="mob-done-meta">
+                <span>👤 ${escapeHtml(h.analista || '-')}</span>
+                <span>⏱ ${escapeHtml(h.duracao || '-')}</span>
+                <span>🕒 ${escapeHtml(h.inicio || '--:--')} → ${escapeHtml(h.fim || '--:--')}</span>
+                ${percent ? `<span>📌 ${escapeHtml(percent)}</span>` : ``}
+              </div>
+
+              <div class="mob-done-bottom">
+                <div><span class="mob-done-strong">Motivo:</span> ${escapeHtml(motivo || 'CONCLUÍDO')}</div>
+                <div style="color:#6b7280;font-weight:700;">${escapeHtml(h.prioridade || '')}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+  }
+
+  // garante classe active e exibição correta
+  updateMobileButtonsUI();
+}
+
+function updateMobileTimers() {
+  const timers = document.querySelectorAll('.mob-live-timer');
+  const now = Date.now();
+
+  timers.forEach(el => {
+    const start = parseInt(el.getAttribute('data-start-ts')) || now;
+    const diff = Math.floor((now - start) / 1000);
+
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = Math.floor(diff % 60);
+
+    el.textContent =
+      (h > 0 ? h.toString().padStart(2,'0') + 'h ' : '') +
+      m.toString().padStart(2,'0') + 'm ' +
+      s.toString().padStart(2,'0') + 's';
+
+    if(h >= 1) el.style.color = '#d32f2f';
+  });
 }
 
 /* ===========================
