@@ -2018,6 +2018,7 @@ function renderUsersList() {
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
           <button class="icon-btn btn-edit" ${isMasterRow ? 'disabled title="Senha do MASTER não é editável aqui"' : ''} onclick="editUserPasswordPrompt('${escapeHtml(u.email)}')">Alterar Senha</button>
+          <button class="icon-btn btn-del" ${isMasterRow ? 'disabled title="Usuário MASTER não pode ser excluído"' : ''} onclick="deleteUserPrompt('${escapeHtml(u.email)}')">Excluir</button>
         </div>
       </div>
     `;
@@ -2083,6 +2084,32 @@ async function editUserPasswordPrompt(email) {
   await logGovernanceAction('UPDATE_PASSWORD', `Senha alterada para: ${e}`, 'users_credentials');
 
   showToast('Senha atualizada', 'success');
+}
+
+/* NOVO: excluir usuário (apenas no Painel Gerencial / MASTER) */
+async function deleteUserPrompt(email) {
+  if (currentUserRole !== 'master') { showToast('Acesso negado', 'error'); return; }
+
+  const e = normalizeEmail(email);
+  if (!e || e === MASTER_EMAIL) { showToast('Não é possível excluir o usuário MASTER', 'warning'); return; }
+
+  await loadUsers();
+  if (!usersMap[e]) { showToast('Usuário não encontrado', 'error'); return; }
+
+  if (!confirm(`Excluir usuário ${e}? Essa ação não pode ser desfeita.`)) return;
+
+  usersList = usersList.filter(u => normalizeEmail(u.email) !== e);
+  rebuildUsersMap();
+
+  adminEmails = adminEmails.filter(x => normalizeEmail(x) !== e);
+
+  await savePermissions();
+  await saveUsers();
+  await logGovernanceAction('DELETE_USER', `Usuário excluído: ${e}`, 'users_credentials');
+
+  renderAdminList();
+  renderUsersList();
+  showToast('Usuário excluído com sucesso', 'success');
 }
 
 async function addAnalista() {
