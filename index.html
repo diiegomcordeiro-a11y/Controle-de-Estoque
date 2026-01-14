@@ -536,16 +536,14 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <button class="logout-btn" onclick="logoutUser()">Sair</button>
   </div>
 
-<nav>
-  <button id="navPcBtn" class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
-  <button id="navAnalistasBtn" onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
-
-  <!-- MOBILE: apenas ADMIN/MASTER -->
-  <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
-
-  <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
-  <button id="navGovBtn" class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
-</nav>
+  <!-- NAV (Mobile apenas ADMIN/MASTER) + IDs para não quebrar active) -->
+  <nav>
+    <button id="navPcBtn" class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
+    <button id="navAnalistasBtn" onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
+    <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
+    <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
+    <button id="navGovBtn" class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
+  </nav>
 </header>
 
 <section id="pc" class="active">
@@ -631,9 +629,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="mob-section-title">
       <span>🟢 Em Execução Agora</span>
     </div>
-    <div id="mobileRunningContainer">
-      <!-- Cards de execução entram aqui -->
-    </div>
+    <div id="mobileRunningContainer"></div>
   </div>
 
   <!-- Fila -->
@@ -641,9 +637,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="mob-section-title" style="margin-top:0;">
       <span>🕒 Fila de Espera (Pendentes)</span>
     </div>
-    <div id="mobilePendingContainer" class="mob-pending-list">
-      <!-- Lista pendente entra aqui -->
-    </div>
+    <div id="mobilePendingContainer" class="mob-pending-list"></div>
   </div>
 
   <!-- Concluídos -->
@@ -651,9 +645,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="mob-section-title" style="margin-top:0;">
       <span>✅ Concluídos (Hoje)</span>
     </div>
-    <div id="mobileDoneContainer" class="mob-done-list">
-      <!-- Lista de concluídos entra aqui -->
-    </div>
+    <div id="mobileDoneContainer" class="mob-done-list"></div>
   </div>
 </section>
 
@@ -1003,6 +995,16 @@ function nowTimeStr() {
 function isPrivileged() { return currentUserRole === 'admin' || currentUserRole === 'master'; }
 
 /* ===========================
+   DETECÇÃO DE MOBILE (AUTO-ABRIR ABA)
+=========================== */
+function isProbablyMobile() {
+  const byScreen = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  const byUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  const byTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  return byScreen || byUA || byTouch;
+}
+
+/* ===========================
    PARCIAL UI MODE
 =========================== */
 const partialModeByTaskId = {};
@@ -1120,6 +1122,12 @@ function resetRoutineFields(task) {
   delete task.analista;
   delete task.percent;
   delete task.inicioTs;
+
+  // NOVO: limpa dados usados pelo "Concluídos" do MOBILE (via STATUS)
+  delete task.fimTs;
+  delete task.lastMotivo;
+  delete task.durationSec;
+  delete task.duracao;
 
   if (task && task.id) exitPartialMode(task.id);
 }
@@ -1564,6 +1572,11 @@ async function initializeApp() {
     render();
     updateCharts();
     if (currentUserRole === 'master') renderGovernanceLog();
+
+    // AUTO-ABRIR MOBILE: somente em celular/tablet e somente ADMIN/MASTER
+    if (isProbablyMobile() && isPrivileged()) {
+      openTab('mobile');
+    }
   } catch (error) {
     console.error('Falha na inicialização (online-only):', error);
     showToast('Falha ao carregar dados do Firebase. Acesso bloqueado.', 'error');
@@ -1838,6 +1851,13 @@ async function finishTask(context, index) {
 
     const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
 
+    // NOVO: grava dados no próprio task (para "Concluídos" do MOBILE via STATUS)
+    task.fimTs = endTs;
+    task.lastMotivo = motivo;
+    task.durationSec = dur.seconds;
+    task.duracao = dur.text;
+    delete task.percent;
+
     const entry = {
       id: Date.now(),
       type: context,
@@ -1911,6 +1931,12 @@ async function partialTask(context, index) {
     task.percent = percent;
 
     const dur = calcDurationFromTimestamps(task.inicioTs, endTs);
+
+    // NOVO: grava dados no próprio task (para "Concluídos" do MOBILE via STATUS)
+    task.fimTs = endTs;
+    task.lastMotivo = motivo;
+    task.durationSec = dur.seconds;
+    task.duracao = dur.text;
 
     const entry = {
       id: Date.now(),
@@ -2923,16 +2949,6 @@ function updateMobileButtonsUI() {
   if (secDon) secDon.style.display = (mobileStatusFilter === 'done') ? 'block' : 'none';
 }
 
-function includeHistoryByTypeForMobile(h) {
-  // h.type: 'pc' (ou vazio), 'analistas'
-  const isPc = (!h.type || h.type === 'pc');
-  const isAn = (h.type === 'analistas');
-
-  if (isPc && mobileTypeFilter.pc) return true;
-  if (isAn && mobileTypeFilter.analistas) return true;
-  return false;
-}
-
 function includeItemByContextForMobile(item) {
   if (!item || !item.context) return false;
   if (item.context === 'pc' && mobileTypeFilter.pc) return true;
@@ -2967,10 +2983,8 @@ function renderMobileDashboard() {
   const runningItems = allItems.filter(item => item.status === 'in_progress');
   const pendingItems = allItems.filter(item => item.status === 'pending');
 
-  // Concluídos (hoje) vem do histórico visível
-  const doneItems = (visibleHistory || [])
-    .filter(h => h && h.data === TODAY_STR && (h.status === 'Concluído' || h.status === 'Parcial'))
-    .filter(includeHistoryByTypeForMobile);
+  // ✅ NOVO: Concluídos vêm do STATUS das rotinas (não do histórico)
+  const doneItems = allItems.filter(item => (item.status === 'done' || item.status === 'partial'));
 
   // KPIs (agora são os números dentro dos botões)
   const kpiRun = document.getElementById('mobKpiRunning');
@@ -2981,10 +2995,10 @@ function renderMobileDashboard() {
   if (kpiPend) kpiPend.textContent = pendingItems.length;
   if (kpiDone) kpiDone.textContent = doneItems.length;
 
-  // Atualiza UI de botões + mostra só 1 seção por vez (tela grande)
+  // Atualiza UI de botões + mostra só 1 seção por vez
   updateMobileButtonsUI();
 
-  // --- RENDER RUNNING (somente se o status selecionado for "running") ---
+  // --- RENDER RUNNING ---
   const runningContainer = document.getElementById('mobileRunningContainer');
   if (runningContainer) {
     runningContainer.innerHTML = '';
@@ -3025,7 +3039,7 @@ function renderMobileDashboard() {
     }
   }
 
-  // --- RENDER PENDING (somente se o status selecionado for "pending") ---
+  // --- RENDER PENDING ---
   const pendingContainer = document.getElementById('mobilePendingContainer');
   if (pendingContainer) {
     pendingContainer.innerHTML = '';
@@ -3062,28 +3076,32 @@ function renderMobileDashboard() {
     }
   }
 
-  // --- RENDER DONE (somente se o status selecionado for "done") ---
+  // --- RENDER DONE ---
   const doneContainer = document.getElementById('mobileDoneContainer');
   if (doneContainer) {
     doneContainer.innerHTML = '';
 
     if (mobileStatusFilter === 'done') {
       if (!doneItems.length) {
-        doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Nenhuma rotina concluída hoje (com os filtros atuais).</div>';
+        doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Nenhuma rotina concluída (com os filtros atuais).</div>';
       } else {
-        // mais recente primeiro
-        const sorted = doneItems.slice().sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+        const sorted = doneItems.slice().sort((a,b) => (b.fimTs || 0) - (a.fimTs || 0));
 
-        doneContainer.innerHTML = sorted.map(h => {
-          const isPc = (!h.type || h.type === 'pc');
+        doneContainer.innerHTML = sorted.map(item => {
+          const isPc = (item.context === 'pc');
           const ctxPill = isPc ? `<span class="mob-pill ctx-pc">OPER</span>` : `<span class="mob-pill ctx-an">ANALISTA</span>`;
-          const stPill = (h.status === 'Parcial') ? `<span class="mob-pill partial">PARCIAL</span>` : `<span class="mob-pill done">CONCLUÍDO</span>`;
-          const percent = (h.status === 'Parcial' && h.percent) ? h.percent : '';
-          const motivo = h.motivo || '';
+          const stPill = (item.status === 'partial') ? `<span class="mob-pill partial">PARCIAL</span>` : `<span class="mob-pill done">CONCLUÍDO</span>`;
+
+          const percent = (item.status === 'partial' && item.percent)
+            ? (String(item.percent).includes('%') ? String(item.percent) : (String(item.percent) + '%'))
+            : '';
+
+          const motivo = item.lastMotivo || (item.status === 'partial' ? 'PARCIAL' : 'CONCLUÍDO');
+
           return `
             <div class="mob-done-item">
               <div class="mob-done-top">
-                <div class="mob-done-title">${escapeHtml(h.rotina || '-')}</div>
+                <div class="mob-done-title">${escapeHtml(item.nome || '-')}</div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
                   ${ctxPill}
                   ${stPill}
@@ -3091,15 +3109,15 @@ function renderMobileDashboard() {
               </div>
 
               <div class="mob-done-meta">
-                <span>👤 ${escapeHtml(h.analista || '-')}</span>
-                <span>⏱ ${escapeHtml(h.duracao || '-')}</span>
-                <span>🕒 ${escapeHtml(h.inicio || '--:--')} → ${escapeHtml(h.fim || '--:--')}</span>
+                <span>👤 ${escapeHtml(item.analista || '-')}</span>
+                <span>⏱ ${escapeHtml(item.duracao || '-')}</span>
+                <span>🕒 ${escapeHtml(item.inicio || '--:--')} → ${escapeHtml(item.fim || '--:--')}</span>
                 ${percent ? `<span>📌 ${escapeHtml(percent)}</span>` : ``}
               </div>
 
               <div class="mob-done-bottom">
-                <div><span class="mob-done-strong">Motivo:</span> ${escapeHtml(motivo || 'CONCLUÍDO')}</div>
-                <div style="color:#6b7280;font-weight:700;">${escapeHtml(h.prioridade || '')}</div>
+                <div><span class="mob-done-strong">Motivo:</span> ${escapeHtml(motivo)}</div>
+                <div style="color:#6b7280;font-weight:700;">${escapeHtml(item.prioridade || '')}</div>
               </div>
             </div>
           `;
@@ -3108,7 +3126,6 @@ function renderMobileDashboard() {
     }
   }
 
-  // garante classe active e exibição correta
   updateMobileButtonsUI();
 }
 
