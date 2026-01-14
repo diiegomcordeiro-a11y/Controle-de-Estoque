@@ -117,9 +117,34 @@ body.user-master .privileged-only.block{display:block}
 .status-legend{display:flex;justify-content:center;gap:15px;margin-top:10px;font-size:12px;font-weight:bold}
 .legend-item span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
 
-/* TASKS */
-.task-header{display:grid;grid-template-columns:1.8fr 1fr .5fr 1.2fr .5fr .5fr .4fr 1.4fr;gap:8px;padding:0 8px 8px;border-bottom:2px solid #eee;margin-bottom:8px;font-weight:bold;color:var(--minerva-red);text-transform:uppercase;font-size:11px}
-.task{display:grid;grid-template-columns:1.8fr 1fr .5fr 1.2fr .5fr .5fr .4fr 1.4fr;gap:8px;align-items:center;background:#fff;padding:4px 8px;margin-bottom:4px;border:1px solid #eee;border-radius:4px;font-size:12px;transition:background .3s}
+/* TASKS - GRID REDEFINIDO V2 (% após ações) */
+/* Ordem: Prio | Rotina | Analista | Ações | % | Status | Inicio | Fim */
+.task-header{
+  display:grid;
+  grid-template-columns: .5fr 1.8fr 1fr 1.4fr .4fr 1.2fr .5fr .5fr;
+  gap:8px;
+  padding:0 8px 8px;
+  border-bottom:2px solid #eee;
+  margin-bottom:8px;
+  font-weight:bold;
+  color:var(--minerva-red);
+  text-transform:uppercase;
+  font-size:11px
+}
+.task{
+  display:grid;
+  grid-template-columns: .5fr 1.8fr 1fr 1.4fr .4fr 1.2fr .5fr .5fr;
+  gap:8px;
+  align-items:center;
+  background:#fff;
+  padding:4px 8px;
+  margin-bottom:4px;
+  border:1px solid #eee;
+  border-radius:4px;
+  font-size:12px;
+  transition:background .3s
+}
+
 .task:hover{border-color:#ccc}
 .task span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .prio-badge{font-size:10px;padding:2px 6px;border-radius:4px;color:#fff;font-weight:bold;text-align:center}
@@ -554,9 +579,16 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <button class="reset-btn privileged-only" onclick="resetRotinas('pc')">REINICIAR ROTINAS</button>
     </div>
 
+    <!-- Header reordenado -->
     <div class="task-header">
-      <span>Rotina</span><span>Analista</span><span>Prioridade</span><span>Status/Justificativa</span>
-      <span>Início</span><span>Fim</span><span>%</span><span>Ações</span>
+      <span>Prioridade</span>
+      <span>Rotina</span>
+      <span>Analista</span>
+      <span>Ações</span>
+      <span>%</span>
+      <span>Status/Justificativa</span>
+      <span>Início</span>
+      <span>Fim</span>
     </div>
 
     <div id="tasks"></div>
@@ -571,9 +603,16 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <button class="reset-btn privileged-only" onclick="resetRotinas('analistas')">REINICIAR ROTINAS</button>
     </div>
 
+    <!-- Header reordenado -->
     <div class="task-header">
-      <span>Rotina</span><span>Analista</span><span>Prioridade</span><span>Status/Justificativa</span>
-      <span>Início</span><span>Fim</span><span>%</span><span>Ações</span>
+      <span>Prioridade</span>
+      <span>Rotina</span>
+      <span>Analista</span>
+      <span>Ações</span>
+      <span>%</span>
+      <span>Status/Justificativa</span>
+      <span>Início</span>
+      <span>Fim</span>
     </div>
 
     <div id="tasksAnalistas"></div>
@@ -2071,11 +2110,35 @@ function renderList(context, list, container) {
 
     const finishDisabled = (!canFinish) || partialMode;
 
+    // RENDERIZACAO REORDENADA V2
+    // Ordem: Prio | Rotina | Analista | Ações | % | Status | Inicio | Fim
     container.innerHTML += `
       <div class="${rowClass}">
-        <span title="${escapeHtml(r.nome)}">${escapeHtml(r.nome)}</span>
-        <select id="analista-${context}-${i}">${options}</select>
         <div class="prio-badge ${badgeClass}">${escapeHtml(badgeText)}</div>
+
+        <span title="${escapeHtml(r.nome)}">${escapeHtml(r.nome)}</span>
+
+        <select id="analista-${context}-${i}">${options}</select>
+
+        <div>
+          <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
+          <button class="partial" ${canPartial ? '' : 'disabled'} onclick="partialTask('${context}', ${i})">Parcial</button>
+          <button class="finish" ${finishDisabled ? 'disabled' : ''} onclick="finishTask('${context}', ${i})">Finalizar</button>
+          ${hasPriv ? `
+            <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
+            <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
+          ` : ''}
+        </div>
+
+        <input
+          type="number"
+          min="1"
+          max="99"
+          placeholder="%"
+          value="${partialMode ? escapeHtml(draft.percent || '') : ''}"
+          ${percentDisabled ? 'disabled' : ''}
+          oninput="onPercentDraftInput('${context}', '${escapeHtml(taskId)}', this.value)"
+        >
 
         <select
           id="motivo-${context}-${i}"
@@ -2089,26 +2152,6 @@ function renderList(context, list, container) {
 
         <span class="inicio">${escapeHtml(r.inicio || "-")}</span>
         <span class="fim">${escapeHtml(r.fim || "-")}</span>
-
-        <input
-          type="number"
-          min="1"
-          max="99"
-          placeholder="%"
-          value="${partialMode ? escapeHtml(draft.percent || '') : ''}"
-          ${percentDisabled ? 'disabled' : ''}
-          oninput="onPercentDraftInput('${context}', '${escapeHtml(taskId)}', this.value)"
-        >
-
-        <div>
-          <button class="start" ${r.status !== 'pending' ? 'disabled style="display:none"' : ''} onclick="startTask('${context}', ${i})">Iniciar</button>
-          <button class="partial" ${canPartial ? '' : 'disabled'} onclick="partialTask('${context}', ${i})">Parcial</button>
-          <button class="finish" ${finishDisabled ? 'disabled' : ''} onclick="finishTask('${context}', ${i})">Finalizar</button>
-          ${hasPriv ? `
-            <button class="edit" onclick="editRotina('${context}', ${i})">Editar</button>
-            <button class="delete" onclick="removeRotina('${context}', ${i})">Excluir</button>
-          ` : ''}
-        </div>
       </div>
     `;
 
