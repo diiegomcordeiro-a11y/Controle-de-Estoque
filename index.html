@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1573,10 +1572,6 @@ async function loginUser() {
   setTimeout(() => {
     currentUser = { email, name: user.name, displayRole: displayRoleForRole(role), isMaster: (email === MASTER_EMAIL) };
     currentUserRole = role;
-
-    // NOVO: SALVA SESSÃO PARA AUTO-LOGIN
-    localStorage.setItem('minerva_session_email', email);
-
     setupUserInterface();
     initializeApp();
     loginBtn.disabled = false;
@@ -1603,19 +1598,11 @@ function setupUserInterface() {
 
 function logoutUser() {
   destroyRealtimeListeners();
-
-  // NOVO: REMOVE SESSÃO
-  localStorage.removeItem('minerva_session_email');
-
   document.getElementById('loginOverlay').style.display = 'flex';
   document.getElementById('mainApp').style.display = 'none';
 
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
-
-  // Restaura UI de login caso tenha vindo de auto-login
-  document.getElementById('loginLoading').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
 
   currentUser = null;
   currentUserRole = 'user';
@@ -3498,52 +3485,10 @@ function updateMobileTimers() {
 /* ===========================
    ONLOAD
 =========================== */
-window.onload = async function() {
+window.onload = function() {
   if (isFirebaseConnected) updateConnectionStatus(true, 'Online - Conectado');
   else updateConnectionStatus(false, 'Offline - Acesso bloqueado');
   enforceOnlineOnlyUI();
-
-  // ----- LOGICA DE AUTO-LOGIN -----
-  const savedEmail = localStorage.getItem('minerva_session_email');
-  if (savedEmail) {
-    // Esconde form e mostra "Restaurando..."
-    document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('loginLoading').style.display = 'block';
-    document.querySelector('#loginLoading p').textContent = "Restaurando sessão...";
-
-    try {
-      // Carrega permissões e usuários para validar o e-mail salvo
-      await loadPermissions();
-      await loadUsers();
-
-      const user = usersMap[savedEmail];
-      if (user) {
-        // Usuário existe, loga direto
-        const role = resolveRoleForEmail(savedEmail);
-        currentUser = {
-          email: savedEmail,
-          name: user.name,
-          displayRole: displayRoleForRole(role),
-          isMaster: (savedEmail === MASTER_EMAIL)
-        };
-        currentUserRole = role;
-
-        setupUserInterface();
-        initializeApp();
-      } else {
-        // E-mail salvo não existe mais no banco -> reseta
-        throw new Error('Usuário salvo não encontrado no banco');
-      }
-    } catch (e) {
-      console.warn('Falha no auto-login:', e);
-      localStorage.removeItem('minerva_session_email');
-      // Volta a exibir login normal
-      document.getElementById('loginLoading').style.display = 'none';
-      document.getElementById('loginForm').style.display = 'block';
-    }
-  }
-  // --------------------------------
-
   updateHeaderProgress();
 };
 
@@ -3551,4 +3496,3 @@ window.addEventListener('beforeunload', () => { destroyRealtimeListeners(); });
 </script>
 </body>
 </html>
-```
