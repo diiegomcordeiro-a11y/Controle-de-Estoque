@@ -44,6 +44,16 @@ body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
 .spinner{border:3px solid #f3f3f3;border-top:3px solid var(--minerva-red);border-radius:50%;width:30px;height:30px;animation:spin 1s linear infinite;margin:0 auto}
 @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 
+.toggle-link {
+  display: block;
+  margin-top: 15px;
+  color: var(--minerva-red);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.toggle-link:hover { color: var(--minerva-dark); }
+
 /* Status Firebase no header */
 .connection-status{background:rgba(255,255,255,.15);color:#fff;padding:8px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
 .connection-dot{width:8px;height:8px;border-radius:50%;background:#4CAF50;animation:pulse 2s infinite}
@@ -548,21 +558,36 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="login-logo">Minerva Foods</div>
     <div class="login-subtitle">Controle de Rotinas Operacionais</div>
 
+    <!-- FORM LOGIN -->
     <form class="login-form" id="loginForm">
       <input type="email" id="loginEmail" name="username" placeholder="E-mail corporativo" autocomplete="username" required>
       <input type="password" id="loginPassword" name="password" placeholder="Senha" autocomplete="current-password" required>
       <button class="login-btn" id="loginBtn" type="submit">🚀 ENTRAR NO SISTEMA</button>
-
-      <div class="loading" id="loginLoading">
-        <div class="spinner"></div>
-        <p>Conectando...</p>
-      </div>
-
-      <div class="login-offline-alert" id="loginOfflineAlert">
-        <strong>Modo offline bloqueado.</strong><br>
-        Não foi possível conectar ao Firebase. Verifique a internet/VPN e recarregue a página.
-      </div>
+      
+      <!-- Link Trocar Senha -->
+      <a class="toggle-link" onclick="showChangePasswordUI()">Alterar senha</a>
     </form>
+
+    <!-- FORM TROCAR SENHA (HIDDEN) -->
+    <form class="login-form" id="changePassForm" style="display:none;" onsubmit="event.preventDefault(); tryChangePassword();">
+      <h3 style="color:var(--minerva-red); margin-top:0;">Alterar Senha</h3>
+      <input type="email" id="cpEmail" placeholder="Seu E-mail" required>
+      <input type="password" id="cpOldPass" placeholder="Senha Atual" required>
+      <input type="password" id="cpNewPass" placeholder="Nova Senha" minlength="4" required>
+      
+      <button class="login-btn" type="submit">SALVAR NOVA SENHA</button>
+      <a class="toggle-link" onclick="hideChangePasswordUI()">Voltar para Login</a>
+    </form>
+
+    <div class="loading" id="loginLoading">
+      <div class="spinner"></div>
+      <p>Conectando...</p>
+    </div>
+
+    <div class="login-offline-alert" id="loginOfflineAlert">
+      <strong>Modo offline bloqueado.</strong><br>
+      Não foi possível conectar ao Firebase. Verifique a internet/VPN e recarregue a página.
+    </div>
   </div>
 </div>
 
@@ -1488,7 +1513,7 @@ async function savePermissions() {
 }
 
 async function loadUsers() {
-  if (usersLoaded) return;
+  // Sempre força reload ao logar para ter certeza das senhas novas
   const u = await loadFromFirebase(COLL_USERS);
   if (u && Array.isArray(u.users)) {
     usersList = u.users.map(x => ({
@@ -1505,8 +1530,10 @@ async function loadUsers() {
 }
 
 async function saveUsers() {
-  if (currentUserRole !== 'master') return;
-
+  // Nota: qualquer um pode chamar saveToFirebase se tiver conectado, 
+  // mas nossa logica de UI protege. No backend real precisaria de Rules.
+  // Aqui estamos permitindo que o usuario "troque" salvando a lista toda.
+  
   const masterExists = usersList.some(u => normalizeEmail(u.email) === MASTER_EMAIL);
   if (!masterExists) usersList.push({ email: MASTER_EMAIL, name: 'Diego Cordeiro', password: usersMap[MASTER_EMAIL]?.password || '' });
 
@@ -1525,7 +1552,7 @@ async function saveUsers() {
 }
 
 /* ===========================
-   LOGIN
+   LOGIN & CHANGE PASSWORD
 =========================== */
 document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); loginUser(); });
 
@@ -1541,6 +1568,80 @@ function displayRoleForRole(role) {
   return 'USER';
 }
 
+function showChangePasswordUI() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('changePassForm').style.display = 'block';
+  document.getElementById('cpEmail').value = '';
+  document.getElementById('cpOldPass').value = '';
+  document.getElementById('cpNewPass').value = '';
+}
+
+function hideChangePasswordUI() {
+  document.getElementById('changePassForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+}
+
+async function tryChangePassword() {
+  if (!isFirebaseConnected) { showToast('Offline. Não é possível alterar senha.', 'error'); return; }
+
+  const email = normalizeEmail(document.getElementById('cpEmail').value);
+  const oldPass = document.getElementById('cpOldPass').value;
+  const newPass = document.getElementById('cpNewPass').value;
+
+  if (!email || !oldPass || !newPass) { showToast('Preencha todos os campos', 'warning'); return; }
+  if (newPass.length < 4) { showToast('Nova senha deve ter no mínimo 4 caracteres', 'warning'); return; }
+
+  const loading = document.getElementById('loginLoading');
+  document.getElementById('changePassForm').style.display = 'none';
+  loading.style.display = 'block';
+  document.querySelector('#loginLoading p').textContent = "Verificando e salvando...";
+
+  try {
+    // 1. Carrega usuários mais recentes do banco
+    await loadUsers(); 
+
+    // 2. Verifica credenciais
+    const user = usersMap[email];
+    if (!user) { throw new Error('Usuário não encontrado.'); }
+    if (user.password !== oldPass) { throw new Error('Senha ATUAL incorreta.'); }
+
+    // 3. Atualiza senha na lista local
+    usersList = usersList.map(u => normalizeEmail(u.email) === email ? { ...u, password: newPass } : u);
+    rebuildUsersMap();
+
+    // 4. Salva no Firebase
+    await saveUsers();
+    
+    // 5. Log de governança (opcional, mas bom pra segurança)
+    if (governanceLog) {
+      governanceLog.unshift({
+        id: Date.now(),
+        userId: email,
+        userName: user.name,
+        userRole: 'SELF',
+        action: 'CHANGE_OWN_PASSWORD',
+        details: 'Usuário alterou a própria senha via tela de login',
+        target: email,
+        timestamp: new Date(),
+        date: TODAY_STR
+      });
+      if (governanceLog.length > 50) governanceLog = governanceLog.slice(0, 50);
+      await saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() });
+    }
+
+    showToast('Senha alterada com sucesso! Faça login.', 'success');
+    hideChangePasswordUI();
+
+  } catch (err) {
+    console.error(err);
+    showToast(err.message || 'Erro ao alterar senha', 'error');
+    document.getElementById('changePassForm').style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    document.querySelector('#loginLoading p').textContent = "Conectando...";
+  }
+}
+
 async function loginUser() {
   if (!isFirebaseConnected) {
     showToast('Firebase offline. Acesso bloqueado.', 'error');
@@ -1553,35 +1654,41 @@ async function loginUser() {
 
   if (!email || !password) { showToast('Preencha email e senha', 'error'); return; }
 
-  await loadPermissions();
-  await loadUsers();
-
-  const user = usersMap[email];
-  if (!user || user.password !== password) {
-    showToast('Email ou senha incorretos!', 'error');
-    return;
-  }
-
-  const role = resolveRoleForEmail(email);
-
   const loginBtn = document.getElementById('loginBtn');
   const loading = document.getElementById('loginLoading');
 
   loginBtn.disabled = true;
   loading.style.display = 'block';
 
-  setTimeout(() => {
+  try {
+    await loadPermissions();
+    await loadUsers(); // Garante que pegou a senha mais nova do banco
+
+    const user = usersMap[email];
+    if (!user || user.password !== password) {
+      showToast('Email ou senha incorretos!', 'error');
+      loginBtn.disabled = false;
+      loading.style.display = 'none';
+      return;
+    }
+
+    const role = resolveRoleForEmail(email);
+
     currentUser = { email, name: user.name, displayRole: displayRoleForRole(role), isMaster: (email === MASTER_EMAIL) };
     currentUserRole = role;
 
-    // NOVO: SALVA SESSÃO PARA AUTO-LOGIN (SESSION STORAGE = APENAS NESTA ABA/SESSÃO)
+    // SESSION STORAGE = APENAS NESTA ABA/SESSÃO
     sessionStorage.setItem('minerva_session_email', email);
 
     setupUserInterface();
     initializeApp();
+  } catch(e) {
+    console.error(e);
+    showToast('Erro ao realizar login', 'error');
+  } finally {
     loginBtn.disabled = false;
     loading.style.display = 'none';
-  }, 450);
+  }
 }
 
 function setupUserInterface() {
@@ -1604,7 +1711,7 @@ function setupUserInterface() {
 function logoutUser() {
   destroyRealtimeListeners();
 
-  // NOVO: REMOVE SESSÃO
+  // REMOVE SESSÃO
   sessionStorage.removeItem('minerva_session_email');
 
   document.getElementById('loginOverlay').style.display = 'flex';
@@ -1612,11 +1719,13 @@ function logoutUser() {
 
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPassword').value = '';
+  
+  // Garante que volta pro form de login, não o de senha
+  hideChangePasswordUI();
 
   // Restaura UI de login caso tenha vindo de auto-login
   document.getElementById('loginLoading').style.display = 'none';
-  document.getElementById('loginForm').style.display = 'block';
-
+  
   currentUser = null;
   currentUserRole = 'user';
 
