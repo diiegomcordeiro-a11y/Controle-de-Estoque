@@ -510,6 +510,33 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   color:#374151;
 }
 .mob-done-strong{ font-weight: 800; }
+
+/* =========================================
+   NOVO: PROGRESSO DA ABA (HEADER)
+   - aparece só em pc / analistas / inventario
+   - calcula "iniciadas" = status != pending
+   - caminhão + baú preenchendo pelo %
+   ========================================= */
+.tab-progress{
+  display:none; /* controlado no JS */
+  align-items:center;
+  gap:8px;
+  background: rgba(255,255,255,.15);
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.18);
+  color:#fff;
+  min-width: 150px;
+}
+.tab-progress-truck svg{ width:56px; height:24px; display:block; }
+.tab-progress-text{ display:flex; flex-direction:column; line-height:1.1; }
+.tab-progress-title{ font-size:10px; font-weight:800; letter-spacing:.3px; opacity:.9; }
+.tab-progress-value{ font-size:11px; font-weight:800; }
+
+@media(max-width:768px){
+  .tab-progress{ min-width: 130px; padding: 6px 8px; }
+  .tab-progress-truck svg{ width:52px; height:22px; }
+}
 </style>
 </head>
 
@@ -556,6 +583,38 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="online-counter">
       <div class="online-indicator"></div>
       <span id="onlineCount">0 online</span>
+    </div>
+
+    <!-- NOVO: PROGRESSO POR ABA -->
+    <div class="tab-progress" id="tabProgress" title="Progresso da aba (iniciadas/total)">
+      <div class="tab-progress-truck" aria-hidden="true">
+        <svg viewBox="0 0 96 40" role="img">
+          <!-- chassis -->
+          <rect x="8" y="26" width="64" height="6" rx="3" fill="rgba(255,255,255,.75)"/>
+          <!-- cabine -->
+          <rect x="10" y="14" width="18" height="12" rx="2" fill="rgba(255,255,255,.85)"/>
+          <rect x="13" y="16" width="10" height="6" rx="1" fill="rgba(122,20,23,.25)"/>
+
+          <!-- baú (moldura) -->
+          <rect x="30" y="12" width="46" height="14" rx="2" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.75)" stroke-width="1"/>
+          <!-- baú (progresso preenchido) -->
+          <clipPath id="cargoClip">
+            <rect x="31" y="13" width="44" height="12" rx="2"/>
+          </clipPath>
+          <rect id="cargoFill" x="31" y="13" width="0" height="12" fill="rgba(198,156,109,.95)" clip-path="url(#cargoClip)"/>
+
+          <!-- rodas -->
+          <circle cx="22" cy="33" r="4" fill="rgba(255,255,255,.9)"/>
+          <circle cx="22" cy="33" r="2" fill="rgba(122,20,23,.65)"/>
+          <circle cx="60" cy="33" r="4" fill="rgba(255,255,255,.9)"/>
+          <circle cx="60" cy="33" r="2" fill="rgba(122,20,23,.65)"/>
+        </svg>
+      </div>
+
+      <div class="tab-progress-text">
+        <div class="tab-progress-title" id="tabProgressTitle">OPERACIONAIS</div>
+        <div class="tab-progress-value" id="tabProgressValue">0/0 • 0%</div>
+      </div>
     </div>
 
     <div class="user-info">
@@ -670,7 +729,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
         <div id="mobCountInventario" class="mob-filter-sub">0 rotinas</div>
       </button>
     </div>
-    
+
     <div style="text-align:center; margin-top:5px;">
         <button id="mobTypeAllBtn" class="mob-filter-btn" style="min-width:120px; display:inline-block; padding: 6px 12px;" onclick="setMobileTypeAll()">
             <div class="mob-filter-title" style="font-size:11px;">🌍 Ativar Todos</div>
@@ -1564,6 +1623,7 @@ function setupRealtimeListeners() {
       ensureOrderIndex(rotinasPC);
       if (currentView === 'pc') render();
       if (currentView === 'mobile') renderMobileDashboard();
+      updateHeaderProgress();
     }
   });
 
@@ -1574,6 +1634,7 @@ function setupRealtimeListeners() {
       ensureOrderIndex(rotinasAnalistas);
       if (currentView === 'analistas') render();
       if (currentView === 'mobile') renderMobileDashboard();
+      updateHeaderProgress();
     }
   });
 
@@ -1585,6 +1646,7 @@ function setupRealtimeListeners() {
       ensureOrderIndex(rotinasInventario);
       if (currentView === 'inventario') render();
       if (currentView === 'mobile') renderMobileDashboard();
+      updateHeaderProgress();
     }
   });
 
@@ -1603,6 +1665,7 @@ function setupRealtimeListeners() {
       if (currentView !== 'governance' && currentView !== 'mobile' && currentView !== 'kpi') renderHistory();
       updateCharts();
       if (currentView === 'mobile') renderMobileDashboard(); // Update counts / lista
+      updateHeaderProgress();
     }
   });
 
@@ -1691,6 +1754,8 @@ async function initializeApp() {
     // AUTO-ABRIR MOBILE: somente em celular/tablet e somente ADMIN/MASTER
     if (isProbablyMobile() && isPrivileged()) {
       openTab('mobile');
+    } else {
+      updateHeaderProgress();
     }
   } catch (error) {
     console.error('Falha na inicialização (online-only):', error);
@@ -1802,7 +1867,7 @@ async function saveData() {
   await Promise.all([
     saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
-    saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() }), // SAVE INVENTARIO
+    saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_HISTORY, { history: visibleHistory, lastUpdate: new Date() }),
     saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
     saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
@@ -2124,6 +2189,48 @@ async function partialTask(context, index) {
 }
 
 /* ===========================
+   NOVO: PROGRESSO NO HEADER (POR ABA)
+   - progresso = "iniciadas" (status != pending) / total
+=========================== */
+function getListByContext(context){
+  if (context === 'pc') return rotinasPC || [];
+  if (context === 'analistas') return rotinasAnalistas || [];
+  if (context === 'inventario') return rotinasInventario || [];
+  return [];
+}
+
+function getTabLabel(context){
+  if (context === 'pc') return 'OPERACIONAIS';
+  if (context === 'analistas') return 'ANALISTAS';
+  if (context === 'inventario') return 'INVENTÁRIO';
+  return '';
+}
+
+function updateHeaderProgress(){
+  const wrap = document.getElementById('tabProgress');
+  const titleEl = document.getElementById('tabProgressTitle');
+  const valueEl = document.getElementById('tabProgressValue');
+  const cargoFill = document.getElementById('cargoFill');
+  if (!wrap || !titleEl || !valueEl || !cargoFill) return;
+
+  const allowed = (currentView === 'pc' || currentView === 'analistas' || currentView === 'inventario');
+  wrap.style.display = allowed ? 'flex' : 'none';
+  if (!allowed) return;
+
+  const list = getListByContext(currentView);
+  const total = list.length;
+  const started = list.filter(t => t && t.status && t.status !== 'pending').length;
+  const pct = total ? Math.round((started / total) * 100) : 0;
+
+  titleEl.textContent = getTabLabel(currentView);
+  valueEl.textContent = `${started}/${total} • ${pct}%`;
+
+  // Preenche o "baú" (largura máxima do retângulo é 44)
+  const maxW = 44;
+  cargoFill.setAttribute('width', String(Math.round((maxW * pct) / 100)));
+}
+
+/* ===========================
    UI / RENDER
 =========================== */
 function openTab(id) {
@@ -2153,7 +2260,7 @@ function openTab(id) {
   const navMap = {
     pc: 'navPcBtn',
     analistas: 'navAnalistasBtn',
-    inventario: 'navInventarioBtn', // NOVO
+    inventario: 'navInventarioBtn',
     mobile: 'navMobileBtn',
     kpi: 'navKpiBtn',
     governance: 'navGovBtn'
@@ -2171,9 +2278,15 @@ function openTab(id) {
     histCard.style.display = 'block';
     render();
   }
+
+  // NOVO: sempre atualiza o progresso do header ao trocar de aba
+  updateHeaderProgress();
 }
 
 function render() {
+  // NOVO: atualiza sempre que renderizar (para refletir ações em tempo real)
+  updateHeaderProgress();
+
   if (currentView === 'mobile') {
     renderMobileDashboard();
     return;
@@ -2185,13 +2298,13 @@ function render() {
 
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
-  renderList('inventario', rotinasInventario, document.getElementById("tasksInventario")); // NOVO
+  renderList('inventario', rotinasInventario, document.getElementById("tasksInventario"));
 
   // Ajuste do título do histórico
   let histTitle = 'OPERACIONAIS';
   if (currentView === 'analistas') histTitle = 'ANALISTAS';
   if (currentView === 'inventario') histTitle = 'INVENTÁRIO';
-  
+
   document.getElementById("historyTitle").innerText = histTitle;
   renderHistory();
 }
@@ -2429,7 +2542,7 @@ async function resetRotinas(context) {
  */
 async function clearHistory() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
-  
+
   let purgeType;
   if (currentView === 'pc') purgeType = 'pc';
   else if (currentView === 'analistas') purgeType = 'analistas';
@@ -2484,11 +2597,11 @@ async function clearHistory() {
 function openManagementPanel(context) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   currentContext = context;
-  
+
   let label = 'OPERACIONAIS';
   if(context === 'analistas') label = 'ANALISTAS';
   if(context === 'inventario') label = 'INVENTÁRIO';
-  
+
   document.getElementById('panelContextTitle').innerText = label;
 
   renderPrioList();
@@ -3086,9 +3199,6 @@ function toggleMobileType(type) {
   if (type !== 'pc' && type !== 'analistas' && type !== 'inventario') return;
 
   mobileTypeFilter[type] = !mobileTypeFilter[type];
-  // Removi a lógica que forçava "tudo true" se ficasse tudo vazio.
-  // Agora o usuário tem liberdade para desmarcar tudo se quiser.
-
   renderMobileDashboard();
 }
 
@@ -3219,7 +3329,7 @@ function renderMobileDashboard() {
         runningItems.forEach(item => {
           const initials = item.analista ? item.analista.split(' ').map(n=>n[0]).join('').slice(0,2) : '??';
           const startTs = item.inicioTs || Date.now();
-          
+
           let ctxLabel = 'OPER';
           if(item.context === 'analistas') ctxLabel = 'ANALISTA';
           if(item.context === 'inventario') ctxLabel = 'INVENTÁRIO';
@@ -3272,7 +3382,7 @@ function renderMobileDashboard() {
           let dotClass = 'bg-prio-media';
           if(item.prioridade === 'alta') dotClass = 'bg-prio-alta';
           if(item.prioridade === 'baixa') dotClass = 'bg-prio-baixa';
-          
+
           let ctxLabel = 'Operacional';
           if(item.context === 'analistas') ctxLabel = 'Analista';
           if(item.context === 'inventario') ctxLabel = 'Inventário';
@@ -3379,6 +3489,7 @@ window.onload = function() {
   if (isFirebaseConnected) updateConnectionStatus(true, 'Online - Conectado');
   else updateConnectionStatus(false, 'Offline - Acesso bloqueado');
   enforceOnlineOnlyUI();
+  updateHeaderProgress();
 };
 
 window.addEventListener('beforeunload', () => { destroyRealtimeListeners(); });
