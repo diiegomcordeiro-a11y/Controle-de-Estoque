@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,6 +8,9 @@
 <!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<!-- EMAILJS -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <!-- GRÁFICOS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -53,6 +55,26 @@ body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
   cursor: pointer;
 }
 .toggle-link:hover { color: var(--minerva-dark); }
+
+/* NOVA: Links de navegação entre formulários */
+.login-links {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 15px;
+}
+.login-links .toggle-link {
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(122,20,23,0.1);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.login-links .toggle-link:hover {
+  background: rgba(122,20,23,0.2);
+  transform: translateY(-1px);
+}
 
 /* Status Firebase no header */
 .connection-status{background:rgba(255,255,255,.15);color:#fff;padding:8px 12px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px}
@@ -564,8 +586,11 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <input type="password" id="loginPassword" name="password" placeholder="Senha" autocomplete="current-password" required>
       <button class="login-btn" id="loginBtn" type="submit">🚀 ENTRAR NO SISTEMA</button>
       
-      <!-- Link Trocar Senha -->
-      <a class="toggle-link" onclick="showChangePasswordUI()">Alterar senha</a>
+      <!-- Links de navegação -->
+      <div class="login-links">
+        <a class="toggle-link" onclick="showChangePasswordUI()">Alterar senha</a>
+        <a class="toggle-link" onclick="showForgotPasswordUI()">Esqueci minha senha</a>
+      </div>
     </form>
 
     <!-- FORM TROCAR SENHA (HIDDEN) -->
@@ -576,7 +601,23 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <input type="password" id="cpNewPass" placeholder="Nova Senha" minlength="4" required>
       
       <button class="login-btn" type="submit">SALVAR NOVA SENHA</button>
-      <a class="toggle-link" onclick="hideChangePasswordUI()">Voltar para Login</a>
+      <div class="login-links">
+        <a class="toggle-link" onclick="hideChangePasswordUI()">Voltar para Login</a>
+      </div>
+    </form>
+
+    <!-- FORM ESQUECI SENHA (HIDDEN) -->
+    <form class="login-form" id="forgotPassForm" style="display:none;" onsubmit="event.preventDefault(); tryForgotPassword();">
+      <h3 style="color:var(--minerva-red); margin-top:0;">Recuperar Senha</h3>
+      <p style="font-size:12px; color:#666; margin-bottom:20px; line-height:1.4;">
+        Insira seu e-mail abaixo. Se encontrado no sistema, enviaremos uma nova senha temporária.
+      </p>
+      <input type="email" id="fpEmail" placeholder="Seu E-mail" required>
+      
+      <button class="login-btn" id="forgotPassBtn" type="submit">📧 ENVIAR NOVA SENHA</button>
+      <div class="login-links">
+        <a class="toggle-link" onclick="hideForgotPasswordUI()">Voltar para Login</a>
+      </div>
     </form>
 
     <div class="loading" id="loginLoading">
@@ -1046,6 +1087,20 @@ try {
   console.error('Erro ao conectar com Firebase:', error);
   isFirebaseConnected = false;
   updateConnectionStatus(false, 'Offline - Acesso bloqueado');
+}
+
+/* ===========================
+   CONFIGURAÇÃO EMAILJS
+=========================== */
+const EMAILJS_PUBLIC_KEY = "WKR3sBHmhn6gEfigq";
+const EMAILJS_SERVICE_ID = "service_nvobyei";
+const EMAILJS_TEMPLATE_ID = "template_7g8aj6j";
+
+// Inicializa EmailJS
+try {
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+} catch (error) {
+  console.error('Erro ao inicializar EmailJS:', error);
 }
 
 function enforceOnlineOnlyUI() {
@@ -1552,7 +1607,7 @@ async function saveUsers() {
 }
 
 /* ===========================
-   LOGIN & CHANGE PASSWORD
+   FUNCÕES UI DE LOGIN
 =========================== */
 document.getElementById('loginForm').addEventListener('submit', (e) => { e.preventDefault(); loginUser(); });
 
@@ -1568,9 +1623,12 @@ function displayRoleForRole(role) {
   return 'USER';
 }
 
+// Navegação entre formulários
 function showChangePasswordUI() {
   document.getElementById('loginForm').style.display = 'none';
   document.getElementById('changePassForm').style.display = 'block';
+  document.getElementById('forgotPassForm').style.display = 'none';
+  
   document.getElementById('cpEmail').value = '';
   document.getElementById('cpOldPass').value = '';
   document.getElementById('cpNewPass').value = '';
@@ -1579,6 +1637,166 @@ function showChangePasswordUI() {
 function hideChangePasswordUI() {
   document.getElementById('changePassForm').style.display = 'none';
   document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('forgotPassForm').style.display = 'none';
+}
+
+function showForgotPasswordUI() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('changePassForm').style.display = 'none';
+  document.getElementById('forgotPassForm').style.display = 'block';
+  
+  document.getElementById('fpEmail').value = '';
+}
+
+function hideForgotPasswordUI() {
+  document.getElementById('forgotPassForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+  document.getElementById('changePassForm').style.display = 'none';
+}
+
+/* ===========================
+   GERADOR DE SENHA ALEATÓRIA
+=========================== */
+function generateRandomPassword(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/* ===========================
+   RECUPERAÇÃO DE SENHA POR EMAIL - VERSÃO FINAL
+=========================== */
+async function tryForgotPassword() {
+  if (!isFirebaseConnected) { 
+    showToast('Sistema offline. Não é possível recuperar senha.', 'error'); 
+    return; 
+  }
+
+  const email = normalizeEmail(document.getElementById('fpEmail').value);
+  
+  if (!email || !email.includes('@')) { 
+    showToast('Informe um e-mail válido', 'warning'); 
+    return; 
+  }
+
+  const btn = document.getElementById('forgotPassBtn');
+  const loading = document.getElementById('loginLoading');
+  
+  // Desabilita botão e mostra loading
+  btn.disabled = true;
+  btn.textContent = '📧 ENVIANDO...';
+  
+  document.getElementById('forgotPassForm').style.display = 'none';
+  loading.style.display = 'block';
+  document.querySelector('#loginLoading p').textContent = "Verificando usuário e enviando e-mail...";
+
+  try {
+    // 1. Carrega usuários mais recentes do banco
+    await loadUsers(); 
+
+    // 2. Verifica se o usuário existe
+    const user = usersMap[email];
+    if (!user) { 
+      throw new Error('E-mail não encontrado no sistema.'); 
+    }
+
+    // 3. Gera nova senha aleatória
+    const newPassword = generateRandomPassword(8);
+    
+    // 4. Atualiza a senha na lista local
+    usersList = usersList.map(u => 
+      normalizeEmail(u.email) === email ? { ...u, password: newPassword } : u
+    );
+    rebuildUsersMap();
+
+    // 5. Salva no Firebase
+    await saveUsers();
+    
+    // 6. ENVIA EMAIL COM TODOS OS CAMPOS POSSÍVEIS (estratégia "shotgun")
+    const templateParams = {
+      // Baseado na sua mensagem original
+      to_name: user.name,
+      new_password: newPassword,
+      
+      // Variações do nome
+      user_name: user.name,
+      nome: user.name,
+      name: user.name,
+      recipient_name: user.name,
+      
+      // Variações do email
+      to_email: email,
+      user_email: email,
+      email: email,
+      recipient_email: email,
+      
+      // Variações da senha
+      password: newPassword,
+      senha: newPassword,
+      nova_senha: newPassword,
+      password_new: newPassword,
+      temp_password: newPassword,
+      
+      // Variações do remetente
+      from_name: 'Diego M Cordeiro',
+      sender: 'Diego M Cordeiro',
+      remetente: 'Diego M Cordeiro',
+      sender_name: 'Diego M Cordeiro',
+      
+      // Campos extras
+      reply_to: 'diego.cordeiro@minervafoods.com',
+      company: 'Minerva Foods',
+      system_name: 'Sistema de Rotinas'
+    };
+
+    // 7. Envia o e-mail
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+    
+    // 8. Log de governança
+    if (governanceLog) {
+      governanceLog.unshift({
+        id: Date.now(),
+        userId: 'SYSTEM',
+        userName: 'Sistema',
+        userRole: 'SYSTEM',
+        action: 'PASSWORD_RECOVERY',
+        details: `Senha recuperada por e-mail para: ${email}`,
+        target: email,
+        timestamp: new Date(),
+        date: TODAY_STR
+      });
+      if (governanceLog.length > 50) governanceLog = governanceLog.slice(0, 50);
+      await saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() });
+    }
+
+    showToast('Nova senha enviada por e-mail! Verifique sua caixa de entrada.', 'success');
+    hideForgotPasswordUI();
+
+  } catch (err) {
+    console.error('Erro na recuperação de senha:', err);
+    
+    let errorMessage = 'Erro ao recuperar senha. Tente novamente.';
+    
+    if (err.message && err.message.includes('não encontrado')) {
+      errorMessage = 'E-mail não encontrado no sistema.';
+    } else if (err.status === 422) {
+      errorMessage = 'Erro nos campos do template. Verifique a configuração no EmailJS.';
+    } else if (err.message && (err.message.includes('EmailJS') || err.message.includes('Failed to send') || err.message.includes('network'))) {
+      errorMessage = 'Erro ao enviar e-mail. Verifique sua conexão.';
+    }
+    
+    showToast(errorMessage, 'error');
+    document.getElementById('forgotPassForm').style.display = 'block';
+  } finally {
+    // Restaura estados
+    loading.style.display = 'none';
+    document.querySelector('#loginLoading p').textContent = "Conectando...";
+    btn.disabled = false;
+    btn.textContent = '📧 ENVIAR NOVA SENHA';
+  }
 }
 
 async function tryChangePassword() {
@@ -1721,6 +1939,7 @@ function logoutUser() {
   document.getElementById('loginPassword').value = '';
   
   // Garante que volta pro form de login, não o de senha
+  hideForgotPasswordUI();
   hideChangePasswordUI();
 
   // Restaura UI de login caso tenha vindo de auto-login
@@ -3661,4 +3880,3 @@ window.addEventListener('beforeunload', () => { destroyRealtimeListeners(); });
 </script>
 </body>
 </html>
-```
