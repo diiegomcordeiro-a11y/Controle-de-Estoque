@@ -23,6 +23,7 @@
   --success-bg:#d1e7dd;--success-text:#0f5132;
   --warning-bg:#fff3cd;--warning-text:#664d03;
   --info:#0d6efd;--danger:#dc3545;
+  --inventario-color: #6f42c1; /* Cor roxa para diferenciar Inventário */
 }
 *{box-sizing:border-box;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
@@ -248,7 +249,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 }
 .mob-filter-btn{
   flex:1;
-  min-width: 160px;
+  min-width: 130px; /* Reduzi um pouco para caber 3 */
   border: 1px solid #e5e7eb;
   background: #f8f9fa;
   border-radius: 10px;
@@ -256,12 +257,14 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   cursor: pointer;
   text-align: left;
   transition: .2s;
+  opacity: 0.7; /* Visualmente indica que está "off" por padrão */
 }
-.mob-filter-btn:hover{ border-color:#d1d5db; transform: translateY(-1px); }
+.mob-filter-btn:hover{ border-color:#d1d5db; transform: translateY(-1px); opacity: 1; }
 .mob-filter-btn.active{
   border-color: rgba(122,20,23,.45);
   background: rgba(122,20,23,.06);
   box-shadow: 0 6px 14px rgba(122,20,23,.08);
+  opacity: 1;
 }
 .mob-filter-title{
   font-size: 13px;
@@ -496,6 +499,8 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 .mob-pill.partial{ background: rgba(249,168,37,.12); border-color: rgba(249,168,37,.30); color: #664d03; }
 .mob-pill.ctx-pc{ background: rgba(122,20,23,.06); border-color: rgba(122,20,23,.20); color: #7A1417; }
 .mob-pill.ctx-an{ background: rgba(13,110,253,.08); border-color: rgba(13,110,253,.22); color: #0d6efd; }
+.mob-pill.ctx-inv{ background: rgba(111, 66, 193, 0.08); border-color: rgba(111, 66, 193, 0.22); color: #6f42c1; }
+
 .mob-done-bottom{
   display:flex;
   justify-content:space-between;
@@ -565,6 +570,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   <nav>
     <button id="navPcBtn" class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
     <button id="navAnalistasBtn" onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
+    <button id="navInventarioBtn" onclick="openTab('inventario')">INVENTÁRIO AQ</button>
     <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
     <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
     <button id="navGovBtn" class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
@@ -579,7 +585,6 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <button class="reset-btn privileged-only" onclick="resetRotinas('pc')">REINICIAR ROTINAS</button>
     </div>
 
-    <!-- Header reordenado -->
     <div class="task-header">
       <span>Prioridade</span>
       <span>Rotina</span>
@@ -603,7 +608,6 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <button class="reset-btn privileged-only" onclick="resetRotinas('analistas')">REINICIAR ROTINAS</button>
     </div>
 
-    <!-- Header reordenado -->
     <div class="task-header">
       <span>Prioridade</span>
       <span>Rotina</span>
@@ -619,6 +623,29 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 </section>
 
+<section id="inventario">
+  <div class="card" style="border-top-color: var(--inventario-color);">
+    <div class="actions-bar">
+      <button class="primary-btn privileged-only" onclick="openModal('inventario')">+ NOVA ROTINA (INVENTÁRIO)</button>
+      <button class="panel-btn privileged-only" onclick="openManagementPanel('inventario')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn privileged-only" onclick="resetRotinas('inventario')">REINICIAR ROTINAS</button>
+    </div>
+
+    <div class="task-header" style="color: var(--inventario-color);">
+      <span>Prioridade</span>
+      <span>Rotina</span>
+      <span>Analista</span>
+      <span>Ações</span>
+      <span>%</span>
+      <span>Status/Justificativa</span>
+      <span>Início</span>
+      <span>Fim</span>
+    </div>
+
+    <div id="tasksInventario"></div>
+  </div>
+</section>
+
 <section id="mobile">
   <div style="margin-bottom:15px; text-align:center;">
     <h3 style="color:var(--minerva-red); margin:0;">Painel de Monitoramento</h3>
@@ -626,7 +653,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 
   <div class="mob-controls-container">
-    <!-- NOVO: filtros por tipo (Operacional / Analistas / Todos) -->
+    <!-- Filtros por tipo (Operacional / Analistas / Inventário / Todos) -->
     <div class="mob-type-bar">
       <button id="mobTypePcBtn" class="mob-filter-btn" onclick="toggleMobileType('pc')">
         <div class="mob-filter-title">📦 Operacional</div>
@@ -638,13 +665,19 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
         <div id="mobCountAnalistas" class="mob-filter-sub">0 rotinas</div>
       </button>
 
-      <button id="mobTypeAllBtn" class="mob-filter-btn" style="min-width:120px;flex:0 0 auto;text-align:center;" onclick="setMobileTypeAll()">
-        <div class="mob-filter-title">🌍 Todos</div>
-        <div class="mob-filter-sub">Ativar ambos</div>
+      <button id="mobTypeInventarioBtn" class="mob-filter-btn" onclick="toggleMobileType('inventario')">
+        <div class="mob-filter-title" style="color: var(--inventario-color);">📋 Inventário</div>
+        <div id="mobCountInventario" class="mob-filter-sub">0 rotinas</div>
       </button>
     </div>
+    
+    <div style="text-align:center; margin-top:5px;">
+        <button id="mobTypeAllBtn" class="mob-filter-btn" style="min-width:120px; display:inline-block; padding: 6px 12px;" onclick="setMobileTypeAll()">
+            <div class="mob-filter-title" style="font-size:11px;">🌍 Ativar Todos</div>
+        </button>
+    </div>
 
-    <!-- NOVO: filtros por status (Executando / Fila / Concluídos) -->
+    <!-- Filtros por status (Executando / Fila / Concluídos) -->
     <div class="mob-status-bar">
       <button id="mobStatusRunningBtn" class="mob-status-btn" onclick="setMobileStatusFilter('running')">
         <div id="mobKpiRunning" class="mob-kpi-value" style="color:#0d6efd">0</div>
@@ -707,6 +740,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
           <option value="all">Visão Geral (Todos)</option>
           <option value="pc">Operacionais</option>
           <option value="analistas">Analistas</option>
+          <option value="inventario">Inventário AQ</option>
         </select>
       </div>
       <div class="filter-group">
@@ -962,6 +996,7 @@ const COLL_PERMISSIONS = 'permissions';
 const COLL_USERS = 'users_credentials';
 const COLL_ROTINAS_PC = 'rotinas_pc';
 const COLL_ROTINAS_ANALISTAS = 'rotinas_analistas';
+const COLL_ROTINAS_INVENTARIO = 'rotinas_inventario'; // NOVA COLEÇÃO
 const COLL_HISTORY = 'history';
 const COLL_CONFIG = 'config';
 const COLL_GOV = 'governance';
@@ -1006,11 +1041,33 @@ const DEFAULT_ROTINAS_ANALISTAS = [
   "BAIXA PENDENTE PARA OPERAÇÃO", "ISCAS INSERIDAS", "CONFERÊNCIA 429 SQL", "CONFERENCIA DO AEREO POR CAMARA"
 ];
 
+const DEFAULT_ROTINAS_INVENTARIO = [
+    "EMAIL INFORMATIVO A TODOS OS SETORES DA EXECUÇÃO DO INVENTÁRIO",
+    "VERIFICAR VERSÕES DOS COLETORES MOBILE",
+    "EXTRAÇÃO DE RELATORIO WMS",
+    "EXTRAÇÃO DE RELATORIO SQL",
+    "BARRAS TIPO C",
+    "BARRAS TIPO 28",
+    "BARRAS TIPO 30",
+    "FOLHAS OU FITAS PARA IDENTIFICAÇÃO DE PALETES INVENTÁRIADOS",
+    "VERIFICAÇÃO DE OP'S DE DESCARGA EM ABERTO",
+    "VERIFICAÇÃO DE OP'S DE DEVOLUÇÃO EM ABERTO",
+    "EXCLUSÃO DE OPS NO ROMANEIO",
+    "VERIFICAÇÃO DE ITENS SEM ENDEREÇO",
+    "VERIFICAR COM COORPORATIVO SE OS RELATORIOS FORAM EXTRAIDOS",
+    "ZERAR CAMARAS A INVENTARIAR",
+    "TESTE DE PALETIZAÇÃO",
+    "TESTE DE PALETIZAR O MESMO PALETE JÁ INVENTÁRIADO",
+    "TESTE DE ENDEREÇAR PALETE NÃO INVENTÁRIADO",
+    "TESTE BIPAR RG JÁ INVENTÁRIADO"
+];
+
 const DEFAULT_ANALISTAS = ["LIVIA PORTA","WILLIAN SILAS","RODRIGO PRADO","EVERTON MORAES","PAULO AFONSO","ERICK SALES"];
 const DEFAULT_MOTIVOS = ["FALTA DE TEMPO","SISTEMA INDISPONÍVEL","SEM DEMANDA","AGUARDANDO OUTRA ÁREA"];
 
 let rotinasPC = [];
 let rotinasAnalistas = [];
+let rotinasInventario = []; // NOVO ARRAY
 
 // history = efetivo (master: visível + archive; admin/user: só visível)
 let history = [];
@@ -1109,7 +1166,10 @@ function ensureOrderIndex(list) {
 
 // Ordena só pendentes/em andamento por prioridade; done/partial ficam no fim na ordem atual
 function sortByStatusAndPriority(context) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
 
   const active = [];
   const finished = [];
@@ -1132,7 +1192,10 @@ function sortByStatusAndPriority(context) {
 }
 
 function applyDefaultPrioritiesAndOrder(context) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
 
   ensureOrderIndex(list);
 
@@ -1143,6 +1206,7 @@ function applyDefaultPrioritiesAndOrder(context) {
       t.prioridade = i < 5 ? 'alta' : (i < 10 ? 'media' : 'baixa');
     });
   } else {
+    // Analistas e Inventário tudo Alta por padrão
     list.forEach(t => { t.prioridade = 'alta'; });
   }
 
@@ -1253,6 +1317,7 @@ function matchTypeForPurge(entry, purgeType) {
   const t = entry?.type;
   if (purgeType === 'pc') return (!t || t === 'pc');
   if (purgeType === 'analistas') return (t === 'analistas');
+  if (purgeType === 'inventario') return (t === 'inventario');
   return false;
 }
 
@@ -1512,6 +1577,17 @@ function setupRealtimeListeners() {
     }
   });
 
+  // NOVO LISTENER: INVENTÁRIO
+  realTimeListeners.rotinasInventario = db.collection(COLL_ROTINAS_INVENTARIO).doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      rotinasInventario = data.rotinas || [];
+      ensureOrderIndex(rotinasInventario);
+      if (currentView === 'inventario') render();
+      if (currentView === 'mobile') renderMobileDashboard();
+    }
+  });
+
   realTimeListeners.history = db.collection(COLL_HISTORY).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
@@ -1658,8 +1734,25 @@ async function loadData() {
     await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastUpdate: new Date(), lastDate: TODAY_STR });
   }
 
+  // CARREGAR INVENTARIO
+  const savedInventario = await loadFromFirebase(COLL_ROTINAS_INVENTARIO);
+  if (savedInventario && savedInventario.rotinas) {
+    rotinasInventario = savedInventario.rotinas;
+  } else {
+    rotinasInventario = DEFAULT_ROTINAS_INVENTARIO.map((nome, i) => ({
+      id: 'inv_' + i,
+      nome,
+      status: 'pending',
+      prioridade: 'alta',
+      orderIndex: i
+    }));
+    applyDefaultPrioritiesAndOrder('inventario');
+    await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastUpdate: new Date(), lastDate: TODAY_STR });
+  }
+
   ensureOrderIndex(rotinasPC);
   ensureOrderIndex(rotinasAnalistas);
+  ensureOrderIndex(rotinasInventario);
 
   const savedHistory = await loadFromFirebase(COLL_HISTORY);
   visibleHistory = savedHistory ? (savedHistory.history || []) : [];
@@ -1694,18 +1787,22 @@ async function loadData() {
 async function resetDailyData() {
   rotinasPC.forEach(resetRoutineFields);
   rotinasAnalistas.forEach(resetRoutineFields);
+  rotinasInventario.forEach(resetRoutineFields);
 
   applyDefaultPrioritiesAndOrder('pc');
   applyDefaultPrioritiesAndOrder('analistas');
+  applyDefaultPrioritiesAndOrder('inventario');
 
   await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
   await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() });
 }
 
 async function saveData() {
   await Promise.all([
     saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() }), // SAVE INVENTARIO
     saveToFirebase(COLL_HISTORY, { history: visibleHistory, lastUpdate: new Date() }),
     saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
     saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
@@ -1833,7 +1930,11 @@ function lockKey(context, task, action) { return `${context}:${task?.id || ''}:$
 function moveTaskToEnd(list, index) { const t = list.splice(index, 1)[0]; list.push(t); }
 
 async function startTask(context, index) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   const task = list[index];
 
   const analistaSelect = document.getElementById(`analista-${context}-${index}`);
@@ -1858,7 +1959,11 @@ function calcDurationFromTimestamps(startTs, endTs) {
 }
 
 async function finishTask(context, index) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   const task = list[index];
   if (!task) return;
 
@@ -1933,7 +2038,11 @@ async function finishTask(context, index) {
 }
 
 async function partialTask(context, index) {
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   const task = list[index];
   if (!task) return;
 
@@ -2018,7 +2127,7 @@ async function partialTask(context, index) {
    UI / RENDER
 =========================== */
 function openTab(id) {
-  // BLOQUEIOS (para não abrir via JS mesmo que alguém chame openTab('mobile'))
+  // BLOQUEIOS
   if (id === 'mobile' && !isPrivileged()) {
     showToast('Acesso negado', 'error');
     return;
@@ -2040,10 +2149,11 @@ function openTab(id) {
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 
-  // ATIVO por ID (não quebra quando o botão Mobile está oculto)
+  // ATIVO por ID
   const navMap = {
     pc: 'navPcBtn',
     analistas: 'navAnalistasBtn',
+    inventario: 'navInventarioBtn', // NOVO
     mobile: 'navMobileBtn',
     kpi: 'navKpiBtn',
     governance: 'navGovBtn'
@@ -2071,10 +2181,18 @@ function render() {
 
   sortByStatusAndPriority('pc');
   sortByStatusAndPriority('analistas');
+  sortByStatusAndPriority('inventario');
 
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
-  document.getElementById("historyTitle").innerText = currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS';
+  renderList('inventario', rotinasInventario, document.getElementById("tasksInventario")); // NOVO
+
+  // Ajuste do título do histórico
+  let histTitle = 'OPERACIONAIS';
+  if (currentView === 'analistas') histTitle = 'ANALISTAS';
+  if (currentView === 'inventario') histTitle = 'INVENTÁRIO';
+  
+  document.getElementById("historyTitle").innerText = histTitle;
   renderHistory();
 }
 
@@ -2110,8 +2228,6 @@ function renderList(context, list, container) {
 
     const finishDisabled = (!canFinish) || partialMode;
 
-    // RENDERIZACAO REORDENADA V2
-    // Ordem: Prio | Rotina | Analista | Ações | % | Status | Inicio | Fim
     container.innerHTML += `
       <div class="${rowClass}">
         <div class="prio-badge ${badgeClass}">${escapeHtml(badgeText)}</div>
@@ -2168,8 +2284,10 @@ function renderList(context, list, container) {
 
 function renderHistory() {
   const filteredHistory = history.filter(h => {
-    if (currentView === 'pc') return !h.type || h.type === 'pc';
-    return h.type === 'analistas';
+    if (currentView === 'pc') return (!h.type || h.type === 'pc');
+    if (currentView === 'analistas') return h.type === 'analistas';
+    if (currentView === 'inventario') return h.type === 'inventario';
+    return false;
   });
 
   document.getElementById("history").innerHTML = filteredHistory.map(h => `
@@ -2218,7 +2336,10 @@ async function saveRotina() {
   const prioridade = document.getElementById('rotinaPrio').value;
   if (!nome) { showToast('Informe o nome da rotina', 'error'); return; }
 
-  const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (currentContext === 'pc') list = rotinasPC;
+  else if (currentContext === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
 
   if (currentEditId !== null) {
     const task = list.find(t => t.id === currentEditId);
@@ -2248,7 +2369,11 @@ async function saveRotina() {
 
 function editRotina(context, i) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   const task = list[i];
   currentContext = context;
   currentEditId = task.id;
@@ -2261,9 +2386,12 @@ async function removeRotina(context, i) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   if (!confirm("Excluir rotina?")) return;
 
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
-  const task = list[i];
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
 
+  const task = list[i];
   if (task?.id) exitPartialMode(task.id);
 
   list.splice(i, 1);
@@ -2276,34 +2404,43 @@ async function removeRotina(context, i) {
 
 async function resetRotinas(context) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
-  if (!confirm(`Reiniciar todas as rotinas de ${context === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
+  let label = 'OPERACIONAIS';
+  if(context === 'analistas') label = 'ANALISTAS';
+  if(context === 'inventario') label = 'INVENTÁRIO';
 
-  const list = context === 'pc' ? rotinasPC : rotinasAnalistas;
+  if (!confirm(`Reiniciar todas as rotinas de ${label}?`)) return;
+
+  let list;
+  if (context === 'pc') list = rotinasPC;
+  else if (context === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   list.forEach(resetRoutineFields);
-
   applyDefaultPrioritiesAndOrder(context);
 
-  await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas (com prioridade/ordem padrão): ${context}`, context);
+  await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas: ${context}`, context);
   await saveData();
   render();
   showToast('Rotinas reiniciadas', 'success');
 }
 
 /**
- * LIMPAR HISTÓRICO:
- * - ADMIN: limpa apenas o visível (mantém arquivo anual do MASTER)
- * - MASTER: limpa visível + apaga do arquivo anual (TODOS os anos), e some visualmente na hora
+ * LIMPAR HISTÓRICO
  */
 async function clearHistory() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
-  if (!confirm(`Apagar histórico da aba ${currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS'}?`)) return;
+  
+  let purgeType;
+  if (currentView === 'pc') purgeType = 'pc';
+  else if (currentView === 'analistas') purgeType = 'analistas';
+  else purgeType = 'inventario';
 
-  const purgeType = (currentView === 'pc') ? 'pc' : 'analistas';
+  if (!confirm(`Apagar histórico da aba ${purgeType.toUpperCase()}?`)) return;
 
   // 1) sempre limpa o VISÍVEL (pra todo mundo)
   visibleHistory = (visibleHistory || []).filter(h => !matchTypeForPurge(h, purgeType));
 
-  // 2) MASTER: limpa também o ARQUIVO (todos os anos) e zera a tela imediatamente
+  // 2) MASTER: limpa também o ARQUIVO (todos os anos)
   if (currentUserRole === 'master') {
     try {
       showToast('MASTER: limpando também o arquivo anual...', 'warning');
@@ -2320,7 +2457,7 @@ async function clearHistory() {
       renderHistory();
       updateCharts();
 
-      await logGovernanceAction('MASTER_PURGE_HISTORY', `MASTER limpou histórico (visível + arquivo anual): ${purgeType}`);
+      await logGovernanceAction('MASTER_PURGE_HISTORY', `MASTER limpou histórico: ${purgeType}`);
       showToast('Histórico removido (visível + arquivo anual)', 'success');
     } catch (e) {
       console.error(e);
@@ -2347,7 +2484,12 @@ async function clearHistory() {
 function openManagementPanel(context) {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   currentContext = context;
-  document.getElementById('panelContextTitle').innerText = context === 'pc' ? "OPERACIONAIS" : "ANALISTAS";
+  
+  let label = 'OPERACIONAIS';
+  if(context === 'analistas') label = 'ANALISTAS';
+  if(context === 'inventario') label = 'INVENTÁRIO';
+  
+  document.getElementById('panelContextTitle').innerText = label;
 
   renderPrioList();
   renderTeamList();
@@ -2364,7 +2506,11 @@ function openManagementPanel(context) {
 async function closePanelModal() { panelModal.style.display = "none"; await saveData(); }
 
 function renderPrioList() {
-  const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (currentContext === 'pc') list = rotinasPC;
+  else if (currentContext === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   document.getElementById('prioList').innerHTML = list.map((r) => `
     <div class="list-item">
       <span style="font-size:12px;">${escapeHtml(r.nome)}</span>
@@ -2377,7 +2523,11 @@ function renderPrioList() {
   `).join("");
 }
 function tempChangePriority(taskId, value) {
-  const list = currentContext === 'pc' ? rotinasPC : rotinasAnalistas;
+  let list;
+  if (currentContext === 'pc') list = rotinasPC;
+  else if (currentContext === 'analistas') list = rotinasAnalistas;
+  else list = rotinasInventario;
+
   const task = list.find(t => t.id === taskId);
   if (task) task.prioridade = value;
 }
@@ -2666,7 +2816,13 @@ async function editAnalista(i) {
 function exportToExcel() {
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
 
-  const filteredHistory = history.filter(h => (currentView === 'pc' ? (!h.type || h.type === 'pc') : (h.type === 'analistas')));
+  let contextName = '';
+  const filteredHistory = history.filter(h => {
+    if(currentView === 'pc') { contextName='OPERACIONAIS'; return (!h.type || h.type === 'pc'); }
+    if(currentView === 'analistas') { contextName='ANALISTAS'; return h.type === 'analistas'; }
+    if(currentView === 'inventario') { contextName='INVENTARIO'; return h.type === 'inventario'; }
+    return false;
+  });
 
   let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head><meta charset="utf-8"></head>
@@ -2693,7 +2849,6 @@ function exportToExcel() {
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  const contextName = currentView === 'pc' ? 'OPERACIONAIS' : 'ANALISTAS';
   a.download = `Relatorio_${contextName}_${TODAY_STR.replace(/\//g, '-')}.xls`;
   document.body.appendChild(a);
   a.click();
@@ -2778,8 +2933,10 @@ function filterHistoryForKpi() {
       if (dateStart && hDate < parseDateInput(dateStart)) return false;
       if (dateEnd && hDate > parseDateInput(dateEnd)) return false;
     }
-    if (typeFilter === 'pc' && h.type === 'analistas') return false;
-    if (typeFilter === 'analistas' && (!h.type || h.type === 'pc')) return false;
+    if (typeFilter === 'pc' && (h.type === 'analistas' || h.type === 'inventario')) return false;
+    if (typeFilter === 'analistas' && (!h.type || h.type === 'pc' || h.type === 'inventario')) return false;
+    if (typeFilter === 'inventario' && h.type !== 'inventario') return false;
+
     if (analistaFilter && h.analista !== analistaFilter) return false;
     if (statusFilter === 'done' && h.status !== 'Concluído') return false;
     if (statusFilter === 'partial' && h.status !== 'Parcial') return false;
@@ -2917,25 +3074,20 @@ function showToast(message, type = 'info') {
 }
 
 /* ===========================
-   LOGICA MOBILE GESTÃO (MONITORAMENTO)
-   - NOVO: filtros por botões (tipo + status)
+   LOGICA MOBILE GESTÃO
 =========================== */
-let mobileTypeFilter = { pc: true, analistas: true }; // permite combinar
+let mobileTypeFilter = { pc: false, analistas: false, inventario: false }; // INICIA ZERADO (FALSE)
 let mobileStatusFilter = 'running'; // running | pending | done
 
 function toggleMobileType(type) {
   if (!mobileTypeFilter || typeof mobileTypeFilter !== 'object') {
-    mobileTypeFilter = { pc: true, analistas: true };
+    mobileTypeFilter = { pc: false, analistas: false, inventario: false };
   }
-  if (type !== 'pc' && type !== 'analistas') return;
+  if (type !== 'pc' && type !== 'analistas' && type !== 'inventario') return;
 
   mobileTypeFilter[type] = !mobileTypeFilter[type];
-
-  // não deixa "vazio": se desligar os dois, volta para ambos
-  if (!mobileTypeFilter.pc && !mobileTypeFilter.analistas) {
-    mobileTypeFilter.pc = true;
-    mobileTypeFilter.analistas = true;
-  }
+  // Removi a lógica que forçava "tudo true" se ficasse tudo vazio.
+  // Agora o usuário tem liberdade para desmarcar tudo se quiser.
 
   renderMobileDashboard();
 }
@@ -2943,6 +3095,7 @@ function toggleMobileType(type) {
 function setMobileTypeAll() {
   mobileTypeFilter.pc = true;
   mobileTypeFilter.analistas = true;
+  mobileTypeFilter.inventario = true;
   renderMobileDashboard();
 }
 
@@ -2956,9 +3109,11 @@ function setMobileStatusFilter(status) {
 function updateMobileButtonsUI() {
   const pcBtn = document.getElementById('mobTypePcBtn');
   const anBtn = document.getElementById('mobTypeAnalistasBtn');
+  const invBtn = document.getElementById('mobTypeInventarioBtn');
 
   if (pcBtn) pcBtn.classList.toggle('active', !!mobileTypeFilter.pc);
   if (anBtn) anBtn.classList.toggle('active', !!mobileTypeFilter.analistas);
+  if (invBtn) invBtn.classList.toggle('active', !!mobileTypeFilter.inventario);
 
   const bRun = document.getElementById('mobStatusRunningBtn');
   const bPen = document.getElementById('mobStatusPendingBtn');
@@ -2996,6 +3151,7 @@ function includeItemByContextForMobile(item) {
   if (!item || !item.context) return false;
   if (item.context === 'pc' && mobileTypeFilter.pc) return true;
   if (item.context === 'analistas' && mobileTypeFilter.analistas) return true;
+  if (item.context === 'inventario' && mobileTypeFilter.inventario) return true;
   return false;
 }
 
@@ -3007,29 +3163,33 @@ function renderMobileDashboard() {
 
   ensureOrderIndex(rotinasPC);
   ensureOrderIndex(rotinasAnalistas);
+  ensureOrderIndex(rotinasInventario);
 
   // Contagem de "quantas rotinas" existem de cada tipo (total)
   const totalPc = Array.isArray(rotinasPC) ? rotinasPC.length : 0;
   const totalAn = Array.isArray(rotinasAnalistas) ? rotinasAnalistas.length : 0;
+  const totalInv = Array.isArray(rotinasInventario) ? rotinasInventario.length : 0;
 
   const countPcEl = document.getElementById('mobCountPc');
   const countAnEl = document.getElementById('mobCountAnalistas');
+  const countInvEl = document.getElementById('mobCountInventario');
+
   if (countPcEl) countPcEl.textContent = `${totalPc} rotinas`;
   if (countAnEl) countAnEl.textContent = `${totalAn} rotinas`;
+  if (countInvEl) countInvEl.textContent = `${totalInv} rotinas`;
 
   const pcItems = (rotinasPC || []).map((item, index) => ({ ...item, context: 'pc', realIndex: index }));
   const analistItems = (rotinasAnalistas || []).map((item, index) => ({ ...item, context: 'analistas', realIndex: index }));
+  const invItems = (rotinasInventario || []).map((item, index) => ({ ...item, context: 'inventario', realIndex: index }));
 
-  // Junta e aplica filtro por tipo (pc/analistas)
-  let allItems = [...pcItems, ...analistItems].filter(includeItemByContextForMobile);
+  // Junta e aplica filtro por tipo (pc/analistas/inventario)
+  let allItems = [...pcItems, ...analistItems, ...invItems].filter(includeItemByContextForMobile);
 
   const runningItems = allItems.filter(item => item.status === 'in_progress');
   const pendingItems = allItems.filter(item => item.status === 'pending');
-
-  // ✅ NOVO: Concluídos vêm do STATUS das rotinas (não do histórico)
   const doneItems = allItems.filter(item => (item.status === 'done' || item.status === 'partial'));
 
-  // KPIs (agora são os números dentro dos botões)
+  // KPIs
   const kpiRun = document.getElementById('mobKpiRunning');
   const kpiPend = document.getElementById('mobKpiPending');
   const kpiDone = document.getElementById('mobKpiDone');
@@ -3038,16 +3198,20 @@ function renderMobileDashboard() {
   if (kpiPend) kpiPend.textContent = pendingItems.length;
   if (kpiDone) kpiDone.textContent = doneItems.length;
 
-  // Atualiza UI de botões + mostra só 1 seção por vez
+  // Atualiza UI de botões
   updateMobileButtonsUI();
+
+  // Verifica se não há NENHUM filtro ativo
+  const noFilterActive = (!mobileTypeFilter.pc && !mobileTypeFilter.analistas && !mobileTypeFilter.inventario);
 
   // --- RENDER RUNNING ---
   const runningContainer = document.getElementById('mobileRunningContainer');
   if (runningContainer) {
     runningContainer.innerHTML = '';
-
     if (mobileStatusFilter === 'running') {
-      if (runningItems.length === 0) {
+      if (noFilterActive) {
+         runningContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#666; font-style:italic;">Selecione uma categoria acima para ver as tarefas.</div>';
+      } else if (runningItems.length === 0) {
         runningContainer.innerHTML = '<div style="padding:15px; color:#666; font-style:italic;">Nenhuma tarefa em execução no momento.</div>';
       } else {
         runningItems.sort((a,b) => (a.inicioTs || 0) - (b.inicioTs || 0));
@@ -3055,12 +3219,16 @@ function renderMobileDashboard() {
         runningItems.forEach(item => {
           const initials = item.analista ? item.analista.split(' ').map(n=>n[0]).join('').slice(0,2) : '??';
           const startTs = item.inicioTs || Date.now();
+          
+          let ctxLabel = 'OPER';
+          if(item.context === 'analistas') ctxLabel = 'ANALISTA';
+          if(item.context === 'inventario') ctxLabel = 'INVENTÁRIO';
 
           runningContainer.innerHTML += `
             <div class="mob-running-card">
               <div class="mob-running-header">
                 <div class="mob-running-title">${escapeHtml(item.nome)}</div>
-                <div style="font-size:10px; color:#666; font-weight:bold;">${item.context === 'pc' ? 'OPER' : 'ANALISTA'}</div>
+                <div style="font-size:10px; color:#666; font-weight:bold;">${ctxLabel}</div>
               </div>
 
               <div class="mob-analyst-row">
@@ -3088,7 +3256,9 @@ function renderMobileDashboard() {
     pendingContainer.innerHTML = '';
 
     if (mobileStatusFilter === 'pending') {
-      if (pendingItems.length === 0) {
+      if (noFilterActive) {
+         pendingContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Selecione uma categoria acima para ver as tarefas.</div>';
+      } else if (pendingItems.length === 0) {
         pendingContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Fila zerada!</div>';
       } else {
         pendingItems.sort((a,b) => {
@@ -3102,6 +3272,10 @@ function renderMobileDashboard() {
           let dotClass = 'bg-prio-media';
           if(item.prioridade === 'alta') dotClass = 'bg-prio-alta';
           if(item.prioridade === 'baixa') dotClass = 'bg-prio-baixa';
+          
+          let ctxLabel = 'Operacional';
+          if(item.context === 'analistas') ctxLabel = 'Analista';
+          if(item.context === 'inventario') ctxLabel = 'Inventário';
 
           pendingContainer.innerHTML += `
             <div class="mob-pending-item">
@@ -3109,7 +3283,7 @@ function renderMobileDashboard() {
                 <div class="mob-prio-dot ${dotClass}"></div>
                 <div>
                   <div class="mob-pending-name">${escapeHtml(item.nome)}</div>
-                  <div class="mob-pending-ctx">${item.context === 'pc' ? 'Operacional' : 'Analista'}</div>
+                  <div class="mob-pending-ctx">${ctxLabel}</div>
                 </div>
               </div>
             </div>
@@ -3125,14 +3299,19 @@ function renderMobileDashboard() {
     doneContainer.innerHTML = '';
 
     if (mobileStatusFilter === 'done') {
-      if (!doneItems.length) {
-        doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Nenhuma rotina concluída (com os filtros atuais).</div>';
+      if (noFilterActive) {
+         doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Selecione uma categoria acima para ver as tarefas.</div>';
+      } else if (!doneItems.length) {
+        doneContainer.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Nenhuma rotina concluída.</div>';
       } else {
         const sorted = doneItems.slice().sort((a,b) => (b.fimTs || 0) - (a.fimTs || 0));
 
         doneContainer.innerHTML = sorted.map(item => {
-          const isPc = (item.context === 'pc');
-          const ctxPill = isPc ? `<span class="mob-pill ctx-pc">OPER</span>` : `<span class="mob-pill ctx-an">ANALISTA</span>`;
+          let ctxPill;
+          if (item.context === 'pc') ctxPill = `<span class="mob-pill ctx-pc">OPER</span>`;
+          else if (item.context === 'analistas') ctxPill = `<span class="mob-pill ctx-an">ANALISTA</span>`;
+          else ctxPill = `<span class="mob-pill ctx-inv">INV</span>`;
+
           const stPill = (item.status === 'partial') ? `<span class="mob-pill partial">PARCIAL</span>` : `<span class="mob-pill done">CONCLUÍDO</span>`;
 
           const percent = (item.status === 'partial' && item.percent)
