@@ -27,6 +27,7 @@
   --warning-bg:#fff3cd;--warning-text:#664d03;
   --info:#0d6efd;--danger:#dc3545;
   --inventario-color: #6f42c1; /* Cor roxa para diferenciar Inventário */
+  --devolucao-color: #e67e22; /* Cor laranja para Devolução */
 }
 *{box-sizing:border-box;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
 body{margin:0;background:var(--bg);color:var(--text-main);font-size:13px}
@@ -282,7 +283,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 }
 .mob-filter-btn{
   flex:1;
-  min-width: 130px; /* Reduzi um pouco para caber 3 */
+  min-width: 120px; /* Ajustado para caber 4 abas */
   border: 1px solid #e5e7eb;
   background: #f8f9fa;
   border-radius: 10px;
@@ -533,6 +534,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 .mob-pill.ctx-pc{ background: rgba(122,20,23,.06); border-color: rgba(122,20,23,.20); color: #7A1417; }
 .mob-pill.ctx-an{ background: rgba(13,110,253,.08); border-color: rgba(13,110,253,.22); color: #0d6efd; }
 .mob-pill.ctx-inv{ background: rgba(111, 66, 193, 0.08); border-color: rgba(111, 66, 193, 0.22); color: #6f42c1; }
+.mob-pill.ctx-dev{ background: rgba(230, 126, 34, 0.08); border-color: rgba(230, 126, 34, 0.22); color: #e67e22; }
 
 .mob-done-bottom{
   display:flex;
@@ -546,7 +548,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 
 /* =========================================
    NOVO: PROGRESSO DA ABA (HEADER)
-   - aparece só em pc / analistas / inventario
+   - aparece só em pc / analistas / inventario / devolucao
    - calcula "iniciadas" = status != pending
    - caminhão + baú preenchendo pelo %
    ========================================= */
@@ -692,14 +694,15 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <button class="logout-btn" onclick="logoutUser()">Sair</button>
   </div>
 
-  <!-- NAV (Mobile apenas ADMIN/MASTER) + IDs para não quebrar active) -->
+  <!-- NAV (Mobile apenas ADMIN/MASTER) + IDs para não quebrar active) + ÍCONES ADICIONADOS -->
   <nav>
-    <button id="navPcBtn" class="active" onclick="openTab('pc')">ROTINAS OPERACIONAIS</button>
-    <button id="navAnalistasBtn" onclick="openTab('analistas')">ROTINAS ANALISTAS</button>
-    <button id="navInventarioBtn" onclick="openTab('inventario')">INVENTÁRIO AQ</button>
+    <button id="navPcBtn" class="active" onclick="openTab('pc')">📦 ROTINAS OPERACIONAIS</button>
+    <button id="navAnalistasBtn" onclick="openTab('analistas')">💻 ROTINAS ANALISTAS</button>
+    <button id="navDevolucaoBtn" onclick="openTab('devolucao')">🔄 ROTINAS DEVOLUÇÃO</button>
+    <button id="navInventarioBtn" onclick="openTab('inventario')">📋 INVENTÁRIO AQ</button>
     <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
     <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
-    <button id="navGovBtn" class="master-only" onclick="openTab('governance')">📋 GOVERNANÇA</button>
+    <button id="navGovBtn" class="master-only" onclick="openTab('governance')">🔐 GOVERNANÇA</button>
   </nav>
 </header>
 
@@ -749,6 +752,30 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 </section>
 
+<!-- SEÇÃO DEVOLUÇÃO MOVIDA PARA ANTES DO INVENTÁRIO -->
+<section id="devolucao">
+  <div class="card" style="border-top-color: var(--devolucao-color);">
+    <div class="actions-bar">
+      <button class="primary-btn privileged-only" onclick="openModal('devolucao')">+ NOVA ROTINA (DEVOLUÇÃO)</button>
+      <button class="panel-btn privileged-only" onclick="openManagementPanel('devolucao')">⚙️ PAINEL GERENCIAL</button>
+      <button class="reset-btn privileged-only" onclick="resetRotinas('devolucao')">REINICIAR ROTINAS</button>
+    </div>
+
+    <div class="task-header" style="color: var(--devolucao-color);">
+      <span>Prioridade</span>
+      <span>Rotina</span>
+      <span>Analista</span>
+      <span>Ações</span>
+      <span>%</span>
+      <span>Status/Justificativa</span>
+      <span>Início</span>
+      <span>Fim</span>
+    </div>
+
+    <div id="tasksDevolucao"></div>
+  </div>
+</section>
+
 <section id="inventario">
   <div class="card" style="border-top-color: var(--inventario-color);">
     <div class="actions-bar">
@@ -779,7 +806,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 
   <div class="mob-controls-container">
-    <!-- Filtros por tipo (Operacional / Analistas / Inventário / Todos) -->
+    <!-- Filtros por tipo (Operacional / Analistas / Inventário / Devolução / Todos) -->
     <div class="mob-type-bar">
       <button id="mobTypePcBtn" class="mob-filter-btn" onclick="toggleMobileType('pc')">
         <div class="mob-filter-title">📦 Operacional</div>
@@ -789,6 +816,11 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       <button id="mobTypeAnalistasBtn" class="mob-filter-btn" onclick="toggleMobileType('analistas')">
         <div class="mob-filter-title">💻 Analistas</div>
         <div id="mobCountAnalistas" class="mob-filter-sub">0 rotinas</div>
+      </button>
+
+      <button id="mobTypeDevolucaoBtn" class="mob-filter-btn" onclick="toggleMobileType('devolucao')">
+        <div class="mob-filter-title" style="color: var(--devolucao-color);">🔄 Devolução</div>
+        <div id="mobCountDevolucao" class="mob-filter-sub">0 rotinas</div>
       </button>
 
       <button id="mobTypeInventarioBtn" class="mob-filter-btn" onclick="toggleMobileType('inventario')">
@@ -866,6 +898,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
           <option value="all">Visão Geral (Todos)</option>
           <option value="pc">Operacionais</option>
           <option value="analistas">Analistas</option>
+          <option value="devolucao">Devolução</option>
           <option value="inventario">Inventário AQ</option>
         </select>
       </div>
@@ -1136,7 +1169,8 @@ const COLL_PERMISSIONS = 'permissions';
 const COLL_USERS = 'users_credentials';
 const COLL_ROTINAS_PC = 'rotinas_pc';
 const COLL_ROTINAS_ANALISTAS = 'rotinas_analistas';
-const COLL_ROTINAS_INVENTARIO = 'rotinas_inventario'; // NOVA COLEÇÃO
+const COLL_ROTINAS_INVENTARIO = 'rotinas_inventario';
+const COLL_ROTINAS_DEVOLUCAO = 'rotinas_devolucao'; // NOVA COLEÇÃO
 const COLL_HISTORY = 'history';
 const COLL_CONFIG = 'config';
 const COLL_GOV = 'governance';
@@ -1202,12 +1236,23 @@ const DEFAULT_ROTINAS_INVENTARIO = [
     "TESTE BIPAR RG JÁ INVENTÁRIADO"
 ];
 
+// NOVAS ROTINAS DE DEVOLUÇÃO
+const DEFAULT_ROTINAS_DEVOLUCAO = [
+  "ANALISE DE ATENDIMENTOS EM ATRASO",
+  "PROGRAMAR CHARQUE",
+  "PROGRAMAR GRAXARIA",
+  "REUNIÃO DE ATENDIMENTOS EM ATRASO",
+  "PRODUTO PARADO EM TSP",
+  "PRODUTO SEM ENDEREÇO ORIGEM DEVOLUÇÃO"
+];
+
 const DEFAULT_ANALISTAS = ["LIVIA PORTA","WILLIAN SILAS","RODRIGO PRADO","EVERTON MORAES","PAULO AFONSO","ERICK SALES"];
 const DEFAULT_MOTIVOS = ["FALTA DE TEMPO","SISTEMA INDISPONÍVEL","SEM DEMANDA","AGUARDANDO OUTRA ÁREA"];
 
 let rotinasPC = [];
 let rotinasAnalistas = [];
-let rotinasInventario = []; // NOVO ARRAY
+let rotinasInventario = [];
+let rotinasDevolucao = []; // NOVO ARRAY
 
 // history = efetivo (master: visível + archive; admin/user: só visível)
 let history = [];
@@ -1309,7 +1354,8 @@ function sortByStatusAndPriority(context) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const active = [];
   const finished = [];
@@ -1335,7 +1381,8 @@ function applyDefaultPrioritiesAndOrder(context) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   ensureOrderIndex(list);
 
@@ -1346,7 +1393,7 @@ function applyDefaultPrioritiesAndOrder(context) {
       t.prioridade = i < 5 ? 'alta' : (i < 10 ? 'media' : 'baixa');
     });
   } else {
-    // Analistas e Inventário tudo Alta por padrão
+    // Analistas, Inventário e Devolução tudo Alta por padrão
     list.forEach(t => { t.prioridade = 'alta'; });
   }
 
@@ -1458,6 +1505,7 @@ function matchTypeForPurge(entry, purgeType) {
   if (purgeType === 'pc') return (!t || t === 'pc');
   if (purgeType === 'analistas') return (t === 'analistas');
   if (purgeType === 'inventario') return (t === 'inventario');
+  if (purgeType === 'devolucao') return (t === 'devolucao');
   return false;
 }
 
@@ -1979,13 +2027,24 @@ function setupRealtimeListeners() {
     }
   });
 
-  // NOVO LISTENER: INVENTÁRIO
   realTimeListeners.rotinasInventario = db.collection(COLL_ROTINAS_INVENTARIO).doc('data').onSnapshot((doc) => {
     if (doc.exists) {
       const data = doc.data();
       rotinasInventario = data.rotinas || [];
       ensureOrderIndex(rotinasInventario);
       if (currentView === 'inventario') render();
+      if (currentView === 'mobile') renderMobileDashboard();
+      updateHeaderProgress();
+    }
+  });
+
+  // NOVO LISTENER: DEVOLUÇÃO
+  realTimeListeners.rotinasDevolucao = db.collection(COLL_ROTINAS_DEVOLUCAO).doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      rotinasDevolucao = data.rotinas || [];
+      ensureOrderIndex(rotinasDevolucao);
+      if (currentView === 'devolucao') render();
       if (currentView === 'mobile') renderMobileDashboard();
       updateHeaderProgress();
     }
@@ -2140,7 +2199,7 @@ async function loadData() {
     await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastUpdate: new Date(), lastDate: TODAY_STR });
   }
 
-  // CARREGAR INVENTARIO
+  // CARREGAR INVENTÁRIO
   const savedInventario = await loadFromFirebase(COLL_ROTINAS_INVENTARIO);
   if (savedInventario && savedInventario.rotinas) {
     rotinasInventario = savedInventario.rotinas;
@@ -2156,9 +2215,26 @@ async function loadData() {
     await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastUpdate: new Date(), lastDate: TODAY_STR });
   }
 
+  // CARREGAR DEVOLUÇÃO
+  const savedDevolucao = await loadFromFirebase(COLL_ROTINAS_DEVOLUCAO);
+  if (savedDevolucao && savedDevolucao.rotinas) {
+    rotinasDevolucao = savedDevolucao.rotinas;
+  } else {
+    rotinasDevolucao = DEFAULT_ROTINAS_DEVOLUCAO.map((nome, i) => ({
+      id: 'dev_' + i,
+      nome,
+      status: 'pending',
+      prioridade: 'alta',
+      orderIndex: i
+    }));
+    applyDefaultPrioritiesAndOrder('devolucao');
+    await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastUpdate: new Date(), lastDate: TODAY_STR });
+  }
+
   ensureOrderIndex(rotinasPC);
   ensureOrderIndex(rotinasAnalistas);
   ensureOrderIndex(rotinasInventario);
+  ensureOrderIndex(rotinasDevolucao);
 
   const savedHistory = await loadFromFirebase(COLL_HISTORY);
   visibleHistory = savedHistory ? (savedHistory.history || []) : [];
@@ -2194,14 +2270,17 @@ async function resetDailyData() {
   rotinasPC.forEach(resetRoutineFields);
   rotinasAnalistas.forEach(resetRoutineFields);
   rotinasInventario.forEach(resetRoutineFields);
+  rotinasDevolucao.forEach(resetRoutineFields);
 
   applyDefaultPrioritiesAndOrder('pc');
   applyDefaultPrioritiesAndOrder('analistas');
   applyDefaultPrioritiesAndOrder('inventario');
+  applyDefaultPrioritiesAndOrder('devolucao');
 
   await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
   await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
   await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDate: TODAY_STR, lastUpdate: new Date() });
 }
 
 async function saveData() {
@@ -2209,6 +2288,7 @@ async function saveData() {
     saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_HISTORY, { history: visibleHistory, lastUpdate: new Date() }),
     saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
     saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
@@ -2339,7 +2419,8 @@ async function startTask(context, index) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list[index];
 
@@ -2368,7 +2449,8 @@ async function finishTask(context, index) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list[index];
   if (!task) return;
@@ -2447,7 +2529,8 @@ async function partialTask(context, index) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list[index];
   if (!task) return;
@@ -2537,6 +2620,7 @@ function getListByContext(context){
   if (context === 'pc') return rotinasPC || [];
   if (context === 'analistas') return rotinasAnalistas || [];
   if (context === 'inventario') return rotinasInventario || [];
+  if (context === 'devolucao') return rotinasDevolucao || [];
   return [];
 }
 
@@ -2544,6 +2628,7 @@ function getTabLabel(context){
   if (context === 'pc') return 'OPERACIONAIS';
   if (context === 'analistas') return 'ANALISTAS';
   if (context === 'inventario') return 'INVENTÁRIO';
+  if (context === 'devolucao') return 'DEVOLUÇÃO';
   return '';
 }
 
@@ -2554,7 +2639,7 @@ function updateHeaderProgress(){
   const cargoFill = document.getElementById('cargoFill');
   if (!wrap || !titleEl || !valueEl || !cargoFill) return;
 
-  const allowed = (currentView === 'pc' || currentView === 'analistas' || currentView === 'inventario');
+  const allowed = (currentView === 'pc' || currentView === 'analistas' || currentView === 'inventario' || currentView === 'devolucao');
   wrap.style.display = allowed ? 'flex' : 'none';
   if (!allowed) return;
 
@@ -2597,11 +2682,12 @@ function openTab(id) {
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 
-  // ATIVO por ID
+  // ATIVO por ID - ORDEM AJUSTADA PARA REFLETIR A NOVA ORDEM DAS ABAS
   const navMap = {
     pc: 'navPcBtn',
     analistas: 'navAnalistasBtn',
-    inventario: 'navInventarioBtn',
+    devolucao: 'navDevolucaoBtn',    // MOVIDO ANTES DO INVENTÁRIO
+    inventario: 'navInventarioBtn',  // DEPOIS DA DEVOLUÇÃO
     mobile: 'navMobileBtn',
     kpi: 'navKpiBtn',
     governance: 'navGovBtn'
@@ -2636,15 +2722,18 @@ function render() {
   sortByStatusAndPriority('pc');
   sortByStatusAndPriority('analistas');
   sortByStatusAndPriority('inventario');
+  sortByStatusAndPriority('devolucao');
 
   renderList('pc', rotinasPC, document.getElementById("tasks"));
   renderList('analistas', rotinasAnalistas, document.getElementById("tasksAnalistas"));
   renderList('inventario', rotinasInventario, document.getElementById("tasksInventario"));
+  renderList('devolucao', rotinasDevolucao, document.getElementById("tasksDevolucao"));
 
   // Ajuste do título do histórico
   let histTitle = 'OPERACIONAIS';
   if (currentView === 'analistas') histTitle = 'ANALISTAS';
   if (currentView === 'inventario') histTitle = 'INVENTÁRIO';
+  if (currentView === 'devolucao') histTitle = 'DEVOLUÇÃO';
 
   document.getElementById("historyTitle").innerText = histTitle;
   renderHistory();
@@ -2741,6 +2830,7 @@ function renderHistory() {
     if (currentView === 'pc') return (!h.type || h.type === 'pc');
     if (currentView === 'analistas') return h.type === 'analistas';
     if (currentView === 'inventario') return h.type === 'inventario';
+    if (currentView === 'devolucao') return h.type === 'devolucao';
     return false;
   });
 
@@ -2793,7 +2883,8 @@ async function saveRotina() {
   let list;
   if (currentContext === 'pc') list = rotinasPC;
   else if (currentContext === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (currentContext === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   if (currentEditId !== null) {
     const task = list.find(t => t.id === currentEditId);
@@ -2826,7 +2917,8 @@ function editRotina(context, i) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list[i];
   currentContext = context;
@@ -2843,7 +2935,8 @@ async function removeRotina(context, i) {
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list[i];
   if (task?.id) exitPartialMode(task.id);
@@ -2861,13 +2954,15 @@ async function resetRotinas(context) {
   let label = 'OPERACIONAIS';
   if(context === 'analistas') label = 'ANALISTAS';
   if(context === 'inventario') label = 'INVENTÁRIO';
+  if(context === 'devolucao') label = 'DEVOLUÇÃO';
 
   if (!confirm(`Reiniciar todas as rotinas de ${label}?`)) return;
 
   let list;
   if (context === 'pc') list = rotinasPC;
   else if (context === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (context === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   list.forEach(resetRoutineFields);
   applyDefaultPrioritiesAndOrder(context);
@@ -2887,7 +2982,8 @@ async function clearHistory() {
   let purgeType;
   if (currentView === 'pc') purgeType = 'pc';
   else if (currentView === 'analistas') purgeType = 'analistas';
-  else purgeType = 'inventario';
+  else if (currentView === 'inventario') purgeType = 'inventario';
+  else purgeType = 'devolucao';
 
   if (!confirm(`Apagar histórico da aba ${purgeType.toUpperCase()}?`)) return;
 
@@ -2942,6 +3038,7 @@ function openManagementPanel(context) {
   let label = 'OPERACIONAIS';
   if(context === 'analistas') label = 'ANALISTAS';
   if(context === 'inventario') label = 'INVENTÁRIO';
+  if(context === 'devolucao') label = 'DEVOLUÇÃO';
 
   document.getElementById('panelContextTitle').innerText = label;
 
@@ -2963,7 +3060,8 @@ function renderPrioList() {
   let list;
   if (currentContext === 'pc') list = rotinasPC;
   else if (currentContext === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (currentContext === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   document.getElementById('prioList').innerHTML = list.map((r) => `
     <div class="list-item">
@@ -2980,7 +3078,8 @@ function tempChangePriority(taskId, value) {
   let list;
   if (currentContext === 'pc') list = rotinasPC;
   else if (currentContext === 'analistas') list = rotinasAnalistas;
-  else list = rotinasInventario;
+  else if (currentContext === 'inventario') list = rotinasInventario;
+  else list = rotinasDevolucao;
 
   const task = list.find(t => t.id === taskId);
   if (task) task.prioridade = value;
@@ -3275,6 +3374,7 @@ function exportToExcel() {
     if(currentView === 'pc') { contextName='OPERACIONAIS'; return (!h.type || h.type === 'pc'); }
     if(currentView === 'analistas') { contextName='ANALISTAS'; return h.type === 'analistas'; }
     if(currentView === 'inventario') { contextName='INVENTARIO'; return h.type === 'inventario'; }
+    if(currentView === 'devolucao') { contextName='DEVOLUCAO'; return h.type === 'devolucao'; }
     return false;
   });
 
@@ -3387,9 +3487,10 @@ function filterHistoryForKpi() {
       if (dateStart && hDate < parseDateInput(dateStart)) return false;
       if (dateEnd && hDate > parseDateInput(dateEnd)) return false;
     }
-    if (typeFilter === 'pc' && (h.type === 'analistas' || h.type === 'inventario')) return false;
-    if (typeFilter === 'analistas' && (!h.type || h.type === 'pc' || h.type === 'inventario')) return false;
+    if (typeFilter === 'pc' && (h.type === 'analistas' || h.type === 'inventario' || h.type === 'devolucao')) return false;
+    if (typeFilter === 'analistas' && (!h.type || h.type === 'pc' || h.type === 'inventario' || h.type === 'devolucao')) return false;
     if (typeFilter === 'inventario' && h.type !== 'inventario') return false;
+    if (typeFilter === 'devolucao' && h.type !== 'devolucao') return false;
 
     if (analistaFilter && h.analista !== analistaFilter) return false;
     if (statusFilter === 'done' && h.status !== 'Concluído') return false;
@@ -3530,14 +3631,14 @@ function showToast(message, type = 'info') {
 /* ===========================
    LOGICA MOBILE GESTÃO
 =========================== */
-let mobileTypeFilter = { pc: false, analistas: false, inventario: false }; // INICIA ZERADO (FALSE)
+let mobileTypeFilter = { pc: false, analistas: false, inventario: false, devolucao: false }; // INICIA ZERADO (FALSE)
 let mobileStatusFilter = 'running'; // running | pending | done
 
 function toggleMobileType(type) {
   if (!mobileTypeFilter || typeof mobileTypeFilter !== 'object') {
-    mobileTypeFilter = { pc: false, analistas: false, inventario: false };
+    mobileTypeFilter = { pc: false, analistas: false, inventario: false, devolucao: false };
   }
-  if (type !== 'pc' && type !== 'analistas' && type !== 'inventario') return;
+  if (type !== 'pc' && type !== 'analistas' && type !== 'inventario' && type !== 'devolucao') return;
 
   mobileTypeFilter[type] = !mobileTypeFilter[type];
   renderMobileDashboard();
@@ -3547,6 +3648,7 @@ function setMobileTypeAll() {
   mobileTypeFilter.pc = true;
   mobileTypeFilter.analistas = true;
   mobileTypeFilter.inventario = true;
+  mobileTypeFilter.devolucao = true;
   renderMobileDashboard();
 }
 
@@ -3561,10 +3663,12 @@ function updateMobileButtonsUI() {
   const pcBtn = document.getElementById('mobTypePcBtn');
   const anBtn = document.getElementById('mobTypeAnalistasBtn');
   const invBtn = document.getElementById('mobTypeInventarioBtn');
+  const devBtn = document.getElementById('mobTypeDevolucaoBtn');
 
   if (pcBtn) pcBtn.classList.toggle('active', !!mobileTypeFilter.pc);
   if (anBtn) anBtn.classList.toggle('active', !!mobileTypeFilter.analistas);
   if (invBtn) invBtn.classList.toggle('active', !!mobileTypeFilter.inventario);
+  if (devBtn) devBtn.classList.toggle('active', !!mobileTypeFilter.devolucao);
 
   const bRun = document.getElementById('mobStatusRunningBtn');
   const bPen = document.getElementById('mobStatusPendingBtn');
@@ -3603,6 +3707,7 @@ function includeItemByContextForMobile(item) {
   if (item.context === 'pc' && mobileTypeFilter.pc) return true;
   if (item.context === 'analistas' && mobileTypeFilter.analistas) return true;
   if (item.context === 'inventario' && mobileTypeFilter.inventario) return true;
+  if (item.context === 'devolucao' && mobileTypeFilter.devolucao) return true;
   return false;
 }
 
@@ -3615,26 +3720,31 @@ function renderMobileDashboard() {
   ensureOrderIndex(rotinasPC);
   ensureOrderIndex(rotinasAnalistas);
   ensureOrderIndex(rotinasInventario);
+  ensureOrderIndex(rotinasDevolucao);
 
   // Contagem de "quantas rotinas" existem de cada tipo (total)
   const totalPc = Array.isArray(rotinasPC) ? rotinasPC.length : 0;
   const totalAn = Array.isArray(rotinasAnalistas) ? rotinasAnalistas.length : 0;
   const totalInv = Array.isArray(rotinasInventario) ? rotinasInventario.length : 0;
+  const totalDev = Array.isArray(rotinasDevolucao) ? rotinasDevolucao.length : 0;
 
   const countPcEl = document.getElementById('mobCountPc');
   const countAnEl = document.getElementById('mobCountAnalistas');
   const countInvEl = document.getElementById('mobCountInventario');
+  const countDevEl = document.getElementById('mobCountDevolucao');
 
   if (countPcEl) countPcEl.textContent = `${totalPc} rotinas`;
   if (countAnEl) countAnEl.textContent = `${totalAn} rotinas`;
   if (countInvEl) countInvEl.textContent = `${totalInv} rotinas`;
+  if (countDevEl) countDevEl.textContent = `${totalDev} rotinas`;
 
   const pcItems = (rotinasPC || []).map((item, index) => ({ ...item, context: 'pc', realIndex: index }));
   const analistItems = (rotinasAnalistas || []).map((item, index) => ({ ...item, context: 'analistas', realIndex: index }));
   const invItems = (rotinasInventario || []).map((item, index) => ({ ...item, context: 'inventario', realIndex: index }));
+  const devItems = (rotinasDevolucao || []).map((item, index) => ({ ...item, context: 'devolucao', realIndex: index }));
 
-  // Junta e aplica filtro por tipo (pc/analistas/inventario)
-  let allItems = [...pcItems, ...analistItems, ...invItems].filter(includeItemByContextForMobile);
+  // Junta e aplica filtro por tipo (pc/analistas/inventario/devolucao)
+  let allItems = [...pcItems, ...analistItems, ...invItems, ...devItems].filter(includeItemByContextForMobile);
 
   const runningItems = allItems.filter(item => item.status === 'in_progress');
   const pendingItems = allItems.filter(item => item.status === 'pending');
@@ -3653,7 +3763,7 @@ function renderMobileDashboard() {
   updateMobileButtonsUI();
 
   // Verifica se não há NENHUM filtro ativo
-  const noFilterActive = (!mobileTypeFilter.pc && !mobileTypeFilter.analistas && !mobileTypeFilter.inventario);
+  const noFilterActive = (!mobileTypeFilter.pc && !mobileTypeFilter.analistas && !mobileTypeFilter.inventario && !mobileTypeFilter.devolucao);
 
   // --- RENDER RUNNING ---
   const runningContainer = document.getElementById('mobileRunningContainer');
@@ -3674,6 +3784,7 @@ function renderMobileDashboard() {
           let ctxLabel = 'OPER';
           if(item.context === 'analistas') ctxLabel = 'ANALISTA';
           if(item.context === 'inventario') ctxLabel = 'INVENTÁRIO';
+          if(item.context === 'devolucao') ctxLabel = 'DEVOLUÇÃO';
 
           runningContainer.innerHTML += `
             <div class="mob-running-card">
@@ -3727,6 +3838,7 @@ function renderMobileDashboard() {
           let ctxLabel = 'Operacional';
           if(item.context === 'analistas') ctxLabel = 'Analista';
           if(item.context === 'inventario') ctxLabel = 'Inventário';
+          if(item.context === 'devolucao') ctxLabel = 'Devolução';
 
           pendingContainer.innerHTML += `
             <div class="mob-pending-item">
@@ -3761,7 +3873,8 @@ function renderMobileDashboard() {
           let ctxPill;
           if (item.context === 'pc') ctxPill = `<span class="mob-pill ctx-pc">OPER</span>`;
           else if (item.context === 'analistas') ctxPill = `<span class="mob-pill ctx-an">ANALISTA</span>`;
-          else ctxPill = `<span class="mob-pill ctx-inv">INV</span>`;
+          else if (item.context === 'inventario') ctxPill = `<span class="mob-pill ctx-inv">INV</span>`;
+          else ctxPill = `<span class="mob-pill ctx-dev">DEV</span>`;
 
           const stPill = (item.status === 'partial') ? `<span class="mob-pill partial">PARCIAL</span>` : `<span class="mob-pill done">CONCLUÍDO</span>`;
 
