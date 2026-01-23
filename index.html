@@ -572,6 +572,280 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   .tab-progress{ min-width: 130px; padding: 6px 8px; }
   .tab-progress-truck svg{ width:52px; height:22px; }
 }
+
+
+/* ===========================
+   ROTINAS RECORRENTES (LEMBRETES)
+=========================== */
+
+.recurring-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.15);
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  background: rgba(13,110,253,.08);
+  color:#0d6efd;
+}
+.recurring-row{
+  border-left: 4px solid #0d6efd !important;
+  background: rgba(13,110,253,.05);
+}
+.recurring-row.due{
+  background: rgba(220,53,69,.10);
+  border-left-color: #dc3545 !important;
+  animation: recurringBlink 1.1s infinite;
+}
+@keyframes recurringBlink{
+  0%{ box-shadow: 0 0 0 0 rgba(220,53,69,.35); }
+  50%{ box-shadow: 0 0 0 6px rgba(220,53,69,.00); }
+  100%{ box-shadow: 0 0 0 0 rgba(220,53,69,.35); }
+}
+.recurring-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.recurring-done-btn{
+  background:#0d6efd;
+  color:#fff;
+  border:none;
+  padding:3px 8px;
+  border-radius:3px;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+  text-transform:uppercase;
+}
+.recurring-del-btn{
+  background:#dc3545;
+  color:#fff;
+  border:none;
+  padding:3px 8px;
+  border-radius:3px;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+  text-transform:uppercase;
+}
+
+
+.recurring-badge.paused{
+  background: rgba(107,114,128,.12);
+  color:#6b7280;
+  border-color: rgba(107,114,128,.25);
+}
+
+
+
+/* Form do cadastro de recorrentes (responsivo) */
+.recurring-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){
+  .recurring-form-grid{grid-template-columns:1fr}
+}
+
+
+
+/* ===== RECORRENTES: EXTRA GRANDE E CHAMATIVO (OVERRIDE) ===== */
+
+/* Aumenta bem a “linha” do lembrete nas abas */
+.task.recurring-row{
+  padding: 14px 12px !important;
+  font-size: 16px !important;
+  border: 2px solid rgba(0,0,0,.08) !important;
+  border-left-width: 10px !important;
+}
+
+/* Nome do lembrete bem grande */
+.task.recurring-row > span:first-of-type{
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: .2px !important;
+  line-height: 1.2 !important;
+}
+
+/* Colunas menores (analista/status/horário) também aumentam */
+.task.recurring-row span{
+  font-weight: 800 !important;
+}
+
+/* Badge “RECORRENTE/PAUSADO” maior */
+.task.recurring-row .recurring-badge{
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  font-weight: 900 !important;
+}
+
+/* Prioridade maior */
+.task.recurring-row .prio-badge{
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+}
+
+/* Botões maiores */
+.task.recurring-row .finish,
+.task.recurring-row .delete{
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  font-weight: 900 !important;
+}
+
+/* Quando estiver VENCIDO: fundo vermelho Minerva escuro + pisca forte */
+.task.recurring-row.due{
+  background: #7A1417 !important;
+  color: #fff !important;
+  border-left-color: #4a0c0e !important;
+  animation: recurringUrgentBlink 0.85s infinite !important;
+}
+.task.recurring-row.due .recurring-badge{
+  background: rgba(255,255,255,.18) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.35) !important;
+}
+.task.recurring-row.due .prio-badge{
+  background: #2b0607 !important;
+  color: #fff !important;
+}
+
+@keyframes recurringUrgentBlink{
+  0%   { filter: brightness(1);    box-shadow: 0 0 0 0 rgba(0,0,0,.35); }
+  50%  { filter: brightness(1.18); box-shadow: 0 0 0 12px rgba(0,0,0,0); }
+  100% { filter: brightness(1);    box-shadow: 0 0 0 0 rgba(0,0,0,.35); }
+}
+
+
+
+/* ===== RECORRENTES: FICAR GRANDE APENAS QUANDO ALARMAR (OVERRIDE FINAL) ===== */
+
+/* Estado normal: só um pouco destacado (sem “gigante”) */
+.task.recurring-row{
+  padding: 10px 10px !important;
+  font-size: 13px !important;
+  border: 2px solid rgba(0,0,0,.08) !important;
+  border-left-width: 6px !important;
+}
+.task.recurring-row > span:first-of-type{
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+.task.recurring-row .recurring-badge{
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+}
+.task.recurring-row .prio-badge{
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+}
+.task.recurring-row .finish,
+.task.recurring-row .delete{
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  border-radius: 8px !important;
+}
+
+/* Somente quando VENCIDO: fica bem grande e mais chamativo */
+.task.recurring-row.due{
+  padding: 18px 14px !important;
+  font-size: 16px !important;
+  border-left-width: 12px !important;
+}
+.task.recurring-row.due > span:first-of-type{
+  font-size: 22px !important;
+  letter-spacing: .2px !important;
+}
+.task.recurring-row.due .recurring-badge{
+  font-size: 13px !important;
+  padding: 5px 12px !important;
+}
+.task.recurring-row.due .prio-badge{
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+.task.recurring-row.due .finish,
+.task.recurring-row.due .delete{
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+}
+
+
+
+/* ===== RECORRENTES: TAMANHO NORMAL IGUAL AS OUTRAS (E GRANDE SÓ NO ALARME) ===== */
+
+/* Igualar visual ao padrão das tasks */
+.task.recurring-row:not(.due){
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  border: 1px solid #eee !important;
+  border-left: 3px solid #0d6efd !important;
+  background: #fff !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+.task.recurring-row:not(.due) span{
+  font-weight: 600 !important;
+}
+.task.recurring-row:not(.due) > span:first-of-type{
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.task.recurring-row:not(.due) .recurring-badge{
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+}
+.task.recurring-row:not(.due) .prio-badge{
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+.task.recurring-row:not(.due) .finish,
+.task.recurring-row:not(.due) .delete{
+  padding: 3px 8px !important;
+  font-size: 10px !important;
+  border-radius: 3px !important;
+}
+
+/* Mantém o ALARME grande */
+.task.recurring-row.due{
+  background: #7A1417 !important;
+  color: #fff !important;
+  border: 2px solid rgba(0,0,0,.12) !important;
+  border-left: 12px solid #4a0c0e !important;
+  padding: 18px 14px !important;
+  font-size: 16px !important;
+}
+.task.recurring-row.due > span:first-of-type{
+  font-size: 22px !important;
+  font-weight: 900 !important;
+}
+.task.recurring-row.due .recurring-badge{
+  font-size: 13px !important;
+  padding: 5px 12px !important;
+  font-weight: 900 !important;
+  background: rgba(255,255,255,.18) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.35) !important;
+}
+.task.recurring-row.due .prio-badge{
+  background: #2b0607 !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+.task.recurring-row.due .finish,
+.task.recurring-row.due .delete{
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  font-weight: 900 !important;
+}
+
 </style>
 </head>
 
@@ -966,7 +1240,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 </section>
 
-<section id="governance" class="master-only">
+<section id="governance">
   <div class="card">
     <h3 style="margin:0 0 15px 0; color:var(--minerva-red)">📋 Relatório de Governança</h3>
 
@@ -1067,7 +1341,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 
       <div style="background:#f8f9fa;border:1px solid #e5e7eb;padding:12px;border-radius:8px;margin-bottom:10px;">
         <div style="font-weight:700;margin-bottom:6px;">Cadastrar novo usuário</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="recurring-form-grid">
           <input id="newUserName" placeholder="Nome" style="margin:0;">
           <input id="newUserEmail" placeholder="E-mail" style="margin:0;">
           <input id="newUserPassword" placeholder="Senha" style="margin:0;" type="password">
@@ -1086,7 +1360,68 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
       </small>
     </div>
 
-    <div style="text-align:right;margin-top:10px;">
+    
+
+    <div id="sectionRecurring" class="panel-section">
+      <div class="panel-title">⏰ Rotinas Recorrentes (Lembretes)</div>
+
+      <div style="background:#f8f9fa;border:1px solid #e5e7eb;padding:12px;border-radius:8px;margin-bottom:10px;">
+        <div style="font-weight:800;margin-bottom:8px;">Cadastrar lembrete recorrente</div>
+
+        <div class="recurring-form-grid">
+          <input id="recName" placeholder="Ex.: Enviar relatório WhatsApp" style="margin:0;">
+
+<div style="margin:0; display:flex; flex-direction:column; gap:6px;">
+  <div style="font-size:11px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;">Onde aparecer</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <label style="display:flex;gap:6px;align-items:center;font-weight:800;font-size:12px;">
+      <input type="checkbox" id="recCtxPc" checked> Operacionais
+    </label>
+    <label style="display:flex;gap:6px;align-items:center;font-weight:800;font-size:12px;">
+      <input type="checkbox" id="recCtxAnalistas"> Analistas
+    </label>
+    <label style="display:flex;gap:6px;align-items:center;font-weight:800;font-size:12px;">
+      <input type="checkbox" id="recCtxInventario"> Inventário
+    </label>
+    <label style="display:flex;gap:6px;align-items:center;font-weight:800;font-size:12px;">
+      <input type="checkbox" id="recCtxDevolucao"> Devolução
+    </label>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button type="button" class="panel-btn" style="padding:6px 10px;" onclick="recSelectAllCtx(true)">Marcar todos</button>
+    <button type="button" class="panel-btn" style="padding:6px 10px;" onclick="recSelectAllCtx(false)">Desmarcar todos</button>
+  </div>
+</div>
+
+
+          <input id="recIntervalMin" type="number" min="1" step="1" placeholder="Intervalo (min) ex.: 10 / 60" style="margin:0;">
+          <select id="recPrioridade" style="margin:0;">
+            <option value="alta" selected>🔥 Alta</option>
+            <option value="media">🟡 Média</option>
+            <option value="baixa">🔵 Baixa</option>
+          </select>
+
+          <select id="recAnalista" style="margin:0;">
+            <option value="TODOS">TODOS</option>
+          </select>
+
+          <button class="primary-btn" style="margin:0;" onclick="addRecurringRoutine()" type="button">Cadastrar</button>
+        </div>
+
+        <small style="color:#666;display:block;margin-top:8px;line-height:1.3;">
+          Quando vencer, a rotina fica <b>piscando</b> na aba correspondente até clicar em <b>Feito</b> (reagenda automaticamente para o próximo intervalo).
+        </small>
+      </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:8px 0 10px 0;">
+        <button class="reset-btn" onclick="pauseAllRecurring()" title="Desativa todos os lembretes recorrentes">⏸️ PAUSAR TODOS</button>
+        <button class="save-btn" style="width:auto;margin:0;" onclick="resumeAllRecurring()" title="Reativa todos os lembretes recorrentes e reagenda a partir de agora">▶️ REATIVAR TODOS</button>
+      </div>
+
+<div class="list-container" id="recurringList"></div>
+    </div>
+
+<div style="text-align:right;margin-top:10px;">
       <button class="primary-btn" style="background:#ccc;color:#333;" onclick="closePanelModal()">Fechar Painel</button>
     </div>
   </div>
@@ -1175,6 +1510,25 @@ const COLL_HISTORY = 'history';
 const COLL_CONFIG = 'config';
 const COLL_GOV = 'governance';
 const COLL_HISTORY_ARCHIVE = 'history_archive';
+const COLL_RECURRING = 'recurring_routines';
+
+// Labels amigáveis para registrar origem das ações (abas)
+const VIEW_LABELS = {
+  pc: 'ROTINAS OPERACIONAIS',
+  analistas: 'ROTINAS ANALISTAS',
+  devolucao: 'ROTINAS DEVOLUÇÃO',
+  inventario: 'INVENTÁRIO AQ',
+  mobile: 'MOBILE',
+  kpi: 'KPI / DASHBOARD',
+  governance: 'GOVERNANÇA'
+};
+function getViewLabel(viewId) {
+  return VIEW_LABELS[viewId] || String(viewId || '-').toUpperCase();
+}
+
+
+let recurringRoutines = [];
+let recurringMonitorInterval = null;
 
 let permissionsLoaded = false;
 let usersLoaded = false;
@@ -1267,6 +1621,15 @@ let chartStatus = null;
 let chartRanking = null;
 let chartMotivos = null;
 
+function todayLocalIso() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+const TODAY_ISO = todayLocalIso();
 const TODAY_STR = new Date().toLocaleDateString('pt-BR');
 document.getElementById('dateDisplay').innerText = TODAY_STR;
 
@@ -1435,6 +1798,16 @@ async function loadFromFirebase(collection) {
   const doc = await db.collection(collection).doc('data').get();
   return doc.exists ? doc.data() : null;
 }
+
+
+// Salva apenas as rotinas recorrentes (não depende do saveData completo)
+async function saveRecurringOnly() {
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+  await db.collection(COLL_RECURRING).doc('data').set({ items: recurringRoutines, lastUpdate: new Date() });
+}
+
+// garante acesso global (evita problemas de escopo)
+window.saveRecurringOnly = saveRecurringOnly;
 
 function normalizeEmail(email) { return String(email || '').trim().toLowerCase(); }
 
@@ -1810,6 +2183,8 @@ async function tryForgotPassword() {
         userId: 'SYSTEM',
         userName: 'Sistema',
         userRole: 'SYSTEM',
+  viewId: currentView || null,
+    viewLabel: getViewLabel(currentView),
         action: 'PASSWORD_RECOVERY',
         details: `Senha recuperada por e-mail para: ${email}`,
         target: email,
@@ -1977,6 +2352,8 @@ function setupUserInterface() {
 function logoutUser() {
   destroyRealtimeListeners();
 
+  stopRecurringMonitor();
+
   // REMOVE SESSÃO
   sessionStorage.removeItem('minerva_session_email');
 
@@ -2078,6 +2455,16 @@ function setupRealtimeListeners() {
     }
   });
 
+  realTimeListeners.recurring = db.collection(COLL_RECURRING).doc('data').onSnapshot((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
+      recurringRoutines = Array.isArray(data.items) ? data.items : [];
+      if (currentView !== 'kpi' && currentView !== 'governance') render();
+      if (currentView === 'mobile') renderMobileDashboard();
+    }
+  });
+
+
   if (currentUserRole === 'master') {
     realTimeListeners.governance = db.collection(COLL_GOV).doc('data').onSnapshot((doc) => {
       if (doc.exists) {
@@ -2151,6 +2538,8 @@ async function initializeApp() {
     updateCharts();
     if (currentUserRole === 'master') renderGovernanceLog();
 
+    startRecurringMonitor();
+
     // AUTO-ABRIR MOBILE: somente em celular/tablet e somente ADMIN/MASTER
     if (isProbablyMobile() && isPrivileged()) {
       openTab('mobile');
@@ -2181,7 +2570,7 @@ async function loadData() {
       orderIndex: i
     }));
     applyDefaultPrioritiesAndOrder('pc');
-    await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastUpdate: new Date(), lastDate: TODAY_STR });
+    await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastUpdate: new Date(), lastDateIso: TODAY_ISO, lastDate: TODAY_STR });
   }
 
   const savedAnalistas = await loadFromFirebase(COLL_ROTINAS_ANALISTAS);
@@ -2196,7 +2585,7 @@ async function loadData() {
       orderIndex: i
     }));
     applyDefaultPrioritiesAndOrder('analistas');
-    await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastUpdate: new Date(), lastDate: TODAY_STR });
+    await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastUpdate: new Date(), lastDateIso: TODAY_ISO, lastDate: TODAY_STR });
   }
 
   // CARREGAR INVENTÁRIO
@@ -2212,7 +2601,7 @@ async function loadData() {
       orderIndex: i
     }));
     applyDefaultPrioritiesAndOrder('inventario');
-    await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastUpdate: new Date(), lastDate: TODAY_STR });
+    await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastUpdate: new Date(), lastDateIso: TODAY_ISO, lastDate: TODAY_STR });
   }
 
   // CARREGAR DEVOLUÇÃO
@@ -2228,7 +2617,7 @@ async function loadData() {
       orderIndex: i
     }));
     applyDefaultPrioritiesAndOrder('devolucao');
-    await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastUpdate: new Date(), lastDate: TODAY_STR });
+    await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastUpdate: new Date(), lastDateIso: TODAY_ISO, lastDate: TODAY_STR });
   }
 
   ensureOrderIndex(rotinasPC);
@@ -2260,9 +2649,33 @@ async function loadData() {
   const savedGov = await loadFromFirebase(COLL_GOV);
   governanceLog = savedGov ? (savedGov.log || []) : [];
 
-  const lastDate = savedPC?.lastDate || '';
-  if (lastDate !== TODAY_STR) {
-    await resetDailyData();
+  // CARREGAR ROTINAS RECORRENTES
+  const savedRecurring = await loadFromFirebase(COLL_RECURRING);
+  if (savedRecurring && Array.isArray(savedRecurring.items)) {
+    recurringRoutines = savedRecurring.items;
+  } else {
+    recurringRoutines = [];
+    await saveToFirebase(COLL_RECURRING, { items: recurringRoutines, lastUpdate: new Date() });
+  }
+
+  const savedLastIso = savedPC?.lastDateIso;
+  const savedLastStr = savedPC?.lastDate;
+
+  if (savedLastIso) {
+    if (savedLastIso !== TODAY_ISO) {
+      await resetDailyData();
+    }
+  } else if (savedLastStr) {
+    // compat com versões antigas
+    if (savedLastStr !== TODAY_STR) {
+      await resetDailyData();
+    } else {
+      // mesmo dia, só faltava o ISO
+      await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDateIso: TODAY_ISO, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
+    }
+  } else {
+    // sem lastDate salvo: não reseta, apenas grava o lastDate de hoje
+    await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDateIso: TODAY_ISO, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
   }
 }
 
@@ -2277,18 +2690,18 @@ async function resetDailyData() {
   applyDefaultPrioritiesAndOrder('inventario');
   applyDefaultPrioritiesAndOrder('devolucao');
 
-  await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() });
-  await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() });
-  await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() });
-  await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
+  await saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() });
 }
 
 async function saveData() {
   await Promise.all([
-    saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDate: TODAY_STR, lastUpdate: new Date() }),
-    saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDate: TODAY_STR, lastUpdate: new Date() }),
-    saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDate: TODAY_STR, lastUpdate: new Date() }),
-    saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_PC, { rotinas: rotinasPC, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_ANALISTAS, { rotinas: rotinasAnalistas, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_INVENTARIO, { rotinas: rotinasInventario, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() }),
+    saveToFirebase(COLL_ROTINAS_DEVOLUCAO, { rotinas: rotinasDevolucao, lastDateIso: TODAY_ISO, lastDate: TODAY_STR, lastUpdate: new Date() }),
     saveToFirebase(COLL_HISTORY, { history: visibleHistory, lastUpdate: new Date() }),
     saveToFirebase(COLL_CONFIG, { analistas, motivos, lastUpdate: new Date() }),
     saveToFirebase(COLL_GOV, { log: governanceLog, lastUpdate: new Date() }),
@@ -2342,6 +2755,9 @@ function renderGovernanceLog() {
         <div>
           <div class="log-action">${escapeHtml(log.action || '')}</div>
           <div class="log-details">${escapeHtml(log.details || '')}</div>
+          <div class="log-meta" style="margin-top:2px; color:#666; font-size:12px;">
+            Aba: <strong>${escapeHtml(log.viewLabel || getViewLabel(log.viewId) || '-')}</strong>${log.target ? ` | Target: <strong>${escapeHtml(String(log.target))}</strong>` : ''}
+          </div>
           <small style="color:#888;">Por: <span style="${roleColor}">${escapeHtml(log.userName||'')} (${escapeHtml(log.userRole||'')})</span></small>
         </div>
         <div class="log-timestamp">${escapeHtml(ts)}</div>
@@ -2367,6 +2783,8 @@ async function exportGovernanceToExcel() {
       { header: 'Usuário', key: 'userName', width: 22 },
       { header: 'E-mail', key: 'userId', width: 28 },
       { header: 'Role', key: 'userRole', width: 10 },
+      { header: 'Aba', key: 'viewLabel', width: 20 },
+      { header: 'ViewId', key: 'viewId', width: 12 },
       { header: 'Ação', key: 'action', width: 18 },
       { header: 'Detalhes', key: 'details', width: 45 },
       { header: 'Target', key: 'target', width: 14 },
@@ -2382,6 +2800,8 @@ async function exportGovernanceToExcel() {
         userName: log.userName || '',
         userId: log.userId || '',
         userRole: log.userRole || '',
+        viewLabel: log.viewLabel || '',
+        viewId: log.viewId || '',
         action: log.action || '',
         details: log.details || '',
         target: log.target || ''
@@ -2433,8 +2853,7 @@ async function startTask(context, index) {
   task.inicioTs = Date.now();
   task.status = 'in_progress';
   task.analista = analistaSelect.value;
-
-  await saveData();
+  await saveRecurringOnly();
   render();
   showToast('Tarefa iniciada', 'success');
 }
@@ -2515,8 +2934,7 @@ async function finishTask(context, index) {
     rebuildEffectiveHistory();
 
     moveTaskToEnd(list, index);
-
-    await saveData();
+  await saveRecurringOnly();
     render();
     updateCharts();
     showToast('Tarefa concluída', 'success');
@@ -2602,8 +3020,7 @@ async function partialTask(context, index) {
     exitPartialMode(task.id);
 
     moveTaskToEnd(list, index);
-
-    await saveData();
+  await saveRecurringOnly();
     render();
     updateCharts();
     showToast('Tarefa marcada como parcial', 'success');
@@ -2625,6 +3042,7 @@ function getListByContext(context){
 }
 
 function getTabLabel(context){
+  if (context === 'all') return 'TODAS AS ABAS';
   if (context === 'pc') return 'OPERACIONAIS';
   if (context === 'analistas') return 'ANALISTAS';
   if (context === 'inventario') return 'INVENTÁRIO';
@@ -2713,6 +3131,7 @@ function openTab(id) {
 function render() {
   // NOVO: atualiza sempre que renderizar (para refletir ações em tempo real)
   updateHeaderProgress();
+  refreshPanelIfOpen();
 
   if (currentView === 'mobile') {
     renderMobileDashboard();
@@ -2741,7 +3160,74 @@ function render() {
 
 function renderList(context, list, container) {
   container.innerHTML = "";
-  const options = `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+
+  
+// Renderiza recorrentes do contexto (no topo)
+  const recForCtx = (recurringRoutines || []).filter(r => r && getRecurringContexts(r).includes(context));
+  if (recForCtx.length) {
+    const sortedRec = recForCtx.slice().sort((a,b) => {
+      const aEnabled = (a && a.enabled !== false);
+      const bEnabled = (b && b.enabled !== false);
+      if (aEnabled !== bEnabled) return aEnabled ? -1 : 1;
+
+      const ad = isRecurringDue(a) ? 0 : 1;
+      const bd = isRecurringDue(b) ? 0 : 1;
+      if (ad !== bd) return ad - bd;
+
+      return Number(a.nextTs||0) - Number(b.nextTs||0);
+    });
+
+    sortedRec.forEach(r => {
+      const enabled = (r && r.enabled !== false);
+      const due = isRecurringDue(r);
+      const next = formatTimeHHMM(r.nextTs);
+
+      const badge = enabled
+        ? '<span class="recurring-badge" style="margin-left:6px;">RECORRENTE</span>'
+        : '<span class="recurring-badge paused" style="margin-left:6px;">PAUSADO</span>';
+
+      const actions = (isPrivileged())
+        ? (enabled
+          ? `<button class="finish" onclick="markRecurringDone('${escapeHtml(r.id)}')">Feito</button>
+             <button class="delete" onclick="pauseRecurring('${escapeHtml(r.id)}')">Pausar</button>
+             <button class="delete" onclick="deleteRecurring('${escapeHtml(r.id)}')">Excluir</button>`
+          : `<button class="finish" onclick="resumeRecurring('${escapeHtml(r.id)}')">Reativar</button>
+             <button class="delete" onclick="deleteRecurring('${escapeHtml(r.id)}')">Excluir</button>` )
+        : (enabled
+          ? `<button class="finish" onclick="markRecurringDone('${escapeHtml(r.id)}')">Feito</button>`
+          : ``);
+
+      container.innerHTML += `
+        <div class="task recurring-row ${ (enabled && due) ? 'due' : '' }" style="${enabled ? '' : 'opacity:.75;'}">
+          <div class="prio-badge ${r.prioridade === 'alta' ? 'p-alta' : (r.prioridade === 'baixa' ? 'p-baixa' : 'p-media')}">
+            ${(String(r.prioridade || 'media')).toUpperCase()}
+          </div>
+
+          <span title="${escapeHtml(r.nome)}">
+            ⏰ ${escapeHtml(r.nome)} ${badge}
+          </span>
+
+          <span>${escapeHtml(r.analista || 'TODOS')}</span>
+
+          <div>
+            ${actions}
+          </div>
+
+          <span>-</span>
+
+          <span style="font-weight:800;color:${(!enabled) ? '#6b7280' : (due ? '#dc3545' : '#0d6efd')};">
+            ${(!enabled) ? 'PAUSADO' : (due ? 'VENCIDO' : 'Próximo')}: ${escapeHtml(next)}
+          </span>
+
+          <span>${escapeHtml(next)}</span>
+          <span>-</span>
+        </div>
+      `;
+    });
+  }
+
+  const options =
+ `<option value="">Selecione...</option>` + analistas.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
 
   list.forEach((r, i) => {
     let rowClass = "task";
@@ -2907,7 +3393,7 @@ async function saveRotina() {
   }
 
   closeModal();
-  await saveData();
+  await saveRecurringOnly();
   render();
   showToast('Rotina salva com sucesso', 'success');
 }
@@ -2944,7 +3430,7 @@ async function removeRotina(context, i) {
   list.splice(i, 1);
 
   await logGovernanceAction('DELETE_ROUTINE', `Rotina removida: ${task.nome}`, context);
-  await saveData();
+  await saveRecurringOnly();
   render();
   showToast('Rotina removida', 'success');
 }
@@ -2968,7 +3454,7 @@ async function resetRotinas(context) {
   applyDefaultPrioritiesAndOrder(context);
 
   await logGovernanceAction('RESET_ROUTINES', `Rotinas reiniciadas: ${context}`, context);
-  await saveData();
+  await saveRecurringOnly();
   render();
   showToast('Rotinas reiniciadas', 'success');
 }
@@ -3020,7 +3506,7 @@ async function clearHistory() {
   }
 
   // salva o visível
-  await saveData();
+  await saveRecurringOnly();
 
   // garante UI atualizada mesmo para ADMIN/USER
   rebuildEffectiveHistory();
@@ -3054,7 +3540,30 @@ function openManagementPanel(context) {
   panelModal.style.display = "flex";
 }
 
-async function closePanelModal() { panelModal.style.display = "none"; await saveData(); }
+
+
+function refreshPanelIfOpen(){
+  try {
+    const pm = document.getElementById('panelModal');
+    if (!pm) return;
+    const open = (pm.style.display === 'flex');
+    if (!open) return;
+
+    // Re-render conteúdos do painel em tempo real
+    if (typeof renderPrioList === 'function') renderPrioList();
+    if (typeof renderTeamList === 'function') renderTeamList();
+    if (typeof renderMotivosList === 'function') renderMotivosList();
+    if (typeof renderRecurringList === 'function') renderRecurringList();
+
+    if (currentUserRole === 'master') {
+      if (typeof renderAdminList === 'function') renderAdminList();
+      if (typeof renderUsersList === 'function') renderUsersList();
+    }
+  } catch (e) {
+    console.warn('refreshPanelIfOpen falhou:', e);
+  }
+}
+async function closePanelModal() { panelModal.style.display = "none"; await saveRecurringOnly(); }
 
 function renderPrioList() {
   let list;
@@ -3090,7 +3599,7 @@ async function savePriorities() {
   sortByStatusAndPriority(currentContext);
 
   await logGovernanceAction('UPDATE_PRIORITIES', `Prioridades atualizadas: ${currentContext}`);
-  await saveData();
+  await saveRecurringOnly();
   render();
   showToast('Prioridades salvas!', 'success');
 }
@@ -3302,7 +3811,7 @@ async function addAnalista() {
   input.value = '';
 
   await logGovernanceAction('ADD_ANALYST', `Analista adicionado: ${nome}`, 'config');
-  await saveData();
+  await saveRecurringOnly();
   renderTeamList();
   populateAnalystFilter();
   showToast('Analista adicionado', 'success');
@@ -3319,7 +3828,7 @@ async function addMotivo() {
   input.value = '';
 
   await logGovernanceAction('ADD_REASON', `Motivo adicionado: ${motivo}`, 'config');
-  await saveData();
+  await saveRecurringOnly();
   renderMotivosList();
   showToast('Motivo adicionado', 'success');
 }
@@ -3331,7 +3840,7 @@ async function deleteAnalista(i) {
   analistas.splice(i, 1);
 
   await logGovernanceAction('DELETE_ANALYST', `Analista removido: ${name}`, 'config');
-  await saveData();
+  await saveRecurringOnly();
   renderTeamList();
   populateAnalystFilter();
   showToast('Analista removido', 'success');
@@ -3344,7 +3853,7 @@ async function deleteMotivo(i) {
   motivos.splice(i, 1);
 
   await logGovernanceAction('DELETE_REASON', `Motivo removido: ${motivo}`, 'config');
-  await saveData();
+  await saveRecurringOnly();
   renderMotivosList();
   showToast('Motivo removido', 'success');
 }
@@ -3357,12 +3866,331 @@ async function editAnalista(i) {
   analistas[i] = String(nome).toUpperCase();
 
   await logGovernanceAction('EDIT_ANALYST', `Analista editado: ${oldName} -> ${nome}`, 'config');
-  await saveData();
+  await saveRecurringOnly();
   renderTeamList();
   populateAnalystFilter();
   showToast('Analista editado', 'success');
 }
 
+
+
+/* ===========================
+   ROTINAS RECORRENTES (LEMBRETES)
+=========================== */
+function startRecurringMonitor(){
+  if (recurringMonitorInterval) clearInterval(recurringMonitorInterval);
+  recurringMonitorInterval = setInterval(() => {
+    if (['pc','analistas','inventario','devolucao','mobile'].includes(currentView)) {
+      if (currentView === 'mobile') renderMobileDashboard();
+      else render();
+    }
+  }, 15000);
+}
+
+function stopRecurringMonitor(){
+  if (recurringMonitorInterval) clearInterval(recurringMonitorInterval);
+  recurringMonitorInterval = null;
+}
+
+function nextTsFromNow(intervalMin){
+  const m = Math.max(1, Number(intervalMin || 1));
+  return Date.now() + (m * 60 * 1000);
+}
+
+
+function isRecurringDue(item){
+  const enabled = (item && item.enabled !== false);
+  if (!enabled) return false;
+  const ts = Number(item?.nextTs || 0);
+  return ts > 0 && Date.now() >= ts;
+}
+
+function formatTimeHHMM(ts){
+  const d = new Date(Number(ts || 0));
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleTimeString('pt-BR', { hour12:false, hour:'2-digit', minute:'2-digit' });
+}
+
+function recSelectAllCtx(flag){
+  const ids = ['recCtxPc','recCtxAnalistas','recCtxInventario','recCtxDevolucao'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!flag;
+  });
+}
+
+function getRecurringContexts(item){
+  // compatibilidade: versões antigas usavam "context" (string) ou "all"
+  if (item && Array.isArray(item.contexts) && item.contexts.length) return item.contexts;
+  const c = String(item?.context || '');
+  if (c === 'all') return ['pc','analistas','inventario','devolucao'];
+  if (c === 'pc' || c === 'analistas' || c === 'inventario' || c === 'devolucao') return [c];
+  return [];
+}
+
+function contextsLabel(item){
+  const ctxs = getRecurringContexts(item);
+  if (!ctxs.length) return '-';
+  if (ctxs.length === 4) return 'TODAS AS ABAS';
+  return ctxs.map(getTabLabel).join(' / ');
+}
+
+function contextsTarget(item){
+  const ctxs = getRecurringContexts(item);
+  return ctxs.length ? ctxs.join('|') : String(item?.context || '');
+}
+// Permissão para marcar recorrente como FEITO:
+// - Se analista == 'TODOS' => qualquer usuário logado pode marcar
+// - Se analista específico => somente esse analista (por nome) pode marcar
+function normalizePersonName(v){
+  return String(v || '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+function isRecurringAssignedToCurrentUser(item){
+  const assignee = normalizePersonName(item?.analista || 'TODOS');
+  if (!assignee || assignee === 'TODOS') return true; // placeholder replaced below
+  const me = normalizePersonName(currentUser?.name || currentUser?.email || '');
+  return assignee === me;
+}
+function canMarkRecurringDone(item){
+  // precisa estar logado
+  if (!currentUser) return false;
+  const assignee = normalizePersonName(item?.analista || 'TODOS');
+  if (!assignee || assignee === 'TODOS') return true;
+  const me = normalizePersonName(currentUser?.name || currentUser?.email || '');
+  return assignee === me;
+}
+
+async function addRecurringRoutine(){
+  try {
+    if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+
+    const name = String(document.getElementById('recName')?.value || '').trim();
+    const contexts = [
+      document.getElementById('recCtxPc')?.checked ? 'pc' : null,
+      document.getElementById('recCtxAnalistas')?.checked ? 'analistas' : null,
+      document.getElementById('recCtxInventario')?.checked ? 'inventario' : null,
+      document.getElementById('recCtxDevolucao')?.checked ? 'devolucao' : null,
+    ].filter(Boolean);
+
+    const intervalMin = Number(document.getElementById('recIntervalMin')?.value || 0);
+    const prioridade = String(document.getElementById('recPrioridade')?.value || 'alta');
+    const analista = String(document.getElementById('recAnalista')?.value || 'TODOS');
+
+    if (!name) { showToast('Informe o nome do lembrete', 'warning'); return; }
+    if (!contexts.length) { showToast('Selecione pelo menos uma aba para o lembrete', 'warning'); return; }
+    if (!intervalMin || intervalMin < 1) { showToast('Intervalo mínimo é 1 minuto', 'warning'); return; }
+
+    const item = {
+      id: 'rec_' + Date.now(),
+      nome: name,
+      contexts,
+      context: (contexts.length === 4 ? 'all' : (contexts[0] || 'pc')) ,
+      intervalMin,
+      prioridade,
+      analista,
+      nextTs: nextTsFromNow(intervalMin),
+      enabled: true,
+      createdAt: Date.now()
+    };
+
+    // otimista (mostra na UI), mas garante persistência
+    recurringRoutines.unshift(item);
+    renderRecurringList();
+    render();
+
+    await saveRecurringOnly();
+
+    // governança é “best-effort” (não pode impedir o cadastro)
+    try {
+      await logGovernanceAction('CREATE_RECURRING', `Recorrente criada: ${name} (${intervalMin}min)`, contexts.join('|'));
+    } catch (e) {
+      console.warn('Falha ao gravar governança (não bloqueia):', e);
+    }
+
+    const a = document.getElementById('recName');
+    const b = document.getElementById('recIntervalMin');
+    if (a) a.value = '';
+    if (b) b.value = '';
+
+    showToast('Rotina recorrente cadastrada', 'success');
+  } catch (e) {
+    console.error(e);
+
+    // rollback local
+    const name = String(document.getElementById('recName')?.value || '').trim();
+    recurringRoutines = (recurringRoutines || []).filter(r => r && r.nome !== name);
+
+    renderRecurringList();
+    render();
+
+    showToast(e?.message || 'Erro ao cadastrar recorrente', 'error');
+  }
+}
+
+async function markRecurringDone(id){
+  const idx = (recurringRoutines || []).findIndex(x => String(x?.id) === String(id));
+  if (idx < 0) return;
+
+  const item = recurringRoutines[idx];
+
+  if (!canMarkRecurringDone(item)) {
+    const assignee = String(item?.analista || 'TODOS');
+    showToast(`Somente o analista atribuído pode marcar como FEITO. (Atribuído: ${assignee})`, 'error');
+    return;
+  }
+
+  item.nextTs = nextTsFromNow(item.intervalMin);
+
+  await logGovernanceAction('RECURRING_DONE', `Recorrente marcada como FEITO: ${item.nome}`, contextsTarget(item));
+  await saveRecurringOnly();
+
+  render();
+  showToast('Reagendado para o próximo intervalo', 'success');
+}
+
+
+async function deleteRecurring(id){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  const item = (recurringRoutines || []).find(x => String(x?.id) === String(id));
+  if (!item) return;
+  if (!confirm(`Excluir recorrente: ${item.nome}?`)) return;
+
+  recurringRoutines = (recurringRoutines || []).filter(x => String(x?.id) !== String(id));
+
+  await logGovernanceAction('DELETE_RECURRING', `Recorrente excluída: ${item.nome}`, contextsTarget(item));
+  await saveRecurringOnly();
+
+  render();
+  showToast('Recorrente excluída', 'success');
+}
+
+async function pauseRecurring(id){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  const item = (recurringRoutines || []).find(x => String(x?.id) === String(id));
+  if (!item) return;
+
+  item.enabled = false;
+
+  await logGovernanceAction('RECURRING_PAUSE', `Recorrente pausada: ${item.nome}`, contextsTarget(item));
+  await saveRecurringOnly();
+
+  render();
+  showToast('Recorrente pausada', 'success');
+}
+
+async function resumeRecurring(id){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  const item = (recurringRoutines || []).find(x => String(x?.id) === String(id));
+  if (!item) return;
+
+  item.enabled = true;
+  item.nextTs = nextTsFromNow(item.intervalMin);
+
+  await logGovernanceAction('RECURRING_RESUME', `Recorrente reativada: ${item.nome}`, contextsTarget(item));
+  await saveRecurringOnly();
+
+  render();
+  showToast('Recorrente reativada', 'success');
+}
+
+async function pauseAllRecurring(){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  if (!confirm('Pausar TODOS os lembretes recorrentes?')) return;
+
+  (recurringRoutines || []).forEach(r => { if (r) r.enabled = false; });
+
+  await logGovernanceAction('RECURRING_PAUSE_ALL', 'Todos os recorrentes foram pausados', 'recurring_routines');
+  await saveRecurringOnly();
+
+  render();
+  showToast('Todos os recorrentes foram pausados', 'success');
+}
+
+async function resumeAllRecurring(){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
+  if (!confirm('Reativar TODOS os lembretes recorrentes (reagenda a partir de agora)?')) return;
+
+  (recurringRoutines || []).forEach(r => {
+    if (!r) return;
+    r.enabled = true;
+    r.nextTs = nextTsFromNow(r.intervalMin);
+  });
+
+  await logGovernanceAction('RECURRING_RESUME_ALL', 'Todos os recorrentes foram reativados', 'recurring_routines');
+  await saveRecurringOnly();
+
+  render();
+  showToast('Todos os recorrentes foram reativados', 'success');
+}
+
+
+function renderRecurringList(){
+  const el = document.getElementById('recurringList');
+  if (!el) return;
+
+  if (!recurringRoutines?.length) {
+    el.innerHTML = '<div style="padding:10px;color:#666;">Nenhuma rotina recorrente cadastrada.</div>';
+    return;
+  }
+
+  const rows = recurringRoutines.slice().sort((a,b) => {
+    const aEnabled = (a && a.enabled !== false);
+    const bEnabled = (b && b.enabled !== false);
+    if (aEnabled !== bEnabled) return aEnabled ? -1 : 1;
+
+    const ad = isRecurringDue(a) ? 0 : 1;
+    const bd = isRecurringDue(b) ? 0 : 1;
+    if (ad !== bd) return ad - bd;
+
+    return (Number(a?.nextTs||0) - Number(b?.nextTs||0));
+  });
+
+  el.innerHTML = rows.map(r => {
+    const enabled = (r && r.enabled !== false);
+    const due = isRecurringDue(r);
+    const next = formatTimeHHMM(r.nextTs);
+    const ctx = contextsLabel(r);
+    const canDone = canMarkRecurringDone(r);
+
+    const badgeClass = enabled ? 'recurring-badge' : 'recurring-badge paused';
+    const badgeText = enabled ? (due ? 'VENCIDO' : 'AGENDADO') : 'PAUSADO';
+
+    const style = enabled
+      ? (due ? 'border-left:4px solid #dc3545;background:rgba(220,53,69,.06);'
+             : 'border-left:4px solid #0d6efd;background:rgba(13,110,253,.04);')
+      : 'border-left:4px solid #6b7280;background:rgba(107,114,128,.06);';
+
+    return `
+      <div class="list-item" style="${style}">
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="${badgeClass}">${badgeText}</span>
+            <span style="font-weight:900;">${escapeHtml(r.nome)}</span>
+          </div>
+          <small style="color:#666;">
+            Aba: <b>${escapeHtml(ctx)}</b> • Intervalo: <b>${escapeHtml(r.intervalMin)} min</b> • Analista: <b>${escapeHtml(r.analista||'TODOS')}</b> • Próximo: <b>${escapeHtml(next)}</b>
+          </small>
+        </div>
+
+        <div class="recurring-actions">
+          ${ enabled
+            ? `${ canDone
+            ? `<button class="recurring-done-btn" onclick="markRecurringDone('${escapeHtml(r.id)}')">Feito</button>`
+            : `<button class="recurring-done-btn" disabled title="Somente o analista atribuído pode marcar como FEITO" onclick="showToast('Somente o analista atribuído pode marcar como FEITO', 'error')">Feito</button>`
+          }
+               <button class="recurring-del-btn" onclick="pauseRecurring('${escapeHtml(r.id)}')">Pausar</button>`
+            : `<button class="recurring-done-btn" onclick="resumeRecurring('${escapeHtml(r.id)}')">Reativar</button>`
+          }
+          <button class="recurring-del-btn" onclick="deleteRecurring('${escapeHtml(r.id)}')">Excluir</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 /* ===========================
    KPI / EXPORT
 =========================== */
@@ -3431,6 +4259,14 @@ function populateAnalystFilter() {
   });
 
   if (currentValue) select.value = currentValue;
+
+  // também popula o select do cadastro de recorrentes (Painel)
+  const recSel = document.getElementById('recAnalista');
+  if (recSel) {
+    const current = recSel.value;
+    recSel.innerHTML = '<option value="TODOS">TODOS</option>' + analistas.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join('');
+    if (current) recSel.value = current;
+  }
 }
 
 function updateCharts() {
