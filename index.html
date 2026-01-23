@@ -3939,31 +3939,6 @@ function contextsTarget(item){
   const ctxs = getRecurringContexts(item);
   return ctxs.length ? ctxs.join('|') : String(item?.context || '');
 }
-// Permissão para marcar recorrente como FEITO:
-// - Se analista == 'TODOS' => qualquer usuário logado pode marcar
-// - Se analista específico => somente esse analista (por nome) pode marcar
-function normalizePersonName(v){
-  return String(v || '')
-    .trim()
-    .toUpperCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
-function isRecurringAssignedToCurrentUser(item){
-  const assignee = normalizePersonName(item?.analista || 'TODOS');
-  if (!assignee || assignee === 'TODOS') return true; // placeholder replaced below
-  const me = normalizePersonName(currentUser?.name || currentUser?.email || '');
-  return assignee === me;
-}
-function canMarkRecurringDone(item){
-  // precisa estar logado
-  if (!currentUser) return false;
-  const assignee = normalizePersonName(item?.analista || 'TODOS');
-  if (!assignee || assignee === 'TODOS') return true;
-  const me = normalizePersonName(currentUser?.name || currentUser?.email || '');
-  return assignee === me;
-}
-
 async function addRecurringRoutine(){
   try {
     if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
@@ -4032,17 +4007,11 @@ async function addRecurringRoutine(){
 }
 
 async function markRecurringDone(id){
+  if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
   const idx = (recurringRoutines || []).findIndex(x => String(x?.id) === String(id));
   if (idx < 0) return;
 
   const item = recurringRoutines[idx];
-
-  if (!canMarkRecurringDone(item)) {
-    const assignee = String(item?.analista || 'TODOS');
-    showToast(`Somente o analista atribuído pode marcar como FEITO. (Atribuído: ${assignee})`, 'error');
-    return;
-  }
-
   item.nextTs = nextTsFromNow(item.intervalMin);
 
   await logGovernanceAction('RECURRING_DONE', `Recorrente marcada como FEITO: ${item.nome}`, contextsTarget(item));
@@ -4051,7 +4020,6 @@ async function markRecurringDone(id){
   render();
   showToast('Reagendado para o próximo intervalo', 'success');
 }
-
 
 async function deleteRecurring(id){
   if (!isPrivileged()) { showToast('Acesso negado', 'error'); return; }
@@ -4154,7 +4122,6 @@ function renderRecurringList(){
     const due = isRecurringDue(r);
     const next = formatTimeHHMM(r.nextTs);
     const ctx = contextsLabel(r);
-    const canDone = canMarkRecurringDone(r);
 
     const badgeClass = enabled ? 'recurring-badge' : 'recurring-badge paused';
     const badgeText = enabled ? (due ? 'VENCIDO' : 'AGENDADO') : 'PAUSADO';
@@ -4178,10 +4145,7 @@ function renderRecurringList(){
 
         <div class="recurring-actions">
           ${ enabled
-            ? `${ canDone
-            ? `<button class="recurring-done-btn" onclick="markRecurringDone('${escapeHtml(r.id)}')">Feito</button>`
-            : `<button class="recurring-done-btn" disabled title="Somente o analista atribuído pode marcar como FEITO" onclick="showToast('Somente o analista atribuído pode marcar como FEITO', 'error')">Feito</button>`
-          }
+            ? `<button class="recurring-done-btn" onclick="markRecurringDone('${escapeHtml(r.id)}')">Feito</button>
                <button class="recurring-del-btn" onclick="pauseRecurring('${escapeHtml(r.id)}')">Pausar</button>`
             : `<button class="recurring-done-btn" onclick="resumeRecurring('${escapeHtml(r.id)}')">Reativar</button>`
           }
