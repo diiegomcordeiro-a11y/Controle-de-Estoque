@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -3415,23 +3416,37 @@ async function finishTask(context, index) {
       timestamp: new Date()
     };
 
+    // ===== UI primeiro (sem delay) =====
     visibleHistory.unshift(entry);
-    await archiveHistoryEntry(entry);
-    if (currentUserRole === 'master') archiveHistory.unshift(entry);
-
     rebuildEffectiveHistory();
-
     moveTaskToEnd(list, index);
-  await saveRotinasContext(context);
-    await saveVisibleHistory();
-render();
+    render();
     updateCharts();
     showToast('Tarefa concluída', 'success');
     autoClosePendingDays('action');
+
+    // ===== Persistência depois =====
+    // Arquivo (history_archive) não pode travar a conclusão
+    try {
+      await archiveHistoryEntry(entry);
+      if (currentUserRole === 'master') archiveHistory.unshift(entry);
+    } catch (e) {
+      console.error('Falha ao arquivar no history_archive:', e);
+    }
+
+    try {
+      await saveRotinasContext(context);
+      await saveVisibleHistory();
+    } catch (e) {
+      console.error('Falha ao salvar no Firebase:', e);
+      showToast('Concluído localmente, mas falhou ao salvar online (verifique conexão/permissões).', 'warning');
+    }
+
   } finally {
     taskActionLocks.delete(lk);
   }
 }
+
 
 async function partialTask(context, index) {
   let list;
@@ -3501,24 +3516,36 @@ async function partialTask(context, index) {
       timestamp: new Date()
     };
 
+    // ===== UI primeiro (sem delay) =====
     visibleHistory.unshift(entry);
-    await archiveHistoryEntry(entry);
-    if (currentUserRole === 'master') archiveHistory.unshift(entry);
-
     rebuildEffectiveHistory();
-
     exitPartialMode(task.id);
-
     moveTaskToEnd(list, index);
-  await saveRotinasContext(context);
-    await saveVisibleHistory();
-render();
+    render();
     updateCharts();
     showToast('Tarefa marcada como parcial', 'success');
+
+    // ===== Persistência depois =====
+    try {
+      await archiveHistoryEntry(entry);
+      if (currentUserRole === 'master') archiveHistory.unshift(entry);
+    } catch (e) {
+      console.error('Falha ao arquivar no history_archive:', e);
+    }
+
+    try {
+      await saveRotinasContext(context);
+      await saveVisibleHistory();
+    } catch (e) {
+      console.error('Falha ao salvar no Firebase:', e);
+      showToast('Parcial localmente, mas falhou ao salvar online (verifique conexão/permissões).', 'warning');
+    }
+
   } finally {
     taskActionLocks.delete(lk);
   }
 }
+
 
 /* ===========================
    NOVO: PROGRESSO NO HEADER (POR ABA)
