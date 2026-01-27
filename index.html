@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1270,10 +1269,10 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <div class="audit-top">
       <div class="audit-title">
         <div class="audit-title-main">Auditoria de Posição</div>
-        <div class="audit-title-sub">Mobile-first: selecione uma câmara por vez, sorteie e registre OK/NOK.</div>
+        <div id="auditAuditHint" class="audit-title-sub">Mobile-first: selecione uma câmara por vez, sorteie e registre OK/NOK.</div>
       </div>
 
-      <div class="audit-filters">
+      <div id="auditFilters" class="audit-filters">
         <div class="audit-filter">
           <label for="auditQty">Quantidade por câmara</label>
           <select id="auditQty">
@@ -2611,6 +2610,26 @@ async function loginUser() {
 
     setupUserInterface();
     initializeApp();
+    try {
+      const last = sessionStorage.getItem('maia_last_tab');
+      if (isProbablyMobile() && isPrivileged()) {
+        openTab('mobile');
+      } else if (last) {
+        openTab(last);
+      }
+    } catch(e) {}
+
+    try {
+      const last = sessionStorage.getItem('maia_last_tab');
+      if (isProbablyMobile() && isPrivileged()) {
+        openTab('mobile');
+      } else if (last) {
+        openTab(last);
+      }
+    } catch(e) {}
+
+
+
   } catch(e) {
     console.error(e);
     showToast('Erro ao realizar login', 'error');
@@ -3561,6 +3580,7 @@ function openTab(id) {
 
   currentView = id;
 
+  try { sessionStorage.setItem('maia_last_tab', id); } catch(e) {}
   // Limpa timer se sair da mobile
   if (mobileTimerInterval && id !== 'mobile') {
     clearInterval(mobileTimerInterval);
@@ -5242,28 +5262,44 @@ function updateMobileTimers() {
 
 
 
-/* ===========================
-   AUDITORIA POSIÇÃO – FIREBASE + HISTÓRICO + TRAVA OK/NOK
-   Regras:
-   - Lista fixa salva no Firestore (importação somente Admin/Master).
-   - Mobile-first: 1 câmara por vez.
-   - Ao marcar OK/NOK: trava e não permite alteração.
-   - Botão LIMPAR: reseta marcações do sorteio atual (câmara selecionada).
-   - Histórico salvo no Firestore ao concluir (todas as posições sorteadas marcadas).
 
-   TXT recomendado: CAMARA;POSICAO;NIVEL;CONSERVACAO
-   CONSERVACAO: RESFRIADO | CONGELADO | AMBOS
+
+/* ===========================
+   AUDITORIA POSIÇÃO – TEMPO REAL (FIRESTORE) + HISTÓRICO
+
+   - NÃO perde sorteio/OK/NOK no F5
+   - Vários usuários veem em tempo real
+   - 1 sessão ATIVA por dia e por câmara
+   - NOVO SORTEIO (Admin/Master) cria sessão para TODAS as câmaras
+   - FINALIZADO salva no audit_runs e remove a sessão ativa daquela câmara
+
+   Firestore:
+   - audit_positions: base fixa
+   - audit_sessions: sessões
+   - audit_active_sessions: ponteiro (dia+câmara)
+   - audit_runs: histórico consolidado
 =========================== */
 
 const COLL_AUDIT_POS = 'audit_positions';
+const COLL_AUDIT_SESSIONS = 'audit_sessions';
+const COLL_AUDIT_ACTIVE = 'audit_active_sessions';
 const COLL_AUDIT_RUNS = 'audit_runs';
 
 let auditPositionsByCamera = {}; // { '01': [ {camera, position, level, conservation, raw} ] }
-let auditStateByCamera = {};     // { '01': { 'POS': {locked:true, status:'ok'|'nok'|''} } }
-let auditLastDrawByCamera = {};  // { '01': [entry,...] }
 let auditInitialized = false;
+
+// Dashboard do dia (todas as câmaras) – baseado no audit_runs
 let auditDailySummary = { total: 0, ok: 0, nok: 0, pct: 0, loaded: false };
-let auditLastImportedText = '';
+
+// Estado da câmara (UI)
+let auditStateByCamera = {};     // { '01': { 'POS': {locked:true, status:'ok'|'nok'|''} } }
+let auditLastDrawByCamera = {};  // { '01': [entry,...] }  (espelho do Firestore)
+
+// Tempo real
+let auditUnsubActive = null;
+let auditUnsubSession = null;
+let auditUnsubMarks = null;
+let auditActiveSessionId = null;
 
 function auditNormalizeCamera(cam){
   const n = String(cam || '').replace(/[^0-9]/g,'');
@@ -5281,143 +5317,29 @@ function auditNormalizeCons(v){
   return 'AMBOS';
 }
 
-function auditParseLevel(token){
-  const t = String(token || '').trim();
-  if (!t) return null;
-  const m = t.match(/(nivel|n)\s*0*([0-9]+)/i) || t.match(/\b0*([0-9]+)\b/);
-  if (!m) return null;
-  const v = parseInt(m[m.length-1], 10);
-  return Number.isFinite(v) ? v : null;
+function auditIsAdminOrMaster(){
+  return (currentUserRole === 'master') || (typeof isPrivileged === 'function' && isPrivileged());
 }
 
-function auditTryInferCamera(raw){
-  const s = String(raw || '').toUpperCase();
-  let m = s.match(/CAM(ARA)?\s*0*([0-9]{1,2})/i);
-  if (m) return auditNormalizeCamera(m[2]);
-  m = s.match(/\bC\s*0*([0-9]{1,2})\b/i);
-  if (m) return auditNormalizeCamera(m[1]);
-  m = s.match(/^\s*0*([0-9]{1,2})\b/);
-  if (m) return auditNormalizeCamera(m[1]);
-  return '';
+function auditGetDateKey(){
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-function auditTryInferLevel(raw){
-  const s = String(raw || '').toUpperCase();
-  let m = s.match(/NIVEL\s*0*([0-9]+)/i);
-  if (m) return parseInt(m[1],10);
-  m = s.match(/\bN\s*0*([0-9]+)\b/i);
-  if (m) return parseInt(m[1],10);
-  m = s.match(/\b([0-9]{1,2})\b\s*$/);
-  if (m) return parseInt(m[1],10);
-  return null;
+function auditGetTodayRange(){
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
 }
 
-function auditParseLines(text){
-  const lines = String(text || '')
-    .replace(/\r/g,'')
-    .split('\n')
-    .map(l => l.trim())
-    .filter(Boolean);
-
-  const out = [];
-  for (const line of lines){
-    let parts = line.split(';');
-    if (parts.length < 4) parts = line.split('\t');
-    if (parts.length < 4) parts = line.split(',');
-
-    let cam = '';
-    let pos = '';
-    let lvl = null;
-    let cons = 'AMBOS';
-
-    if (parts.length >= 4){
-      cam = auditNormalizeCamera(parts[0]);
-      pos = String(parts[1] || '').trim();
-      lvl = auditParseLevel(parts[2]);
-      cons = auditNormalizeCons(parts[3]);
-    } else if (parts.length == 3){
-      cam = auditNormalizeCamera(parts[0]);
-      pos = String(parts[1] || '').trim();
-      lvl = auditParseLevel(parts[2]);
-      cons = 'AMBOS';
-    } else if (parts.length == 2){
-      cam = auditNormalizeCamera(parts[0]) || auditTryInferCamera(line);
-      pos = String(parts[1] || '').trim();
-      lvl = auditTryInferLevel(line);
-      cons = 'AMBOS';
-    } else {
-      cam = auditTryInferCamera(line);
-      pos = line;
-      lvl = auditTryInferLevel(line);
-      cons = 'AMBOS';
-    }
-
-    if (!cam) continue;
-    if (!pos) pos = line;
-    if (!Number.isFinite(lvl)) lvl = null;
-
-    out.push({ camera: cam, position: pos, level: lvl, conservation: cons, raw: line });
-  }
-  return out;
-}
-
-function auditIngestLocal(text){
-  const entries = auditParseLines(text);
-  if (!entries.length){
-    showToast('Nenhuma posição válida encontrada no TXT.', 'warning');
-    return { entries: [], byCamera: {} };
-  }
-
-  const byCamera = {};
-  for (const e of entries){
-    if (!byCamera[e.camera]) byCamera[e.camera] = [];
-    const exists = byCamera[e.camera].some(x => x.position === e.position);
-    if (!exists) byCamera[e.camera].push(e);
-  }
-
-  showToast(`Lista carregada: ${entries.length} linhas processadas.`, 'success');
-  return { entries, byCamera };
-}
-
-function auditUpdateCameraSelect(){
-  const sel = document.getElementById('auditCameraSelect');
-  const hint = document.getElementById('auditCameraHint');
-  const histSel = document.getElementById('auditHistCamera');
-  if (!sel || !hint) return;
-
-  const cams = Object.keys(auditPositionsByCamera).sort();
-  if (!cams.length){
-    hint.textContent = 'Carregue a lista para habilitar as câmaras disponíveis.';
-    return;
-  }
-
-  hint.textContent = `Câmaras disponíveis: ${cams.map(c => 'Câmara ' + c).join(', ')}`;
-
-  const current = sel.value;
-  sel.innerHTML = '';
-  for (const c of cams){
-    const opt = document.createElement('option');
-    opt.value = c;
-    opt.textContent = `Câmara ${c}`;
-    sel.appendChild(opt);
-  }
-  if (cams.includes(current)) sel.value = current;
-
-  if (histSel){
-    const hCurrent = histSel.value;
-    histSel.innerHTML = '';
-    const all = document.createElement('option');
-    all.value = 'ALL';
-    all.textContent = 'Todas';
-    histSel.appendChild(all);
-    for (const c of cams){
-      const opt = document.createElement('option');
-      opt.value = c;
-      opt.textContent = `Câmara ${c}`;
-      histSel.appendChild(opt);
-    }
-    if ([...histSel.options].some(o => o.value === hCurrent)) histSel.value = hCurrent;
-  }
+function auditPosDocId(pos){
+  return encodeURIComponent(String(pos || '')).replace(/%/g,'_');
 }
 
 function auditGetFilters(){
@@ -5452,58 +5374,6 @@ function auditEnsureState(cam, pos){
   if (!auditStateByCamera[cam][pos]) auditStateByCamera[cam][pos] = { locked:false, status:'' };
 }
 
-function auditDraw(){
-  const { cam, qty, levelMode, cons } = auditGetFilters();
-  const all = auditPositionsByCamera[cam] || [];
-
-  if (!all.length){
-    showToast('Esta câmara ainda não tem posições carregadas no Firebase.', 'warning');
-    return;
-  }
-
-  const filtered = auditFilterList(all, levelMode, cons);
-  if (!filtered.length){
-    showToast('Nenhuma posição disponível para os filtros selecionados.', 'warning');
-    return;
-  }
-
-  const picked = auditShuffle(filtered).slice(0, Math.min(qty, filtered.length));
-  auditLastDrawByCamera[cam] = picked;
-
-  for (const e of picked) auditEnsureState(cam, e.position);
-
-  showToast(`Sorteio realizado: ${picked.length} posições (Câmara ${cam}).`, 'success');
-  auditRender();
-}
-
-function auditEnsureDrawForCurrentCamera(){
-  const { cam } = auditGetFilters();
-  const existing = auditLastDrawByCamera[cam] || [];
-  // se já existe sorteio para a câmara, apenas renderiza
-  if (existing.length){ auditRender(); return; }
-  // se não existe, sorteia automaticamente com os filtros atuais
-  auditDraw();
-}
-
-function auditClearMarksCurrentCamera(){
-  const cam = auditNormalizeCamera(document.getElementById('auditCameraSelect')?.value);
-  const draw = auditLastDrawByCamera[cam] || [];
-  for (const e of draw){
-    auditEnsureState(cam, e.position);
-    auditStateByCamera[cam][e.position] = { locked:false, status:'' };
-  }
-  showToast(`Marcações limpas (Câmara ${cam}).`, 'info');
-  auditRender();
-}
-
-function auditLock(cam, pos, status){
-  auditEnsureState(cam, pos);
-  if (auditStateByCamera[cam][pos].locked) return false;
-  auditStateByCamera[cam][pos].locked = true;
-  auditStateByCamera[cam][pos].status = status;
-  return true;
-}
-
 function auditComputeDrawKpis(){
   const { cam } = auditGetFilters();
   const draw = auditLastDrawByCamera[cam] || [];
@@ -5528,22 +5398,25 @@ function auditRender(){
   const { cam } = auditGetFilters();
   const draw = auditLastDrawByCamera[cam] || [];
 
-  const { total, audited, ok, nok, pct } = auditComputeDrawKpis();  // KPIs (DASH DO DIA - TODAS AS CÂMARAS)
+  // KPIs (DASH DO DIA - TODAS AS CÂMARAS)
   const d = auditDailySummary || { total: 0, ok: 0, nok: 0, pct: 0 };
-  const elT = document.getElementById('auditKpiTotal');
-  const elO = document.getElementById('auditKpiOk');
-  const elN = document.getElementById('auditKpiNok');
-  const elP = document.getElementById('auditKpiPct');
-  if (elT) elT.textContent = String(d.total || 0);
-  if (elO) elO.textContent = String(d.ok || 0);
-  if (elN) elN.textContent = String(d.nok || 0);
-  if (elP) elP.textContent = `${d.pct || 0}%`;
+  document.getElementById('auditKpiTotal') && (document.getElementById('auditKpiTotal').textContent = String(d.total || 0));
+  document.getElementById('auditKpiOk') && (document.getElementById('auditKpiOk').textContent = String(d.ok || 0));
+  document.getElementById('auditKpiNok') && (document.getElementById('auditKpiNok').textContent = String(d.nok || 0));
+  document.getElementById('auditKpiPct') && (document.getElementById('auditKpiPct').textContent = `${d.pct || 0}%`);
 
+  const { total, audited, ok, nok, pct } = auditComputeDrawKpis();
   metaEl.textContent = `${pct}% (${ok}/${total || 0}) · Auditadas: ${audited}/${total || 0}`;
 
   listEl.innerHTML = '';
+
+  if (!auditActiveSessionId){
+    listEl.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:6px 2px;">Sem sorteio ativo para hoje nessa câmara. Aguarde um <b>NOVO SORTEIO</b> (Admin/Master).</div>';
+    return;
+  }
+
   if (!draw.length){
-    listEl.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:6px 2px;">Nenhum sorteio ainda. Clique em <b>NOVO SORTEIO</b>.</div>';
+    listEl.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:6px 2px;">Carregando sessão...</div>';
     return;
   }
 
@@ -5611,10 +5484,6 @@ function auditRender(){
   });
 }
 
-function auditIsAdminOrMaster(){
-  return (currentUserRole === 'master') || (typeof isPrivileged === 'function' && isPrivileged());
-}
-
 async function auditLoadPositionsFromFirestore(){
   try{
     auditPositionsByCamera = {};
@@ -5638,100 +5507,331 @@ async function auditLoadPositionsFromFirestore(){
     });
 
     auditUpdateCameraSelect();
-    showToast('Posições carregadas do Firebase.', 'success');
-    auditRender();
   } catch(e){
     console.error(e);
     showToast('Falha ao carregar posições do Firebase.', 'error');
   }
 }
 
-async function auditSavePositionsToFirestore(fromText){
-  if (!auditIsAdminOrMaster()){
-    showToast('Apenas Admin/Master podem importar posições.', 'error');
+function auditUpdateCameraSelect(){
+  const sel = document.getElementById('auditCameraSelect');
+  const hint = document.getElementById('auditCameraHint');
+  const histSel = document.getElementById('auditHistCamera');
+  if (!sel || !hint) return;
+
+  const cams = Object.keys(auditPositionsByCamera).sort();
+  if (!cams.length){
+    hint.textContent = 'Carregue a lista para habilitar as câmaras disponíveis.';
     return;
   }
 
-  const { entries, byCamera } = auditIngestLocal(fromText);
-  if (!entries.length) return;
+  hint.textContent = `Câmaras disponíveis: ${cams.map(c => 'Câmara ' + c).join(', ')}`;
 
-  try{
-    showToast('Salvando no Firebase... (pode levar alguns segundos)', 'info');
+  const current = sel.value;
+  sel.innerHTML = '';
+  for (const c of cams){
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = `Câmara ${c}`;
+    sel.appendChild(opt);
+  }
+  if (cams.includes(current)) sel.value = current;
 
-    const CHUNK = 450;
-    for (let i=0; i<entries.length; i+=CHUNK){
-      const chunk = entries.slice(i, i+CHUNK);
-      const batch = db.batch();
-      chunk.forEach(e => {
-        const id = `${e.camera}__${String(e.position).replace(/\//g,'_')}`;
-        const ref = db.collection(COLL_AUDIT_POS).doc(id);
-        batch.set(ref, {
-          camera: e.camera,
-          position: e.position,
-          level: (e.level ?? null),
-          conservation: auditNormalizeCons(e.conservation),
-          raw: e.raw || '',
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedBy: currentUser?.email || null
-        }, { merge: true });
-      });
-      await batch.commit();
+  if (histSel){
+    const hCurrent = histSel.value;
+    histSel.innerHTML = '';
+    const all = document.createElement('option');
+    all.value = 'ALL';
+    all.textContent = 'Todas';
+    histSel.appendChild(all);
+    for (const c of cams){
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = `Câmara ${c}`;
+      histSel.appendChild(opt);
     }
-
-    auditPositionsByCamera = byCamera;
-    auditUpdateCameraSelect();
-    showToast('Importação concluída e salva no Firebase.', 'success');
-    auditRender();
-  } catch(e){
-    console.error(e);
-    showToast('Falha ao salvar posições no Firebase.', 'error');
+    if ([...histSel.options].some(o => o.value === hCurrent)) histSel.value = hCurrent;
   }
 }
 
-function auditGetRunSummary(){
-  const { cam, levelMode, cons } = auditGetFilters();
-  const { total, ok, nok, pct } = auditComputeDrawKpis();
-  return {
-    camera: cam,
-    total,
-    ok,
-    nok,
-    pct,
-    filters: { levelMode, conservation: cons }
-  };
+function auditCleanupRealtime(){
+  try{ if (auditUnsubActive) auditUnsubActive(); } catch(e){}
+  try{ if (auditUnsubSession) auditUnsubSession(); } catch(e){}
+  try{ if (auditUnsubMarks) auditUnsubMarks(); } catch(e){}
+  auditUnsubActive = null;
+  auditUnsubSession = null;
+  auditUnsubMarks = null;
+  auditActiveSessionId = null;
 }
 
-async function auditSaveRunHistory(){
-  const sum = auditGetRunSummary();
-  if (!sum.total) return;
+function auditSubscribeForCurrentCamera(){
+  const { cam } = auditGetFilters();
+  if (!cam) return;
+
+  const dateKey = auditGetDateKey();
+  const pointerId = `${dateKey}__${cam}`;
+
+  auditCleanupRealtime();
+
+  const ref = db.collection(COLL_AUDIT_ACTIVE).doc(pointerId);
+  auditUnsubActive = ref.onSnapshot((doc) => {
+    const data = doc.exists ? (doc.data() || {}) : {};
+    const sessionId = data.activeSessionId || null;
+
+    if (sessionId === auditActiveSessionId) {
+      auditRender();
+      return;
+    }
+
+    auditActiveSessionId = sessionId;
+
+    // limpa dados locais
+    auditLastDrawByCamera[cam] = [];
+    auditStateByCamera[cam] = {};
+
+    if (!sessionId){
+      auditRender();
+      return;
+    }
+
+    auditSubscribeSession(sessionId, cam);
+  }, (err) => {
+    console.error(err);
+    showToast('Falha ao assinar sessão ativa.', 'error');
+  });
+}
+
+function auditSubscribeSession(sessionId, cam){
+  try{ if (auditUnsubSession) auditUnsubSession(); } catch(e){}
+  try{ if (auditUnsubMarks) auditUnsubMarks(); } catch(e){}
+  auditUnsubSession = null;
+  auditUnsubMarks = null;
+
+  const sessionRef = db.collection(COLL_AUDIT_SESSIONS).doc(sessionId);
+  auditUnsubSession = sessionRef.onSnapshot((doc) => {
+    if (!doc.exists){
+      auditActiveSessionId = null;
+      auditRender();
+      return;
+    }
+
+    const d = doc.data() || {};
+    const draw = Array.isArray(d.draw) ? d.draw : [];
+
+    auditLastDrawByCamera[cam] = draw.map(x => ({
+      position: String(x.position || ''),
+      level: Number.isFinite(x.level) ? x.level : (x.level ? parseInt(x.level,10) : null),
+      conservation: auditNormalizeCons(x.conservation || 'AMBOS')
+    }));
+
+    auditRender();
+  }, (err) => {
+    console.error(err);
+    showToast('Falha ao ouvir a sessão.', 'error');
+  });
+
+  auditUnsubMarks = sessionRef.collection('marks').onSnapshot((snap) => {
+    if (!auditStateByCamera[cam]) auditStateByCamera[cam] = {};
+
+    snap.docChanges().forEach(ch => {
+      const md = ch.doc.data() || {};
+      const pos = String(md.position || '');
+      const status = (md.status === 'ok' || md.status === 'nok') ? md.status : '';
+      if (!pos) return;
+      auditEnsureState(cam, pos);
+      auditStateByCamera[cam][pos].locked = !!status;
+      auditStateByCamera[cam][pos].status = status;
+    });
+
+    auditRender();
+  }, (err) => {
+    console.error(err);
+    showToast('Falha ao ouvir marcações.', 'error');
+  });
+}
+
+async function auditCreateNewSession(){
+  // NOVO SORTEIO para TODAS as câmaras
+  if (!auditIsAdminOrMaster()){
+    showToast('Apenas Admin/Master podem gerar NOVO SORTEIO.', 'error');
+    return;
+  }
+
+  const { qty, levelMode, cons } = auditGetFilters();
+  const dateKey = auditGetDateKey();
+
+  const cams = Object.keys(auditPositionsByCamera || {}).sort();
+  if (!cams.length){
+    showToast('Não há câmaras na base fixa (audit_positions).', 'warning');
+    return;
+  }
+
+  const confirmMsg = `Gerar NOVO SORTEIO para ${cams.length} câmaras (dia ${dateKey})?`;
+  if (!confirm(confirmMsg)) return;
 
   try{
-    const payload = {
-      camera: sum.camera,
-      total: sum.total,
-      ok: sum.ok,
-      nok: sum.nok,
-      pct: sum.pct,
-      filters: sum.filters,
+    showToast('Gerando sorteios para todas as câmaras...', 'info');
+
+    for (const cam of cams){
+      const all = auditPositionsByCamera[cam] || [];
+      if (!all.length) continue;
+
+      const filtered = auditFilterList(all, levelMode, cons);
+      if (!filtered.length) continue;
+
+      const picked = auditShuffle(filtered).slice(0, Math.min(qty, filtered.length));
+
+      const pointerId = `${dateKey}__${cam}`;
+      const pointerRef = db.collection(COLL_AUDIT_ACTIVE).doc(pointerId);
+
+      const pointerSnap = await pointerRef.get();
+      const pointer = pointerSnap.exists ? (pointerSnap.data() || {}) : {};
+      const nextSeq = (parseInt(pointer.nextSeq || 1, 10) || 1);
+
+      const prevId = pointer.activeSessionId || null;
+      if (prevId){
+        await db.collection(COLL_AUDIT_SESSIONS).doc(prevId).set({
+          active: false,
+          supersededAt: firebase.firestore.FieldValue.serverTimestamp(),
+          supersededBy: currentUser?.email || null
+        }, { merge: true });
+      }
+
+      const sessionId = `${dateKey}__${cam}__${nextSeq}`;
+      const sessionRef = db.collection(COLL_AUDIT_SESSIONS).doc(sessionId);
+
+      await sessionRef.set({
+        id: sessionId,
+        dateKey,
+        camera: cam,
+        seq: nextSeq,
+        active: true,
+        finalized: false,
+        filters: { qty, levelMode, conservation: cons },
+        draw: picked.map(p => ({ position: p.position, level: p.level ?? null, conservation: auditNormalizeCons(p.conservation) })),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdBy: currentUser?.email || null,
+        createdByName: currentUser?.name || null
+      }, { merge: true });
+
+      await pointerRef.set({
+        dateKey,
+        camera: cam,
+        activeSessionId: sessionId,
+        nextSeq: nextSeq + 1,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: currentUser?.email || null
+      }, { merge: true });
+    }
+
+    showToast('Sorteios criados para todas as câmaras.', 'success');
+
+    auditSubscribeForCurrentCamera();
+    auditRender();
+
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao criar novo sorteio.', 'error');
+  }
+}
+
+async function auditMarkPosition(pos, status){
+  const { cam } = auditGetFilters();
+  if (!auditActiveSessionId){
+    showToast('Sem sessão ativa para marcar.', 'warning');
+    return;
+  }
+  if (status !== 'ok' && status !== 'nok') return;
+
+  const sessionRef = db.collection(COLL_AUDIT_SESSIONS).doc(auditActiveSessionId);
+  const markRef = sessionRef.collection('marks').doc(auditPosDocId(pos));
+
+  try{
+    const snap = await markRef.get();
+    if (snap.exists){
+      const d = snap.data() || {};
+      if (d.status === 'ok' || d.status === 'nok') return;
+    }
+
+    await markRef.set({
+      position: pos,
+      status,
+      by: currentUser?.email || null,
+      byName: currentUser?.name || null,
+      at: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao marcar posição.', 'error');
+  }
+}
+
+async function auditFinalize(){
+  const { cam } = auditGetFilters();
+  const draw = auditLastDrawByCamera[cam] || [];
+  if (!auditActiveSessionId || !draw.length){
+    showToast('Nenhuma sessão para finalizar.', 'warning');
+    return;
+  }
+
+  const allLocked = draw.every(e => auditStateByCamera?.[cam]?.[e.position]?.locked);
+  if (!allLocked){
+    showToast('Finalize somente quando TODAS as posições estiverem marcadas (OK/NOK).', 'warning');
+    return;
+  }
+
+  const { total, ok, nok, pct } = auditComputeDrawKpis();
+
+  try{
+    await db.collection(COLL_AUDIT_RUNS).add({
+      camera: cam,
+      total,
+      ok,
+      nok,
+      pct,
+      sessionId: auditActiveSessionId,
+      dateKey: auditGetDateKey(),
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdBy: currentUser?.email || null,
       createdByName: currentUser?.name || null,
       adminHidden: false
-    };
-    await db.collection(COLL_AUDIT_RUNS).add(payload);
+    });
+
+    // finaliza sessão
+    await db.collection(COLL_AUDIT_SESSIONS).doc(auditActiveSessionId).set({
+      active: false,
+      finalized: true,
+      finalizedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      finalizedBy: currentUser?.email || null,
+      finalizedByName: currentUser?.name || null
+    }, { merge: true });
+
+    // remove sessão ativa
+    const dateKey = auditGetDateKey();
+    await db.collection(COLL_AUDIT_ACTIVE).doc(`${dateKey}__${cam}`).set({
+      activeSessionId: null,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentUser?.email || null
+    }, { merge: true });
+
+    auditActiveSessionId = null;
+    auditLastDrawByCamera[cam] = [];
+    auditStateByCamera[cam] = {};
+
+    showToast('Execução finalizada e registrada no histórico.', 'success');
+
+    await auditLoadHistory();
+    await auditLoadDailySummary();
+
+    const hist = document.getElementById('auditHistoryTable');
+    if (hist) hist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    auditRender();
   } catch(e){
     console.error(e);
+    showToast('Falha ao finalizar.', 'error');
   }
-}
-
-
-function auditGetTodayRange(){
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0,0,0,0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start, end };
 }
 
 async function auditLoadDailySummary(){
@@ -5741,6 +5841,7 @@ async function auditLoadDailySummary(){
       .where('createdAt', '>=', start)
       .where('createdAt', '<', end);
     const snap = await q.get();
+
     const isMaster = (currentUserRole === 'master');
     let total = 0, ok = 0, nok = 0;
     snap.forEach(doc => {
@@ -5750,32 +5851,14 @@ async function auditLoadDailySummary(){
       ok += (parseInt(d.ok || 0, 10) || 0);
       nok += (parseInt(d.nok || 0, 10) || 0);
     });
+
     const denom = ok + nok;
     const pct = denom ? Math.round((ok / denom) * 100) : 0;
     auditDailySummary = { total, ok, nok, pct, loaded: true };
     auditRender();
   } catch (e) {
     console.error(e);
-    // mantém valores antigos
   }
-}
-
-function auditRangeToStartDate(range){
-  const now = new Date();
-  const start = new Date(now);
-  if (range === 'today'){
-    start.setHours(0,0,0,0);
-    return start;
-  }
-  if (range === '7'){
-    start.setDate(start.getDate() - 7);
-    return start;
-  }
-  if (range === '30'){
-    start.setDate(start.getDate() - 30);
-    return start;
-  }
-  return null;
 }
 
 async function auditLoadHistory(){
@@ -5790,8 +5873,17 @@ async function auditLoadHistory(){
   try{
     let q = db.collection(COLL_AUDIT_RUNS).orderBy('createdAt','desc').limit(200);
 
-    const startDate = auditRangeToStartDate(range);
+    const now = new Date();
+    let startDate = null;
+    if (range === 'today'){
+      startDate = new Date(now); startDate.setHours(0,0,0,0);
+    } else if (range === '7'){
+      startDate = new Date(now); startDate.setDate(startDate.getDate() - 7);
+    } else if (range === '30'){
+      startDate = new Date(now); startDate.setDate(startDate.getDate() - 30);
+    }
     if (startDate) q = q.where('createdAt', '>=', startDate);
+
     if (cam !== 'ALL') q = q.where('camera', '==', auditNormalizeCamera(cam));
 
     const snap = await q.get();
@@ -5799,20 +5891,22 @@ async function auditLoadHistory(){
     snap.forEach(doc => {
       const d = doc.data() || {};
       rows.push({
+        id: doc.id,
         camera: d.camera || '-',
         total: d.total || 0,
         ok: d.ok || 0,
         nok: d.nok || 0,
         pct: (typeof d.pct === 'number') ? d.pct : 0,
         by: d.createdByName || d.createdBy || '-',
-        at: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : null
+        at: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : null,
+        adminHidden: !!d.adminHidden
       });
     });
 
-    
     const isMasterView = (currentUserRole === 'master');
     const visibleRows = isMasterView ? rows : rows.filter(r => !r.adminHidden);
-if (!visibleRows.length){
+
+    if (!visibleRows.length){
       tableEl.innerHTML = '<div style="color:#6b7280;font-size:12px;">Sem registros para os filtros selecionados.</div>';
       return;
     }
@@ -5853,12 +5947,60 @@ if (!visibleRows.length){
   }
 }
 
+async function auditClearHistory(){
+  // Regra: Admin zera só p/ Admin; Master apaga geral.
+  if (!auditIsAdminOrMaster()) { showToast('Acesso negado.', 'error'); return; }
+
+  try {
+    const camSel = document.getElementById('auditHistCamera')?.value || 'ALL';
+    const range = document.getElementById('auditHistRange')?.value || '7';
+
+    let q = db.collection(COLL_AUDIT_RUNS).orderBy('createdAt','desc').limit(200);
+    const now = new Date();
+    let startDate = null;
+    if (range === 'today'){ startDate = new Date(now); startDate.setHours(0,0,0,0); }
+    else if (range === '7'){ startDate = new Date(now); startDate.setDate(startDate.getDate() - 7); }
+    else if (range === '30'){ startDate = new Date(now); startDate.setDate(startDate.getDate() - 30); }
+    if (startDate) q = q.where('createdAt', '>=', startDate);
+    if (camSel !== 'ALL') q = q.where('camera', '==', auditNormalizeCamera(camSel));
+
+    const snap = await q.get();
+    if (snap.empty){ showToast('Sem execuções para zerar nesse filtro.', 'info'); return; }
+
+    const isMaster = (currentUserRole === 'master');
+    const confirmMsg = isMaster
+      ? 'Zerar execuções (MASTER) vai APAGAR do Firebase para TODO MUNDO. Deseja continuar?'
+      : 'Zerar execuções vai ocultar os registros para Admin (Master continua vendo). Deseja continuar?';
+    if (!confirm(confirmMsg)) return;
+
+    const docs = snap.docs;
+    const CHUNK = 450;
+
+    for (let i=0; i<docs.length; i+=CHUNK){
+      const batch = db.batch();
+      docs.slice(i, i+CHUNK).forEach(d => {
+        const ref = db.collection(COLL_AUDIT_RUNS).doc(d.id);
+        if (isMaster) batch.delete(ref);
+        else batch.set(ref, { adminHidden: true, adminHiddenAt: firebase.firestore.FieldValue.serverTimestamp(), adminHiddenBy: currentUser?.email || null }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    showToast(isMaster ? 'Execuções apagadas (MASTER) para todos.' : 'Execuções zeradas para Admin (Master mantém histórico).', 'success');
+    await auditLoadHistory();
+    await auditLoadDailySummary();
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao zerar execuções.', 'error');
+  }
+}
+
 function auditExportCurrentToExcel(){
   try{
     const { cam } = auditGetFilters();
     const draw = auditLastDrawByCamera[cam] || [];
     if (!draw.length){
-      showToast('Nada para exportar (faça um sorteio).', 'warning');
+      showToast('Nada para exportar (sem sorteio ativo).', 'warning');
       return;
     }
 
@@ -5913,75 +6055,26 @@ function auditExportHistoryToExcel(){
   });
 }
 
-
-async function auditClearHistoryForAdmin(){
-  if (!auditIsAdminOrMaster()) { showToast('Acesso negado.', 'error'); return; }
-
-  try {
-    const camSel = document.getElementById('auditHistCamera')?.value || 'ALL';
-    const range = document.getElementById('auditHistRange')?.value || '7';
-
-    let q = db.collection(COLL_AUDIT_RUNS).orderBy('createdAt','desc').limit(200);
-    const startDate = auditRangeToStartDate(range);
-    if (startDate) q = q.where('createdAt', '>=', startDate);
-    if (camSel !== 'ALL') q = q.where('camera', '==', auditNormalizeCamera(camSel));
-
-    const snap = await q.get();
-    if (snap.empty){ showToast('Sem execuções para zerar nesse filtro.', 'info'); return; }
-
-    const isMaster = (currentUserRole === 'master');
-
-    const confirmMsg = isMaster
-      ? 'Zerar execuções (MASTER) vai APAGAR do Firebase para TODO MUNDO. Deseja continuar?'
-      : 'Zerar execuções vai ocultar os registros para Admin (Master continua vendo). Deseja continuar?';
-
-    if (!confirm(confirmMsg)) return;
-
-    const docs = snap.docs;
-    const CHUNK = 450;
-
-    for (let i=0; i<docs.length; i+=CHUNK){
-      const batch = db.batch();
-      docs.slice(i, i+CHUNK).forEach(d => {
-        const ref = db.collection(COLL_AUDIT_RUNS).doc(d.id);
-        if (isMaster) {
-          batch.delete(ref);
-        } else {
-          batch.set(ref, {
-            adminHidden: true,
-            adminHiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
-            adminHiddenBy: currentUser?.email || null
-          }, { merge: true });
-        }
-      });
-      await batch.commit();
-    }
-
-    showToast(isMaster ? 'Execuções apagadas (MASTER) para todos.' : 'Execuções zeradas para Admin (Master mantém histórico).', 'success');
-    await auditLoadHistory();
-    await auditLoadDailySummary();
-  } catch(e){
-    console.error(e);
-    showToast('Falha ao zerar execuções.', 'error');
-  }
-}
 function auditApplyPermissionsUI(){
   const isAdminOrMaster = auditIsAdminOrMaster();
 
-  // Administração (importação)
-  const details = document.getElementById('auditAdminDetails');
-  if (details) details.style.display = isAdminOrMaster ? 'block' : 'none';
+  // esconder texto e filtros para usuário comum
+  const hint = document.getElementById('auditAuditHint');
+  if (hint) hint.style.display = isAdminOrMaster ? 'block' : 'none';
+  const filters = document.getElementById('auditFilters');
+  if (filters) filters.style.display = isAdminOrMaster ? 'grid' : 'none';
 
-  // Botões restritos
+  // NOVO SORTEIO e ATUALIZAR (admin/master)
   const btnDraw = document.getElementById('auditDrawBtn');
   const btnRefresh = document.getElementById('auditRefreshBtn');
-  const btnClear = document.getElementById('auditClearBtn');
-  [btnDraw, btnRefresh, btnClear].forEach(b => {
-    if (!b) return;
-    b.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
-  });
+  if (btnDraw) btnDraw.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
+  if (btnRefresh) btnRefresh.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
 
-  // Zerar execuções: somente Admin/Master
+  // Botão LIMPAR pode existir no HTML antigo; esconde (não usado no realtime)
+  const btnClear = document.getElementById('auditClearBtn');
+  if (btnClear) btnClear.style.display = 'none';
+
+  // Zerar execuções: Admin e Master
   const btnZero = document.getElementById('auditHistoryClearBtn');
   if (btnZero) btnZero.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
 }
@@ -5991,116 +6084,43 @@ function renderAuditoriaTab(){
     auditInitialized = true;
 
     // Buttons
-    document.getElementById('auditDrawBtn')?.addEventListener('click', auditDraw);
+    document.getElementById('auditDrawBtn')?.addEventListener('click', auditCreateNewSession);
     document.getElementById('auditRefreshBtn')?.addEventListener('click', () => { auditLoadDailySummary(); auditRender(); auditLoadHistory(); });
     document.getElementById('auditExportBtn')?.addEventListener('click', auditExportCurrentToExcel);
-    document.getElementById('auditClearBtn')?.addEventListener('click', auditClearMarksCurrentCamera);
-    document.getElementById('auditFinalizeBtn')?.addEventListener('click', async () => {
-      const { cam } = auditGetFilters();
-      const draw = auditLastDrawByCamera[cam] || [];
-      if (!draw.length){ showToast('Nenhum sorteio para finalizar.', 'warning'); return; }
-      const allLocked = draw.every(e => auditStateByCamera?.[cam]?.[e.position]?.locked);
-      if (!allLocked){ showToast('Finalize somente quando TODAS as posições estiverem marcadas (OK/NOK).', 'warning'); return; }
-      await auditSaveRunHistory();
-      await auditLoadHistory();
-      await auditLoadDailySummary();
-      const hist = document.getElementById('auditHistoryTable');
-      if (hist) hist.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      showToast('Execução finalizada e registrada no histórico.', 'success');
-    });
 
+    // FINALIZADO (todos)
+    document.getElementById('auditFinalizeBtn')?.addEventListener('click', auditFinalize);
 
-    // Filters
-    document.getElementById('auditCameraSelect')?.addEventListener('change', auditEnsureDrawForCurrentCamera);
-    document.getElementById('auditQty')?.addEventListener('change', auditRender);
-    document.getElementById('auditNivelSelect')?.addEventListener('change', auditRender);
-    document.getElementById('auditConsSelect')?.addEventListener('change', auditRender);
+    // Camera change
+    document.getElementById('auditCameraSelect')?.addEventListener('change', () => { auditSubscribeForCurrentCamera(); auditRender(); });
 
-    // List click
+    // OK/NOK click
     document.getElementById('auditResults')?.addEventListener('click', async (ev) => {
       const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-action]') : null;
       if (!btn) return;
       const row = btn.closest('.audit-row');
       if (!row) return;
-
-      const cam = row.dataset.camera;
-      const pos = row.dataset.position;
-      const action = btn.dataset.action;
-
-      auditEnsureState(cam, pos);
-      if (auditStateByCamera[cam][pos].locked) return;
-
-      const changed = auditLock(cam, pos, action);
-      if (!changed) return;
-
-      auditRender();
+      await auditMarkPosition(row.dataset.position, btn.dataset.action);
     });
 
-    // Admin import
-    const toggle = document.getElementById('auditPasteToggle');
-    const pasteBox = document.getElementById('auditPasteBox');
-    toggle?.addEventListener('click', () => {
-      if (!pasteBox) return;
-      pasteBox.style.display = (pasteBox.style.display === 'none' ? 'block' : 'none');
-    });
-
-    document.getElementById('auditClearTextBtn')?.addEventListener('click', () => {
-      const t = document.getElementById('auditText');
-      if (t) t.value = '';
-    });
-
-    document.getElementById('auditLoadTextBtn')?.addEventListener('click', () => {
-      const t = document.getElementById('auditText');
-      const text = t ? t.value : '';
-      auditLastImportedText = text;
-      const r = auditIngestLocal(text);
-      if (Object.keys(r.byCamera).length){
-        auditPositionsByCamera = r.byCamera;
-        auditUpdateCameraSelect();
-        auditRender();
-      }
-    });
-
-    document.getElementById('auditFile')?.addEventListener('change', (ev) => {
-      const f = ev.target.files && ev.target.files[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const text = String(reader.result || '');
-        auditLastImportedText = text;
-        const r = auditIngestLocal(text);
-        if (Object.keys(r.byCamera).length){
-          auditPositionsByCamera = r.byCamera;
-          auditUpdateCameraSelect();
-          auditRender();
-        }
-      };
-      reader.readAsText(f);
-      ev.target.value = '';
-    });
-
-    document.getElementById('auditSavePositionsBtn')?.addEventListener('click', () => {
-      const t = document.getElementById('auditText');
-      const text = (t && t.value && t.value.trim()) ? t.value : (auditLastImportedText || '');
-      if (!text){
-        showToast('Carregue o TXT (arquivo ou colar texto) antes de salvar no Firebase.', 'warning');
-        return;
-      }
-      auditSavePositionsToFirestore(text);
-    });
-
-    // Histórico
+    // History
     document.getElementById('auditHistoryReloadBtn')?.addEventListener('click', auditLoadHistory);
     document.getElementById('auditHistoryExportBtn')?.addEventListener('click', auditExportHistoryToExcel);
-    document.getElementById('auditHistoryClearBtn')?.addEventListener('click', auditClearHistoryForAdmin);
+    document.getElementById('auditHistoryClearBtn')?.addEventListener('click', auditClearHistory);
     document.getElementById('auditHistCamera')?.addEventListener('change', auditLoadHistory);
     document.getElementById('auditHistRange')?.addEventListener('change', auditLoadHistory);
   }
 
   auditApplyPermissionsUI();
-  auditLoadPositionsFromFirestore();
-  auditRender();
-  auditLoadHistory();
+
+  // IMPORTANTe: assina a sessão ativa da câmara selecionada SEM depender de troca no dropdown
+  // e só depois atualiza UI.
+  auditLoadPositionsFromFirestore().then(() => {
+    auditSubscribeForCurrentCamera();
+    auditLoadDailySummary();
+    auditRender();
+    auditLoadHistory();
+  });
 }
 
 /* ===========================
@@ -6139,6 +6159,15 @@ window.onload = async function() {
 
         setupUserInterface();
         initializeApp();
+        try {
+          const last = sessionStorage.getItem('maia_last_tab');
+          if (isProbablyMobile() && isPrivileged()) {
+            openTab('mobile');
+          } else if (last) {
+            openTab(last);
+          }
+        } catch(e) {}
+
       } else {
         // E-mail salvo não existe mais no banco -> reseta
         throw new Error('Usuário salvo não encontrado no banco');
