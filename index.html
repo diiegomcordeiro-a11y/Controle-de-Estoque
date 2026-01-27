@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -846,6 +847,112 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   font-weight: 900 !important;
 }
 
+
+
+
+/* =========================================
+   AUDITORIA DE POSIÇÃO – LAYOUT PROFISSIONAL (MINERVA)
+   Mobile-first: mostra 1 câmara por vez
+   ========================================= */
+#auditoria{padding:0}
+#auditoria .audit-shell{padding:14px}
+
+#auditoria .audit-top{
+  background: linear-gradient(180deg, rgba(122,20,23,.08), rgba(255,255,255,.0));
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+#auditoria .audit-title-main{font-weight:900;letter-spacing:.2px;color:var(--minerva-red);font-size:18px}
+#auditoria .audit-title-sub{margin-top:4px;color:#6b7280;font-size:12px}
+
+#auditoria .audit-filters{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
+#auditoria .audit-filter label{display:block;font-weight:800;margin:0 0 6px 0;color:#374151;font-size:12px}
+#auditoria .audit-filter select, #auditoria .audit-filter input{
+  width:100%;padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;outline:none
+}
+#auditoria .audit-filter select:focus, #auditoria .audit-filter input:focus{
+  border-color: var(--minerva-red);
+  box-shadow: 0 0 0 3px rgba(122,20,23,.12);
+}
+#auditoria .audit-hint{margin-top:6px;color:#6b7280;font-size:11px;line-height:1.25}
+
+#auditoria .audit-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+#auditoria .audit-btn{border:none;border-radius:12px;padding:11px 12px;font-weight:900;cursor:pointer}
+#auditoria .audit-btn-primary{background:var(--minerva-red);color:#fff;box-shadow:0 8px 20px rgba(122,20,23,.25)}
+#auditoria .audit-btn-dark{background:#4b5563;color:#fff}
+#auditoria .audit-btn-ghost{background:#fff;border:1px solid #e5e7eb;color:#374151}
+
+#auditoria .audit-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+#auditoria .audit-kpi{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;padding:12px;text-align:center}
+#auditoria .audit-kpi-value{font-size:28px;font-weight:900;color:var(--minerva-red);line-height:1}
+#auditoria .audit-kpi-label{margin-top:8px;font-size:11px;color:#6b7280;font-weight:800;letter-spacing:.6px}
+
+#auditoria .audit-body{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+
+#auditoria .audit-column{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;overflow:hidden;width:100%;max-width:980px}
+#auditoria .audit-col-head{background:linear-gradient(90deg, rgba(122,20,23,.12), rgba(122,20,23,.03));padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+#auditoria .audit-col-title{font-weight:900;color:#111827}
+#auditoria .audit-col-meta{font-size:12px;color:#6b7280;font-weight:800}
+
+#auditoria .audit-list{display:flex;flex-direction:column;gap:10px;padding:12px}
+#auditoria .audit-row{border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+#auditoria .audit-row-left{min-width:0}
+#auditoria .audit-pos{font-weight:900;color:#111827;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#auditoria .audit-sub{margin-top:2px;color:#6b7280;font-size:11px;font-weight:700;display:flex;gap:10px;flex-wrap:wrap}
+#auditoria .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #e5e7eb;background:#f9fafb;border-radius:999px;padding:5px 9px}
+
+#auditoria .audit-actions{display:flex;gap:8px}
+#auditoria .audit-act{border:none;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;min-width:72px}
+#auditoria .audit-ok{background:#16a34a;color:#fff}
+#auditoria .audit-nok{background:#ef4444;color:#fff}
+
+#auditoria .audit-row.audit-locked{position:relative}
+#auditoria .audit-row.audit-locked::after{content:"Auditado";position:absolute;top:10px;right:12px;font-size:10px;font-weight:900;color:#6b7280}
+#auditoria .audit-row.audit-locked .audit-act{opacity:.55;cursor:not-allowed}
+
+#auditoria .audit-row.audit-locked[data-status="ok"]{border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.06)}
+#auditoria .audit-row.audit-locked[data-status="nok"]{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.06)}
+
+#auditoria .audit-history{background:#fff;border:1px solid rgba(0,0,0,.06);border-radius:16px;overflow:hidden}
+#auditoria .audit-history-head{padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(90deg, rgba(122,20,23,.06), rgba(255,255,255,0))}
+#auditoria .audit-history-title{font-weight:900;color:#111827}
+#auditoria .audit-history-actions{display:flex;gap:8px;flex-wrap:wrap}
+#auditoria .audit-mini{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:8px 10px;font-weight:900;cursor:pointer;color:#374151}
+
+#auditoria .audit-history-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;border-top:1px solid rgba(0,0,0,.06)}
+#auditoria .audit-history-table{padding:12px;border-top:1px solid rgba(0,0,0,.06)}
+#auditoria .audit-history-note{padding:0 12px 12px;color:#6b7280;font-size:11px}
+
+#auditoria .audit-table{width:100%;border-collapse:collapse;font-size:12px}
+#auditoria .audit-table th{font-size:11px;color:#6b7280;text-align:left;padding:8px;border-bottom:1px solid #eef2f7}
+#auditoria .audit-table td{padding:8px;border-bottom:1px solid #eef2f7;color:#111827}
+
+#auditoria .audit-admin{padding:12px;border-top:1px solid rgba(0,0,0,.06)}
+#auditoria .audit-admin-title{font-weight:900;color:#111827;margin-bottom:8px}
+#auditoria .audit-admin-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#auditoria .audit-admin-row input[type=file]{flex:1;min-width:220px}
+#auditoria .audit-paste textarea{width:100%;margin-top:10px;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px}
+#auditoria .audit-admin-actions{display:flex;gap:10px;margin-top:8px;justify-content:flex-end}
+#auditoria .audit-admin-hint{margin-top:8px;color:#6b7280;font-size:11px;line-height:1.25}
+
+
+#auditoria .audit-history-bottom{margin-top:12px}
+#auditoria .audit-history-bottom-inner{max-width:none}
+#auditoria .audit-admin-details{margin-top:12px}
+#auditoria .audit-admin-summary{cursor:pointer;font-weight:900;color:#111827;padding:10px 12px;border:1px dashed rgba(0,0,0,.18);border-radius:12px;background:#fff}
+#auditoria .audit-admin-details[open] .audit-admin-summary{border-style:solid}
+
+#auditoria .audit-finalize{padding:0 12px 14px;display:flex;flex-direction:column;gap:8px}
+#auditoria .audit-finalize-hint{color:#6b7280;font-size:11px;line-height:1.25}
+@media(min-width:900px){
+  #auditoria .audit-filters{grid-template-columns:repeat(4,1fr)}
+  #auditoria .audit-kpis{grid-template-columns:repeat(4,1fr)}
+  }
+
+#auditoria .audit-col-picker{padding:12px;border-top:1px solid rgba(0,0,0,.06)}
+
 </style>
 </head>
 
@@ -973,6 +1080,7 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
     <button id="navPcBtn" class="active" onclick="openTab('pc')">📦 ROTINAS OPERACIONAIS</button>
     <button id="navAnalistasBtn" onclick="openTab('analistas')">💻 ROTINAS ANALISTAS</button>
     <button id="navDevolucaoBtn" onclick="openTab('devolucao')">🔄 ROTINAS DEVOLUÇÃO</button>
+    <button id="navAuditBtn" onclick="openTab('auditoria')">🧾 AUDITORIA POSIÇÃO</button>
     <button id="navInventarioBtn" onclick="openTab('inventario')">📋 INVENTÁRIO AQ</button>
     <button id="navMobileBtn" class="privileged-only" onclick="openTab('mobile')">📱 MOBILE</button>
     <button id="navKpiBtn" onclick="openTab('kpi')">📊 KPI / DASHBOARD</button>
@@ -1153,6 +1261,157 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
   </div>
 </section>
 
+
+
+
+
+<section id="auditoria">
+  <div class="audit-shell">
+    <div class="audit-top">
+      <div class="audit-title">
+        <div class="audit-title-main">Auditoria de Posição</div>
+        <div class="audit-title-sub">Mobile-first: selecione uma câmara por vez, sorteie e registre OK/NOK.</div>
+      </div>
+
+      <div class="audit-filters">
+        <div class="audit-filter">
+          <label for="auditQty">Quantidade por câmara</label>
+          <select id="auditQty">
+            <option value="5">5 posições</option>
+            <option value="10" selected>10 posições</option>
+            <option value="15">15 posições</option>
+            <option value="20">20 posições</option>
+          </select>
+        </div>
+
+        <div class="audit-filter">
+          <label for="auditNivelSelect">A partir do nível</label>
+          <select id="auditNivelSelect">
+            <option value="1" selected>Nível 1 (chão) em diante</option>
+            <option value="all">Ambos os níveis</option>
+            <option value="gt1">Somente acima do 1</option>
+          </select>
+        </div>
+
+        <div class="audit-filter">
+          <label for="auditConsSelect">Conservação</label>
+          <select id="auditConsSelect">
+            <option value="AMBOS" selected>Ambos (Congelado + Resfriado)</option>
+            <option value="CONGELADO">Congelado</option>
+            <option value="RESFRIADO">Resfriado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="audit-buttons">
+        <button id="auditDrawBtn" class="audit-btn audit-btn-primary" type="button">🎲 NOVO SORTEIO</button>
+        <button id="auditRefreshBtn" class="audit-btn audit-btn-dark" type="button">🔄 ATUALIZAR</button>
+        <button id="auditExportBtn" class="audit-btn audit-btn-dark" type="button">📥 EXPORTAR EXCEL</button>
+        <button id="auditClearBtn" class="audit-btn audit-btn-ghost" type="button">🧹 LIMPAR</button>
+      </div>
+
+      <div class="audit-kpis">
+        <div class="audit-kpi">
+          <div id="auditKpiTotal" class="audit-kpi-value">0</div>
+          <div class="audit-kpi-label">TOTAL POSIÇÕES</div>
+        </div>
+        <div class="audit-kpi">
+          <div id="auditKpiOk" class="audit-kpi-value">0</div>
+          <div class="audit-kpi-label">CONFORMES (OK)</div>
+        </div>
+        <div class="audit-kpi">
+          <div id="auditKpiNok" class="audit-kpi-value">0</div>
+          <div class="audit-kpi-label">NÃO CONFORMES (NOK)</div>
+        </div>
+        <div class="audit-kpi">
+          <div id="auditKpiPct" class="audit-kpi-value">0%</div>
+          <div class="audit-kpi-label">% CONFORMIDADE</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="audit-body">
+      <div class="audit-column">
+        <div class="audit-col-head">
+          <div class="audit-col-title">Câmara selecionada</div>
+          <div id="auditColMeta" class="audit-col-meta">0% (0/0)</div>
+        </div>
+
+        <div class="audit-col-picker audit-filter">
+          <label for="auditCameraSelect">Câmara</label>
+          <select id="auditCameraSelect">
+            <option value="01">Câmara 01</option>
+            <option value="02">Câmara 02</option>
+            <option value="03">Câmara 03</option>
+          </select>
+          <div id="auditCameraHint" class="audit-hint">Carregue a lista para habilitar as câmaras disponíveis.</div>
+        </div>
+        <div id="auditResults" class="audit-list"></div>
+<div class="audit-finalize">  <button id="auditFinalizeBtn" class="audit-btn audit-btn-primary" type="button">✅ FINALIZADO</button>  <div class="audit-finalize-hint">Salva no histórico quando todas as posições estiverem marcadas (OK/NOK).</div></div>
+      </div>
+
+      
+    </div>
+
+    <div class="audit-history-bottom">
+<div class="audit-history audit-history-bottom-inner">
+        <div class="audit-history-head">
+          <div class="audit-history-title">Histórico de execução</div>
+          <div class="audit-history-actions">
+            <button id="auditHistoryReloadBtn" class="audit-mini" type="button">Recarregar</button>
+            <button id="auditHistoryExportBtn" class="audit-mini" type="button">Exportar</button>            <button id="auditHistoryClearBtn" class="audit-mini" type="button">Zerar execuções</button>
+
+          </div>
+        </div>
+
+        <div class="audit-history-filters">
+          <div class="audit-filter">
+            <label for="auditHistCamera">Câmara</label>
+            <select id="auditHistCamera">
+              <option value="ALL" selected>Todas</option>
+              <option value="01">Câmara 01</option>
+              <option value="02">Câmara 02</option>
+              <option value="03">Câmara 03</option>
+            </select>
+          </div>
+          <div class="audit-filter">
+            <label for="auditHistRange">Período</label>
+            <select id="auditHistRange">
+              <option value="today">Hoje</option>
+              <option value="7" selected>Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="all">Tudo</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="auditHistoryTable" class="audit-history-table"></div>
+        <div class="audit-history-note">* O histórico é salvo no Firebase e segue as permissões do sistema.</div>
+
+        <details id="auditAdminDetails" class="audit-admin-details" style="display:none;">
+  <summary class="audit-admin-summary">⚙️ Administração (Admin/Master)</summary>
+  <div class="audit-admin">
+          <div class="audit-admin-title">Importação da lista fixa (Admin/Master)</div>
+          <div class="audit-admin-row">
+            <input id="auditFile" type="file" accept=".txt" />
+            <button id="auditPasteToggle" class="audit-mini" type="button">Colar texto</button>
+            <button id="auditSavePositionsBtn" class="audit-btn audit-btn-dark" type="button">⬆️ Salvar posições no Firebase</button>
+          </div>
+          <div id="auditPasteBox" class="audit-paste" style="display:none;">
+            <textarea id="auditText" rows="6" placeholder="Cole aqui: CAMARA;POSICAO;NIVEL;CONSERVACAO (1 por linha)"></textarea>
+            <div class="audit-admin-actions">
+              <button id="auditLoadTextBtn" class="audit-mini" type="button">Carregar lista</button>
+              <button id="auditClearTextBtn" class="audit-mini" type="button">Limpar</button>
+            </div>
+          </div>
+          <div class="audit-admin-hint">Formato recomendado: <b>CAMARA;POSICAO;NIVEL;CONSERVACAO</b>. CONSERVACAO: <b>RESFRIADO</b>, <b>CONGELADO</b> ou <b>AMBOS</b>. Se vier vazio, assume <b>AMBOS</b>.</div>
+        </div>
+</details>
+      </div>
+    </div>
+
+  </div>
+</section>
 <section id="kpi">
   <div class="card">
     <h3 style="margin:0 0 10px 0; color:var(--minerva-red)">Dashboard de Performance</h3>
@@ -1520,6 +1779,7 @@ const VIEW_LABELS = {
   inventario: 'INVENTÁRIO AQ',
   mobile: 'MOBILE',
   kpi: 'KPI / DASHBOARD',
+  auditoria: 'AUDITORIA DE POSIÇÃO',
   governance: 'GOVERNANÇA'
 };
 function getViewLabel(viewId) {
@@ -2557,11 +2817,190 @@ function destroyRealtimeListeners() {
 /* ===========================
    INIT / LOAD DATA
 =========================== */
+
+
+/* ===========================
+   AUTO-CLOSE (NÃO EXECUTADAS)
+   - Executa quando alguém abre o painel (e pode ser chamado em ações)
+   - Fecha TODOS os dias pendentes desde o último fechamento registrado
+   - Gera registros no HISTORY para rotinas NÃO INICIADAS
+   - Abas: pc / analistas / devolucao
+
+   OBS: como roda no front-end, ele usa o estado atual das rotinas.
+=========================== */
+let autoCloseCheckedOnce = false;
+let autoCloseInProgress = false;
+
+function isoToPtbr(dateIso){
+  const s = String(dateIso || '');
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return new Date().toLocaleDateString('pt-BR');
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function addDaysIso(dateIso, deltaDays){
+  const s = String(dateIso || localIsoDate(new Date()));
+  const d = new Date(s + 'T00:00:00');
+  d.setDate(d.getDate() + (parseInt(deltaDays,10) || 0));
+  return localIsoDate(d);
+}
+
+function isNotStartedTask(task){
+  const st = String(task?.status || 'pending');
+  if (st === 'pending') return true;
+  if (!task?.inicioTs && (st !== 'in_progress' && st !== 'done' && st !== 'partial')) return true;
+  return false;
+}
+
+async function appendVisibleHistoryEntries(entries){
+  if (!entries || !entries.length) return;
+  if (!isFirebaseConnected) throw new Error('Firebase offline (bloqueado)');
+
+  const docRef = db.collection(COLL_HISTORY).doc('data');
+  let updated = null;
+
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(docRef);
+    const data = doc.exists ? (doc.data() || {}) : {};
+    let arr = Array.isArray(data.history) ? data.history.slice() : [];
+
+    const ids = new Set(arr.map(x => String(x?.id)));
+    for (const e of entries){
+      const id = String(e?.id);
+      if (!id || ids.has(id)) continue;
+      arr.unshift(e);
+      ids.add(id);
+    }
+
+    if (arr.length > 800) arr = arr.slice(0, 800);
+    updated = arr;
+
+    tx.set(docRef, { history: arr, lastUpdate: new Date() }, { merge: true });
+  });
+
+  if (updated) visibleHistory = updated;
+  rebuildEffectiveHistory();
+}
+
+async function generateNotExecutedForDate(dateIso){
+  const dateStr = isoToPtbr(dateIso);
+  const ts = new Date(dateIso + 'T23:59:59');
+
+  const tasksByCtx = [
+    { ctx: 'pc', list: rotinasPC },
+    { ctx: 'analistas', list: rotinasAnalistas },
+    { ctx: 'devolucao', list: rotinasDevolucao }
+  ];
+
+  const newEntries = [];
+
+  for (const {ctx, list} of tasksByCtx){
+    const arr = Array.isArray(list) ? list : [];
+    for (let i=0; i<arr.length; i++){
+      const task = arr[i];
+      if (!task) continue;
+      if (!isNotStartedTask(task)) continue;
+
+      const key = String(task.id || task.nome || ('IDX_'+i)).replace(/\s+/g,'_');
+      const entryId = `AUTO__${dateIso}__${ctx}__${key}`;
+
+      newEntries.push({
+        id: entryId,
+        type: ctx,
+        data: dateStr,
+        dateIso: dateIso,
+        rotina: String(task.nome || task.rotina || 'ROTINA').trim(),
+        analista: String(task.analista || '-'),
+        motivo: 'NÃO INICIADA',
+        inicio: '-',
+        fim: '-',
+        duracao: '-',
+        durationSec: 0,
+        percent: '-',
+        status: 'Não executada',
+        prioridade: task.prioridade || '-',
+        timestamp: ts
+      });
+    }
+  }
+
+  if (!newEntries.length) return 0;
+
+  // grava no arquivo e no archive diário
+  await appendVisibleHistoryEntries(newEntries);
+  for (const e of newEntries){
+    await archiveHistoryEntry(e);
+    if (currentUserRole === 'master') archiveHistory.unshift(e);
+  }
+  if (currentUserRole === 'master') {
+    archiveHistory.sort((a,b) => safeTime(b.timestamp) - safeTime(a.timestamp));
+  }
+
+  return newEntries.length;
+}
+
+async function autoClosePendingDays(trigger='init'){
+  if (autoCloseInProgress) return;
+
+  // evita rodar o tempo todo; pode chamar em ações, mas só roda uma vez por sessão
+  if (autoCloseCheckedOnce && trigger === 'action') return;
+
+  autoCloseInProgress = true;
+  try{
+    if (!isFirebaseConnected) return;
+
+    const todayIso = localIsoDate(new Date());
+    const yesterdayIso = addDaysIso(todayIso, -1);
+
+    // Se não existe "ontem" válido (ex.: datas quebradas), sai
+    if (!yesterdayIso || yesterdayIso >= todayIso) return;
+
+    const cfgRef = db.collection(COLL_CONFIG).doc('data');
+    const cfgSnap = await cfgRef.get();
+    const cfg = cfgSnap.exists ? (cfgSnap.data() || {}) : {};
+
+    let lastClosed = String(cfg.lastAutoCloseDateIso || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(lastClosed)) lastClosed = '';
+
+    let startIso = lastClosed ? addDaysIso(lastClosed, 1) : yesterdayIso;
+
+    // nada a fazer
+    if (startIso > yesterdayIso) {
+      autoCloseCheckedOnce = true;
+      return;
+    }
+
+    // fecha todos os dias pendentes
+    let cursor = new Date(startIso + 'T00:00:00');
+    const end = new Date(yesterdayIso + 'T00:00:00');
+
+    while (cursor <= end){
+      const dIso = localIsoDate(cursor);
+      const count = await generateNotExecutedForDate(dIso);
+
+      await cfgRef.set({
+        lastAutoCloseDateIso: dIso,
+        lastAutoCloseAt: new Date(),
+        lastAutoCloseBy: currentUser?.email || null,
+        lastAutoCloseCount: count
+      }, { merge: true });
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    autoCloseCheckedOnce = true;
+  } catch(e){
+    console.error('autoClosePendingDays falhou:', e);
+  } finally {
+    autoCloseInProgress = false;
+  }
+}
 async function initializeApp() {
   try {
     await loadData();
     setupKpiFilters();
     setupRealtimeListeners();
+    await autoClosePendingDays('init');
     render();
     updateCharts();
     if (currentUserRole === 'master') renderGovernanceLog();
@@ -2884,6 +3323,7 @@ async function startTask(context, index) {
   await saveRotinasContext(context);
 render();
   showToast('Tarefa iniciada', 'success');
+  autoClosePendingDays('action');
 }
 
 function calcDurationFromTimestamps(startTs, endTs) {
@@ -2967,6 +3407,7 @@ async function finishTask(context, index) {
 render();
     updateCharts();
     showToast('Tarefa concluída', 'success');
+    autoClosePendingDays('action');
   } finally {
     taskActionLocks.delete(lk);
   }
@@ -3137,6 +3578,7 @@ function openTab(id) {
     devolucao: 'navDevolucaoBtn',    // MOVIDO ANTES DO INVENTÁRIO
     inventario: 'navInventarioBtn',  // DEPOIS DA DEVOLUÇÃO
     mobile: 'navMobileBtn',
+    auditoria: 'navAuditBtn',
     kpi: 'navKpiBtn',
     governance: 'navGovBtn'
   };
@@ -3144,11 +3586,12 @@ function openTab(id) {
   if (activeBtn) activeBtn.classList.add("active");
 
   const histCard = document.getElementById("historyCard");
-  if (id === 'kpi' || id === 'governance' || id === 'mobile') {
+  if (id === 'kpi' || id === 'governance' || id === 'mobile' || id === 'auditoria') {
     histCard.style.display = 'none';
     if (id === 'kpi') updateCharts();
     if (id === 'governance' && currentUserRole === 'master') renderGovernanceLog();
     if (id === 'mobile') renderMobileDashboard();
+    if (id === 'auditoria') renderAuditoriaTab();
   } else {
     histCard.style.display = 'block';
     render();
@@ -4793,6 +5236,871 @@ function updateMobileTimers() {
 
     if(h >= 1) el.style.color = '#d32f2f';
   });
+}
+
+
+
+
+
+/* ===========================
+   AUDITORIA POSIÇÃO – FIREBASE + HISTÓRICO + TRAVA OK/NOK
+   Regras:
+   - Lista fixa salva no Firestore (importação somente Admin/Master).
+   - Mobile-first: 1 câmara por vez.
+   - Ao marcar OK/NOK: trava e não permite alteração.
+   - Botão LIMPAR: reseta marcações do sorteio atual (câmara selecionada).
+   - Histórico salvo no Firestore ao concluir (todas as posições sorteadas marcadas).
+
+   TXT recomendado: CAMARA;POSICAO;NIVEL;CONSERVACAO
+   CONSERVACAO: RESFRIADO | CONGELADO | AMBOS
+=========================== */
+
+const COLL_AUDIT_POS = 'audit_positions';
+const COLL_AUDIT_RUNS = 'audit_runs';
+
+let auditPositionsByCamera = {}; // { '01': [ {camera, position, level, conservation, raw} ] }
+let auditStateByCamera = {};     // { '01': { 'POS': {locked:true, status:'ok'|'nok'|''} } }
+let auditLastDrawByCamera = {};  // { '01': [entry,...] }
+let auditInitialized = false;
+let auditDailySummary = { total: 0, ok: 0, nok: 0, pct: 0, loaded: false };
+let auditLastImportedText = '';
+
+function auditNormalizeCamera(cam){
+  const n = String(cam || '').replace(/[^0-9]/g,'');
+  if (!n) return '';
+  return n.padStart(2,'0');
+}
+
+function auditNormalizeCons(v){
+  const s = String(v || '').trim().toUpperCase();
+  if (!s) return 'AMBOS';
+  if (s.includes('CONG')) return 'CONGELADO';
+  if (s.includes('RESF')) return 'RESFRIADO';
+  if (s.includes('AMB')) return 'AMBOS';
+  if (s === 'CONGELADO' || s === 'RESFRIADO' || s === 'AMBOS') return s;
+  return 'AMBOS';
+}
+
+function auditParseLevel(token){
+  const t = String(token || '').trim();
+  if (!t) return null;
+  const m = t.match(/(nivel|n)\s*0*([0-9]+)/i) || t.match(/\b0*([0-9]+)\b/);
+  if (!m) return null;
+  const v = parseInt(m[m.length-1], 10);
+  return Number.isFinite(v) ? v : null;
+}
+
+function auditTryInferCamera(raw){
+  const s = String(raw || '').toUpperCase();
+  let m = s.match(/CAM(ARA)?\s*0*([0-9]{1,2})/i);
+  if (m) return auditNormalizeCamera(m[2]);
+  m = s.match(/\bC\s*0*([0-9]{1,2})\b/i);
+  if (m) return auditNormalizeCamera(m[1]);
+  m = s.match(/^\s*0*([0-9]{1,2})\b/);
+  if (m) return auditNormalizeCamera(m[1]);
+  return '';
+}
+
+function auditTryInferLevel(raw){
+  const s = String(raw || '').toUpperCase();
+  let m = s.match(/NIVEL\s*0*([0-9]+)/i);
+  if (m) return parseInt(m[1],10);
+  m = s.match(/\bN\s*0*([0-9]+)\b/i);
+  if (m) return parseInt(m[1],10);
+  m = s.match(/\b([0-9]{1,2})\b\s*$/);
+  if (m) return parseInt(m[1],10);
+  return null;
+}
+
+function auditParseLines(text){
+  const lines = String(text || '')
+    .replace(/\r/g,'')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  const out = [];
+  for (const line of lines){
+    let parts = line.split(';');
+    if (parts.length < 4) parts = line.split('\t');
+    if (parts.length < 4) parts = line.split(',');
+
+    let cam = '';
+    let pos = '';
+    let lvl = null;
+    let cons = 'AMBOS';
+
+    if (parts.length >= 4){
+      cam = auditNormalizeCamera(parts[0]);
+      pos = String(parts[1] || '').trim();
+      lvl = auditParseLevel(parts[2]);
+      cons = auditNormalizeCons(parts[3]);
+    } else if (parts.length == 3){
+      cam = auditNormalizeCamera(parts[0]);
+      pos = String(parts[1] || '').trim();
+      lvl = auditParseLevel(parts[2]);
+      cons = 'AMBOS';
+    } else if (parts.length == 2){
+      cam = auditNormalizeCamera(parts[0]) || auditTryInferCamera(line);
+      pos = String(parts[1] || '').trim();
+      lvl = auditTryInferLevel(line);
+      cons = 'AMBOS';
+    } else {
+      cam = auditTryInferCamera(line);
+      pos = line;
+      lvl = auditTryInferLevel(line);
+      cons = 'AMBOS';
+    }
+
+    if (!cam) continue;
+    if (!pos) pos = line;
+    if (!Number.isFinite(lvl)) lvl = null;
+
+    out.push({ camera: cam, position: pos, level: lvl, conservation: cons, raw: line });
+  }
+  return out;
+}
+
+function auditIngestLocal(text){
+  const entries = auditParseLines(text);
+  if (!entries.length){
+    showToast('Nenhuma posição válida encontrada no TXT.', 'warning');
+    return { entries: [], byCamera: {} };
+  }
+
+  const byCamera = {};
+  for (const e of entries){
+    if (!byCamera[e.camera]) byCamera[e.camera] = [];
+    const exists = byCamera[e.camera].some(x => x.position === e.position);
+    if (!exists) byCamera[e.camera].push(e);
+  }
+
+  showToast(`Lista carregada: ${entries.length} linhas processadas.`, 'success');
+  return { entries, byCamera };
+}
+
+function auditUpdateCameraSelect(){
+  const sel = document.getElementById('auditCameraSelect');
+  const hint = document.getElementById('auditCameraHint');
+  const histSel = document.getElementById('auditHistCamera');
+  if (!sel || !hint) return;
+
+  const cams = Object.keys(auditPositionsByCamera).sort();
+  if (!cams.length){
+    hint.textContent = 'Carregue a lista para habilitar as câmaras disponíveis.';
+    return;
+  }
+
+  hint.textContent = `Câmaras disponíveis: ${cams.map(c => 'Câmara ' + c).join(', ')}`;
+
+  const current = sel.value;
+  sel.innerHTML = '';
+  for (const c of cams){
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = `Câmara ${c}`;
+    sel.appendChild(opt);
+  }
+  if (cams.includes(current)) sel.value = current;
+
+  if (histSel){
+    const hCurrent = histSel.value;
+    histSel.innerHTML = '';
+    const all = document.createElement('option');
+    all.value = 'ALL';
+    all.textContent = 'Todas';
+    histSel.appendChild(all);
+    for (const c of cams){
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = `Câmara ${c}`;
+      histSel.appendChild(opt);
+    }
+    if ([...histSel.options].some(o => o.value === hCurrent)) histSel.value = hCurrent;
+  }
+}
+
+function auditGetFilters(){
+  const cam = auditNormalizeCamera(document.getElementById('auditCameraSelect')?.value);
+  const qty = parseInt(document.getElementById('auditQty')?.value || '10', 10) || 10;
+  const levelMode = document.getElementById('auditNivelSelect')?.value || '1';
+  const cons = auditNormalizeCons(document.getElementById('auditConsSelect')?.value || 'AMBOS');
+  return { cam, qty, levelMode, cons };
+}
+
+function auditFilterList(list, levelMode, cons){
+  let out = list.slice();
+  if (levelMode === '1') out = out.filter(x => (x.level ?? 1) === 1);
+  if (levelMode === 'gt1') out = out.filter(x => (x.level ?? 1) > 1);
+  if (cons !== 'AMBOS'){
+    out = out.filter(x => (auditNormalizeCons(x.conservation) === cons) || (auditNormalizeCons(x.conservation) === 'AMBOS'));
+  }
+  return out;
+}
+
+function auditShuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function auditEnsureState(cam, pos){
+  if (!auditStateByCamera[cam]) auditStateByCamera[cam] = {};
+  if (!auditStateByCamera[cam][pos]) auditStateByCamera[cam][pos] = { locked:false, status:'' };
+}
+
+function auditDraw(){
+  const { cam, qty, levelMode, cons } = auditGetFilters();
+  const all = auditPositionsByCamera[cam] || [];
+
+  if (!all.length){
+    showToast('Esta câmara ainda não tem posições carregadas no Firebase.', 'warning');
+    return;
+  }
+
+  const filtered = auditFilterList(all, levelMode, cons);
+  if (!filtered.length){
+    showToast('Nenhuma posição disponível para os filtros selecionados.', 'warning');
+    return;
+  }
+
+  const picked = auditShuffle(filtered).slice(0, Math.min(qty, filtered.length));
+  auditLastDrawByCamera[cam] = picked;
+
+  for (const e of picked) auditEnsureState(cam, e.position);
+
+  showToast(`Sorteio realizado: ${picked.length} posições (Câmara ${cam}).`, 'success');
+  auditRender();
+}
+
+function auditEnsureDrawForCurrentCamera(){
+  const { cam } = auditGetFilters();
+  const existing = auditLastDrawByCamera[cam] || [];
+  // se já existe sorteio para a câmara, apenas renderiza
+  if (existing.length){ auditRender(); return; }
+  // se não existe, sorteia automaticamente com os filtros atuais
+  auditDraw();
+}
+
+function auditClearMarksCurrentCamera(){
+  const cam = auditNormalizeCamera(document.getElementById('auditCameraSelect')?.value);
+  const draw = auditLastDrawByCamera[cam] || [];
+  for (const e of draw){
+    auditEnsureState(cam, e.position);
+    auditStateByCamera[cam][e.position] = { locked:false, status:'' };
+  }
+  showToast(`Marcações limpas (Câmara ${cam}).`, 'info');
+  auditRender();
+}
+
+function auditLock(cam, pos, status){
+  auditEnsureState(cam, pos);
+  if (auditStateByCamera[cam][pos].locked) return false;
+  auditStateByCamera[cam][pos].locked = true;
+  auditStateByCamera[cam][pos].status = status;
+  return true;
+}
+
+function auditComputeDrawKpis(){
+  const { cam } = auditGetFilters();
+  const draw = auditLastDrawByCamera[cam] || [];
+  let ok = 0, nok = 0, audited = 0;
+  for (const e of draw){
+    const st = auditStateByCamera?.[cam]?.[e.position];
+    if (!st?.locked) continue;
+    audited++;
+    if (st.status === 'ok') ok++;
+    if (st.status === 'nok') nok++;
+  }
+  const total = draw.length;
+  const pct = total ? Math.round((ok / total) * 100) : 0;
+  return { total, audited, ok, nok, pct };
+}
+
+function auditRender(){
+  const listEl = document.getElementById('auditResults');
+  const metaEl = document.getElementById('auditColMeta');
+  if (!listEl || !metaEl) return;
+
+  const { cam } = auditGetFilters();
+  const draw = auditLastDrawByCamera[cam] || [];
+
+  const { total, audited, ok, nok, pct } = auditComputeDrawKpis();  // KPIs (DASH DO DIA - TODAS AS CÂMARAS)
+  const d = auditDailySummary || { total: 0, ok: 0, nok: 0, pct: 0 };
+  const elT = document.getElementById('auditKpiTotal');
+  const elO = document.getElementById('auditKpiOk');
+  const elN = document.getElementById('auditKpiNok');
+  const elP = document.getElementById('auditKpiPct');
+  if (elT) elT.textContent = String(d.total || 0);
+  if (elO) elO.textContent = String(d.ok || 0);
+  if (elN) elN.textContent = String(d.nok || 0);
+  if (elP) elP.textContent = `${d.pct || 0}%`;
+
+  metaEl.textContent = `${pct}% (${ok}/${total || 0}) · Auditadas: ${audited}/${total || 0}`;
+
+  listEl.innerHTML = '';
+  if (!draw.length){
+    listEl.innerHTML = '<div style="color:#6b7280;font-size:12px;padding:6px 2px;">Nenhum sorteio ainda. Clique em <b>NOVO SORTEIO</b>.</div>';
+    return;
+  }
+
+  draw.forEach((e, idx) => {
+    auditEnsureState(cam, e.position);
+    const st = auditStateByCamera[cam][e.position];
+
+    const row = document.createElement('div');
+    row.className = 'audit-row' + (st.locked ? ' audit-locked' : '');
+    row.dataset.camera = cam;
+    row.dataset.position = e.position;
+    row.dataset.status = (st.status || '');
+
+    const left = document.createElement('div');
+    left.className = 'audit-row-left';
+
+    const pos = document.createElement('div');
+    pos.className = 'audit-pos';
+    pos.textContent = `${String(idx+1).padStart(2,'0')} · ${e.position}`;
+
+    const sub = document.createElement('div');
+    sub.className = 'audit-sub';
+
+    const pillLvl = document.createElement('span');
+    pillLvl.className = 'pill';
+    pillLvl.textContent = `Nível ${Number.isFinite(e.level) ? e.level : '-'}`;
+
+    const pillCons = document.createElement('span');
+    pillCons.className = 'pill';
+    pillCons.textContent = auditNormalizeCons(e.conservation);
+
+    sub.appendChild(pillLvl);
+    sub.appendChild(pillCons);
+
+    left.appendChild(pos);
+    left.appendChild(sub);
+
+    const acts = document.createElement('div');
+    acts.className = 'audit-actions';
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = 'audit-act audit-ok';
+    okBtn.textContent = 'OK';
+    okBtn.dataset.action = 'ok';
+
+    const nokBtn = document.createElement('button');
+    nokBtn.type = 'button';
+    nokBtn.className = 'audit-act audit-nok';
+    nokBtn.textContent = 'NOK';
+    nokBtn.dataset.action = 'nok';
+
+    if (st.locked){
+      okBtn.disabled = true;
+      nokBtn.disabled = true;
+    }
+
+    acts.appendChild(okBtn);
+    acts.appendChild(nokBtn);
+
+    row.appendChild(left);
+    row.appendChild(acts);
+
+    listEl.appendChild(row);
+  });
+}
+
+function auditIsAdminOrMaster(){
+  return (currentUserRole === 'master') || (typeof isPrivileged === 'function' && isPrivileged());
+}
+
+async function auditLoadPositionsFromFirestore(){
+  try{
+    auditPositionsByCamera = {};
+    const snap = await db.collection(COLL_AUDIT_POS).get();
+    snap.forEach(doc => {
+      const d = doc.data() || {};
+      const cam = auditNormalizeCamera(d.camera);
+      if (!cam) return;
+      if (!auditPositionsByCamera[cam]) auditPositionsByCamera[cam] = [];
+      auditPositionsByCamera[cam].push({
+        camera: cam,
+        position: String(d.position || ''),
+        level: Number.isFinite(d.level) ? d.level : (d.level ? parseInt(d.level,10) : null),
+        conservation: auditNormalizeCons(d.conservation || 'AMBOS'),
+        raw: d.raw || ''
+      });
+    });
+
+    Object.keys(auditPositionsByCamera).forEach(cam => {
+      auditPositionsByCamera[cam].sort((a,b) => String(a.position).localeCompare(String(b.position)));
+    });
+
+    auditUpdateCameraSelect();
+    showToast('Posições carregadas do Firebase.', 'success');
+    auditRender();
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao carregar posições do Firebase.', 'error');
+  }
+}
+
+async function auditSavePositionsToFirestore(fromText){
+  if (!auditIsAdminOrMaster()){
+    showToast('Apenas Admin/Master podem importar posições.', 'error');
+    return;
+  }
+
+  const { entries, byCamera } = auditIngestLocal(fromText);
+  if (!entries.length) return;
+
+  try{
+    showToast('Salvando no Firebase... (pode levar alguns segundos)', 'info');
+
+    const CHUNK = 450;
+    for (let i=0; i<entries.length; i+=CHUNK){
+      const chunk = entries.slice(i, i+CHUNK);
+      const batch = db.batch();
+      chunk.forEach(e => {
+        const id = `${e.camera}__${String(e.position).replace(/\//g,'_')}`;
+        const ref = db.collection(COLL_AUDIT_POS).doc(id);
+        batch.set(ref, {
+          camera: e.camera,
+          position: e.position,
+          level: (e.level ?? null),
+          conservation: auditNormalizeCons(e.conservation),
+          raw: e.raw || '',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: currentUser?.email || null
+        }, { merge: true });
+      });
+      await batch.commit();
+    }
+
+    auditPositionsByCamera = byCamera;
+    auditUpdateCameraSelect();
+    showToast('Importação concluída e salva no Firebase.', 'success');
+    auditRender();
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao salvar posições no Firebase.', 'error');
+  }
+}
+
+function auditGetRunSummary(){
+  const { cam, levelMode, cons } = auditGetFilters();
+  const { total, ok, nok, pct } = auditComputeDrawKpis();
+  return {
+    camera: cam,
+    total,
+    ok,
+    nok,
+    pct,
+    filters: { levelMode, conservation: cons }
+  };
+}
+
+async function auditSaveRunHistory(){
+  const sum = auditGetRunSummary();
+  if (!sum.total) return;
+
+  try{
+    const payload = {
+      camera: sum.camera,
+      total: sum.total,
+      ok: sum.ok,
+      nok: sum.nok,
+      pct: sum.pct,
+      filters: sum.filters,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdBy: currentUser?.email || null,
+      createdByName: currentUser?.name || null,
+      adminHidden: false
+    };
+    await db.collection(COLL_AUDIT_RUNS).add(payload);
+  } catch(e){
+    console.error(e);
+  }
+}
+
+
+function auditGetTodayRange(){
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+async function auditLoadDailySummary(){
+  try {
+    const { start, end } = auditGetTodayRange();
+    let q = db.collection(COLL_AUDIT_RUNS)
+      .where('createdAt', '>=', start)
+      .where('createdAt', '<', end);
+    const snap = await q.get();
+    const isMaster = (currentUserRole === 'master');
+    let total = 0, ok = 0, nok = 0;
+    snap.forEach(doc => {
+      const d = doc.data() || {};
+      if (!isMaster && d.adminHidden) return;
+      total += (parseInt(d.total || 0, 10) || 0);
+      ok += (parseInt(d.ok || 0, 10) || 0);
+      nok += (parseInt(d.nok || 0, 10) || 0);
+    });
+    const denom = ok + nok;
+    const pct = denom ? Math.round((ok / denom) * 100) : 0;
+    auditDailySummary = { total, ok, nok, pct, loaded: true };
+    auditRender();
+  } catch (e) {
+    console.error(e);
+    // mantém valores antigos
+  }
+}
+
+function auditRangeToStartDate(range){
+  const now = new Date();
+  const start = new Date(now);
+  if (range === 'today'){
+    start.setHours(0,0,0,0);
+    return start;
+  }
+  if (range === '7'){
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+  if (range === '30'){
+    start.setDate(start.getDate() - 30);
+    return start;
+  }
+  return null;
+}
+
+async function auditLoadHistory(){
+  const tableEl = document.getElementById('auditHistoryTable');
+  if (!tableEl) return;
+
+  const cam = document.getElementById('auditHistCamera')?.value || 'ALL';
+  const range = document.getElementById('auditHistRange')?.value || '7';
+
+  tableEl.innerHTML = '<div style="color:#6b7280;font-size:12px;">Carregando...</div>';
+
+  try{
+    let q = db.collection(COLL_AUDIT_RUNS).orderBy('createdAt','desc').limit(200);
+
+    const startDate = auditRangeToStartDate(range);
+    if (startDate) q = q.where('createdAt', '>=', startDate);
+    if (cam !== 'ALL') q = q.where('camera', '==', auditNormalizeCamera(cam));
+
+    const snap = await q.get();
+    const rows = [];
+    snap.forEach(doc => {
+      const d = doc.data() || {};
+      rows.push({
+        camera: d.camera || '-',
+        total: d.total || 0,
+        ok: d.ok || 0,
+        nok: d.nok || 0,
+        pct: (typeof d.pct === 'number') ? d.pct : 0,
+        by: d.createdByName || d.createdBy || '-',
+        at: d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : null
+      });
+    });
+
+    
+    const isMasterView = (currentUserRole === 'master');
+    const visibleRows = isMasterView ? rows : rows.filter(r => !r.adminHidden);
+if (!visibleRows.length){
+      tableEl.innerHTML = '<div style="color:#6b7280;font-size:12px;">Sem registros para os filtros selecionados.</div>';
+      return;
+    }
+
+    const fmt = (dt) => {
+      if (!dt) return '-';
+      const dd = String(dt.getDate()).padStart(2,'0');
+      const mm = String(dt.getMonth()+1).padStart(2,'0');
+      const yy = dt.getFullYear();
+      const hh = String(dt.getHours()).padStart(2,'0');
+      const mi = String(dt.getMinutes()).padStart(2,'0');
+      return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+    };
+
+    const htmlTable = [
+      '<table class="audit-table">',
+      '<thead><tr>',
+      '<th>Data/Hora</th><th>Usuário</th><th>Câmara</th><th>Sorteadas</th><th>OK</th><th>NOK</th><th>%</th>',
+      '</tr></thead><tbody>',
+      ...visibleRows.map(r => (
+        `<tr>`+
+        `<td>${fmt(r.at)}</td>`+
+        `<td>${String(r.by).slice(0,40)}</td>`+
+        `<td>${r.camera}</td>`+
+        `<td>${r.total}</td>`+
+        `<td>${r.ok}</td>`+
+        `<td>${r.nok}</td>`+
+        `<td><b>${r.pct}%</b></td>`+
+        `</tr>`
+      )),
+      '</tbody></table>'
+    ].join('');
+
+    tableEl.innerHTML = htmlTable;
+  } catch(e){
+    console.error(e);
+    tableEl.innerHTML = '<div style="color:#6b7280;font-size:12px;">Erro ao carregar histórico.</div>';
+  }
+}
+
+function auditExportCurrentToExcel(){
+  try{
+    const { cam } = auditGetFilters();
+    const draw = auditLastDrawByCamera[cam] || [];
+    if (!draw.length){
+      showToast('Nada para exportar (faça um sorteio).', 'warning');
+      return;
+    }
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Auditoria');
+
+    ws.columns = [
+      { header: 'Câmara', key: 'camera', width: 10 },
+      { header: 'Posição', key: 'position', width: 22 },
+      { header: 'Nível', key: 'level', width: 10 },
+      { header: 'Conservação', key: 'conservation', width: 14 },
+      { header: 'Status', key: 'status', width: 10 }
+    ];
+
+    draw.forEach(e => {
+      const st = auditStateByCamera?.[cam]?.[e.position] || { locked:false, status:'' };
+      ws.addRow({
+        camera: cam,
+        position: e.position,
+        level: (Number.isFinite(e.level) ? e.level : ''),
+        conservation: auditNormalizeCons(e.conservation),
+        status: st.status || ''
+      });
+    });
+
+    wb.xlsx.writeBuffer().then(buf => {
+      saveAs(new Blob([buf]), `Auditoria_Posicao_Camara_${cam}.xlsx`);
+      showToast('Excel exportado.', 'success');
+    });
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao exportar Excel.', 'error');
+  }
+}
+
+function auditExportHistoryToExcel(){
+  const tableEl = document.querySelector('#auditHistoryTable table');
+  if (!tableEl){
+    showToast('Nada para exportar no histórico.', 'warning');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Historico');
+
+  const rows = [...tableEl.querySelectorAll('tr')].map(tr => [...tr.querySelectorAll('th,td')].map(td => td.textContent.trim()));
+  rows.forEach(r => ws.addRow(r));
+
+  wb.xlsx.writeBuffer().then(buf => {
+    saveAs(new Blob([buf]), `Auditoria_Historico.xlsx`);
+    showToast('Histórico exportado.', 'success');
+  });
+}
+
+
+async function auditClearHistoryForAdmin(){
+  if (!auditIsAdminOrMaster()) { showToast('Acesso negado.', 'error'); return; }
+
+  try {
+    const camSel = document.getElementById('auditHistCamera')?.value || 'ALL';
+    const range = document.getElementById('auditHistRange')?.value || '7';
+
+    let q = db.collection(COLL_AUDIT_RUNS).orderBy('createdAt','desc').limit(200);
+    const startDate = auditRangeToStartDate(range);
+    if (startDate) q = q.where('createdAt', '>=', startDate);
+    if (camSel !== 'ALL') q = q.where('camera', '==', auditNormalizeCamera(camSel));
+
+    const snap = await q.get();
+    if (snap.empty){ showToast('Sem execuções para zerar nesse filtro.', 'info'); return; }
+
+    const isMaster = (currentUserRole === 'master');
+
+    const confirmMsg = isMaster
+      ? 'Zerar execuções (MASTER) vai APAGAR do Firebase para TODO MUNDO. Deseja continuar?'
+      : 'Zerar execuções vai ocultar os registros para Admin (Master continua vendo). Deseja continuar?';
+
+    if (!confirm(confirmMsg)) return;
+
+    const docs = snap.docs;
+    const CHUNK = 450;
+
+    for (let i=0; i<docs.length; i+=CHUNK){
+      const batch = db.batch();
+      docs.slice(i, i+CHUNK).forEach(d => {
+        const ref = db.collection(COLL_AUDIT_RUNS).doc(d.id);
+        if (isMaster) {
+          batch.delete(ref);
+        } else {
+          batch.set(ref, {
+            adminHidden: true,
+            adminHiddenAt: firebase.firestore.FieldValue.serverTimestamp(),
+            adminHiddenBy: currentUser?.email || null
+          }, { merge: true });
+        }
+      });
+      await batch.commit();
+    }
+
+    showToast(isMaster ? 'Execuções apagadas (MASTER) para todos.' : 'Execuções zeradas para Admin (Master mantém histórico).', 'success');
+    await auditLoadHistory();
+    await auditLoadDailySummary();
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao zerar execuções.', 'error');
+  }
+}
+function auditApplyPermissionsUI(){
+  const isAdminOrMaster = auditIsAdminOrMaster();
+
+  // Administração (importação)
+  const details = document.getElementById('auditAdminDetails');
+  if (details) details.style.display = isAdminOrMaster ? 'block' : 'none';
+
+  // Botões restritos
+  const btnDraw = document.getElementById('auditDrawBtn');
+  const btnRefresh = document.getElementById('auditRefreshBtn');
+  const btnClear = document.getElementById('auditClearBtn');
+  [btnDraw, btnRefresh, btnClear].forEach(b => {
+    if (!b) return;
+    b.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
+  });
+
+  // Zerar execuções: somente Admin/Master
+  const btnZero = document.getElementById('auditHistoryClearBtn');
+  if (btnZero) btnZero.style.display = isAdminOrMaster ? 'inline-flex' : 'none';
+}
+
+function renderAuditoriaTab(){
+  if (!auditInitialized){
+    auditInitialized = true;
+
+    // Buttons
+    document.getElementById('auditDrawBtn')?.addEventListener('click', auditDraw);
+    document.getElementById('auditRefreshBtn')?.addEventListener('click', () => { auditLoadDailySummary(); auditRender(); auditLoadHistory(); });
+    document.getElementById('auditExportBtn')?.addEventListener('click', auditExportCurrentToExcel);
+    document.getElementById('auditClearBtn')?.addEventListener('click', auditClearMarksCurrentCamera);
+    document.getElementById('auditFinalizeBtn')?.addEventListener('click', async () => {
+      const { cam } = auditGetFilters();
+      const draw = auditLastDrawByCamera[cam] || [];
+      if (!draw.length){ showToast('Nenhum sorteio para finalizar.', 'warning'); return; }
+      const allLocked = draw.every(e => auditStateByCamera?.[cam]?.[e.position]?.locked);
+      if (!allLocked){ showToast('Finalize somente quando TODAS as posições estiverem marcadas (OK/NOK).', 'warning'); return; }
+      await auditSaveRunHistory();
+      await auditLoadHistory();
+      await auditLoadDailySummary();
+      const hist = document.getElementById('auditHistoryTable');
+      if (hist) hist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('Execução finalizada e registrada no histórico.', 'success');
+    });
+
+
+    // Filters
+    document.getElementById('auditCameraSelect')?.addEventListener('change', auditEnsureDrawForCurrentCamera);
+    document.getElementById('auditQty')?.addEventListener('change', auditRender);
+    document.getElementById('auditNivelSelect')?.addEventListener('change', auditRender);
+    document.getElementById('auditConsSelect')?.addEventListener('change', auditRender);
+
+    // List click
+    document.getElementById('auditResults')?.addEventListener('click', async (ev) => {
+      const btn = ev.target && ev.target.closest ? ev.target.closest('button[data-action]') : null;
+      if (!btn) return;
+      const row = btn.closest('.audit-row');
+      if (!row) return;
+
+      const cam = row.dataset.camera;
+      const pos = row.dataset.position;
+      const action = btn.dataset.action;
+
+      auditEnsureState(cam, pos);
+      if (auditStateByCamera[cam][pos].locked) return;
+
+      const changed = auditLock(cam, pos, action);
+      if (!changed) return;
+
+      auditRender();
+    });
+
+    // Admin import
+    const toggle = document.getElementById('auditPasteToggle');
+    const pasteBox = document.getElementById('auditPasteBox');
+    toggle?.addEventListener('click', () => {
+      if (!pasteBox) return;
+      pasteBox.style.display = (pasteBox.style.display === 'none' ? 'block' : 'none');
+    });
+
+    document.getElementById('auditClearTextBtn')?.addEventListener('click', () => {
+      const t = document.getElementById('auditText');
+      if (t) t.value = '';
+    });
+
+    document.getElementById('auditLoadTextBtn')?.addEventListener('click', () => {
+      const t = document.getElementById('auditText');
+      const text = t ? t.value : '';
+      auditLastImportedText = text;
+      const r = auditIngestLocal(text);
+      if (Object.keys(r.byCamera).length){
+        auditPositionsByCamera = r.byCamera;
+        auditUpdateCameraSelect();
+        auditRender();
+      }
+    });
+
+    document.getElementById('auditFile')?.addEventListener('change', (ev) => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || '');
+        auditLastImportedText = text;
+        const r = auditIngestLocal(text);
+        if (Object.keys(r.byCamera).length){
+          auditPositionsByCamera = r.byCamera;
+          auditUpdateCameraSelect();
+          auditRender();
+        }
+      };
+      reader.readAsText(f);
+      ev.target.value = '';
+    });
+
+    document.getElementById('auditSavePositionsBtn')?.addEventListener('click', () => {
+      const t = document.getElementById('auditText');
+      const text = (t && t.value && t.value.trim()) ? t.value : (auditLastImportedText || '');
+      if (!text){
+        showToast('Carregue o TXT (arquivo ou colar texto) antes de salvar no Firebase.', 'warning');
+        return;
+      }
+      auditSavePositionsToFirestore(text);
+    });
+
+    // Histórico
+    document.getElementById('auditHistoryReloadBtn')?.addEventListener('click', auditLoadHistory);
+    document.getElementById('auditHistoryExportBtn')?.addEventListener('click', auditExportHistoryToExcel);
+    document.getElementById('auditHistoryClearBtn')?.addEventListener('click', auditClearHistoryForAdmin);
+    document.getElementById('auditHistCamera')?.addEventListener('change', auditLoadHistory);
+    document.getElementById('auditHistRange')?.addEventListener('change', auditLoadHistory);
+  }
+
+  auditApplyPermissionsUI();
+  auditLoadPositionsFromFirestore();
+  auditRender();
+  auditLoadHistory();
 }
 
 /* ===========================
