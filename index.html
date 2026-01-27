@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1304,8 +1305,9 @@ button:disabled{opacity:.3;cursor:not-allowed;filter:grayscale(100%);pointer-eve
 
       <div class="audit-buttons">
         <button id="auditDrawBtn" class="audit-btn audit-btn-primary" type="button">🎲 NOVO SORTEIO</button>
-        <button id="auditRefreshBtn" class="audit-btn audit-btn-dark" type="button">🔄 ATUALIZAR</button>
+        <button id="auditRefreshBtn" class="audit-btn audit-btn-dark" type="button">🧹 RESET BANCO</button>
         <button id="auditExportBtn" class="audit-btn audit-btn-dark" type="button">📥 EXPORTAR EXCEL</button>
+        <button id="auditExportNokBtn" class="audit-btn audit-btn-dark" type="button">📥 EXPORTAR NOK (DIA)</button>
         <button id="auditClearBtn" class="audit-btn audit-btn-ghost" type="button">🧹 LIMPAR</button>
       </div>
 
@@ -6036,6 +6038,148 @@ function auditExportCurrentToExcel(){
   }
 }
 
+async function auditResetBancoAllCamerasToday(){
+  if (!auditIsAdminOrMaster()) { showToast('Acesso negado.', 'error'); return; }
+  try{
+    const dateKey = auditGetDateKey();
+    const msg = 'RESET BANCO: vai apagar TODAS as marcacoes (OK e NOK) de TODAS as camaras de hoje. O historico (audit_runs) nao sera alterado. Continuar?';
+    if (!confirm(msg)) return;
+    const sessSnap = await db.collection(COLL_AUDIT_SESSIONS).where('dateKey','==',dateKey).get();
+    if (sessSnap.empty){ showToast('Nao ha sessoes para hoje.', 'warning'); return; }
+    let deleted = 0;
+    for (const doc of sessSnap.docs){
+      const marksRef = db.collection(COLL_AUDIT_SESSIONS).doc(doc.id).collection('marks');
+      const marksSnap = await marksRef.get();
+      const docs = marksSnap.docs;
+      if (!docs.length) continue;
+      const CHUNK = 450;
+      for (let i=0; i<docs.length; i+=CHUNK){
+        const batch = db.batch();
+        docs.slice(i, i+CHUNK).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+      deleted += docs.length;
+    }
+    showToast('RESET BANCO concluido. Marcacoes removidas: ' + deleted + '.', 'success');
+    await auditLoadHistory();
+    await auditLoadDailySummary();
+    auditRender();
+  } catch(e){ console.error(e); showToast('Falha no RESET BANCO.', 'error'); }
+}
+
+async function auditExportNokXlsxAllToday(){
+  const btn = document.getElementById('auditExportNokBtn');
+  if (btn && btn.dataset.busy === '1') return;
+  if (btn) { btn.dataset.busy = '1'; btn.disabled = true; btn.style.opacity = '0.75'; }
+
+  try{
+    showToast('Gerando Excel NOK do dia... aguarde.', 'info');
+
+    const dateKey = auditGetDateKey();
+    const sessSnap = await db.collection(COLL_AUDIT_SESSIONS).where('dateKey','==',dateKey).get();
+    if (sessSnap.empty){ showToast('Nao ha sessoes de auditoria para hoje.', 'warning'); return; }
+
+    const rows = [];
+
+    for (const doc of sessSnap.docs){
+      const s = doc.data() || {};
+      const sessionId = doc.id;
+      const camera = auditNormalizeCamera(s.camera);
+
+      const draw = Array.isArray(s.draw) ? s.draw : [];
+      const metaByPos = {};
+      for (const d of draw){
+        const p = String((d && d.position) || '');
+        if (!p) continue;
+        metaByPos[p] = {
+          level: (Number.isFinite(d.level) ? d.level : (d.level ? parseInt(d.level,10) : null)),
+          conservation: auditNormalizeCons((d && d.conservation) || 'AMBOS')
+        };
+      }
+
+      const marksSnap = await db.collection(COLL_AUDIT_SESSIONS).doc(sessionId).collection('marks').get();
+      marksSnap.forEach(mk => {
+        const md = mk.data() || {};
+        if (md.status !== 'nok') return;
+        const pos = String(md.position || '');
+        if (!pos) return;
+
+        const meta = metaByPos[pos] || { level: null, conservation: 'AMBOS' };
+        const at = md.at && typeof md.at.toDate === 'function' ? md.at.toDate() : null;
+
+        rows.push({
+          dateKey: dateKey,
+          camera: camera,
+          position: pos,
+          level: meta.level,
+          conservation: meta.conservation,
+          byName: (md.byName || ''),
+          byEmail: (md.by || ''),
+          at: at,
+          sessionId: sessionId
+        });
+      });
+    }
+
+    if (!rows.length){ showToast('Nenhuma posicao NOK encontrada hoje.', 'warning'); return; }
+
+    rows.sort((a,b) => (String(a.camera)+String(a.position)).localeCompare(String(b.camera)+String(b.position)));
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('NOK_DIA');
+
+    ws.columns = [
+      { header: 'Data', key: 'dateKey', width: 12 },
+      { header: 'Camara', key: 'camera', width: 10 },
+      { header: 'Posicao', key: 'position', width: 22 },
+      { header: 'Nivel', key: 'level', width: 8 },
+      { header: 'Conservacao', key: 'conservation', width: 14 },
+      { header: 'Usuario', key: 'byName', width: 24 },
+      { header: 'Email', key: 'byEmail', width: 28 },
+      { header: 'Hora', key: 'time', width: 10 },
+      { header: 'Sessao', key: 'sessionId', width: 26 }
+    ];
+
+    const fmtTime = (dt) => {
+      if (!dt) return '';
+      const hh = String(dt.getHours()).padStart(2,'0');
+      const mm = String(dt.getMinutes()).padStart(2,'0');
+      return hh + ':' + mm;
+    };
+
+    rows.forEach(r => {
+      ws.addRow({
+        dateKey: r.dateKey,
+        camera: r.camera,
+        position: r.position,
+        level: (Number.isFinite(r.level) ? r.level : ''),
+        conservation: r.conservation,
+        byName: r.byName,
+        byEmail: r.byEmail,
+        time: fmtTime(r.at),
+        sessionId: r.sessionId
+      });
+    });
+
+    ws.getRow(1).font = { bold: true };
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: ws.columns.length } };
+
+    const fname = 'Auditoria_NOK_' + dateKey + '.xlsx';
+    const buf = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf]), fname);
+
+    showToast('Excel gerado: ' + rows.length + ' NOK (todas as camaras).', 'success');
+  } catch(e){
+    console.error(e);
+    showToast('Falha ao exportar NOK.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.dataset.busy = '0'; }
+  }
+}
+
+
+
+
 function auditExportHistoryToExcel(){
   const tableEl = document.querySelector('#auditHistoryTable table');
   if (!tableEl){
@@ -6085,8 +6229,9 @@ function renderAuditoriaTab(){
 
     // Buttons
     document.getElementById('auditDrawBtn')?.addEventListener('click', auditCreateNewSession);
-    document.getElementById('auditRefreshBtn')?.addEventListener('click', () => { auditLoadDailySummary(); auditRender(); auditLoadHistory(); });
+        document.getElementById('auditRefreshBtn')?.addEventListener('click', auditResetBancoAllCamerasToday);
     document.getElementById('auditExportBtn')?.addEventListener('click', auditExportCurrentToExcel);
+    document.getElementById('auditExportNokBtn')?.addEventListener('click', auditExportNokXlsxAllToday);
 
     // FINALIZADO (todos)
     document.getElementById('auditFinalizeBtn')?.addEventListener('click', auditFinalize);
