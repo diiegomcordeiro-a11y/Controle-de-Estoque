@@ -5531,7 +5531,7 @@ async function auditLoadPositionsFromFirestore(){
     });
 
     Object.keys(auditPositionsByCamera).forEach(cam => {
-      auditPositionsByCamera[cam].sort((a,b) => String(a.position).localeCompare(String(b.position)));
+      auditPositionsByCamera[cam].sort((a,b) => String(a.position).localeCompare(String(b.position), 'pt-BR', { sensitivity: 'base' }));
     });
 
     auditUpdateCameraSelect();
@@ -5547,7 +5547,7 @@ function auditUpdateCameraSelect(){
   const histSel = document.getElementById('auditHistCamera');
   if (!sel || !hint) return;
 
-  const cams = Object.keys(auditPositionsByCamera).sort();
+  const cams = Object.keys(auditPositionsByCamera).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR',{ sensitivity: 'base' }));
   if (!cams.length){
     hint.textContent = 'Carregue a lista para habilitar as câmaras disponíveis.';
     return;
@@ -5688,7 +5688,7 @@ async function auditCreateNewSession(){
   const { qty, levelMode, cons } = auditGetFilters();
   const dateKey = auditGetDateKey();
 
-  const cams = Object.keys(auditPositionsByCamera || {}).sort();
+  const cams = Object.keys(auditPositionsByCamera || {}).sort((a,b)=>String(a).localeCompare(String(b),'pt-BR',{ sensitivity: 'base' }));
   if (!cams.length){
     showToast('Não há câmaras na base fixa (audit_positions).', 'warning');
     return;
@@ -5709,7 +5709,9 @@ async function auditCreateNewSession(){
 
       const picked = auditShuffle(filtered).slice(0, Math.min(qty, filtered.length));
 
-      const pointerId = `${dateKey}__${cam}`;
+      
+      picked.sort((a,b)=>String(a.position).localeCompare(String(b.position),'pt-BR',{ sensitivity: 'base' }));
+const pointerId = `${dateKey}__${cam}`;
       const pointerRef = db.collection(COLL_AUDIT_ACTIVE).doc(pointerId);
 
       const pointerSnap = await pointerRef.get();
